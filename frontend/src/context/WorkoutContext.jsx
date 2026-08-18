@@ -182,7 +182,18 @@ export function WorkoutProvider({ children }) {
     let interval;
     if (restTimer > 0) {
       interval = setInterval(() => {
-        setRestTimer(prev => prev - 1);
+        setRestTimer(prev => {
+          if (prev <= 1) {
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification("Rest Time Over!", {
+                body: "Time for your next set! Let's get it.",
+                icon: "/pwa-192x192.png"
+              });
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
@@ -311,6 +322,9 @@ export function WorkoutProvider({ children }) {
   };
 
   const completeSet = (exerciseIndex, setIndex) => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
