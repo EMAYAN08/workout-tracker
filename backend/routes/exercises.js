@@ -1,4 +1,5 @@
 const express = require('express');
+const https = require('https');
 const router = express.Router();
 const CustomExercise = require('../models/CustomExercise');
 
@@ -30,6 +31,67 @@ router.post('/custom', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Failed to add custom exercise' });
   }
+});
+
+const searchCache = new Map();
+
+router.get('/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query || query.length < 3) {
+    return res.json([]);
+  }
+
+  const encodedQuery = encodeURIComponent(query);
+  const lowerQuery = query.toLowerCase();
+  
+  let customMatches = [];
+  try {
+    const customExercises = await CustomExercise.find();
+    customMatches = customExercises.filter(ex => ex.name.includes(lowerQuery));
+  } catch (error) {
+    console.error(error);
+  }
+
+  if (searchCache.has(encodedQuery)) {
+    return res.json([...customMatches, ...searchCache.get(encodedQuery)]);
+  }
+
+  const url = `https://oss.exercisedb.dev/api/v1/exercises?name=${encodedQuery}&limit=15`;
+
+  https.get(url, (apiRes) => {
+    let data = '';
+    
+    apiRes.on('data', (chunk) => {
+      data += chunk;
+    });
+    
+    apiRes.on('end', () => {
+      try {
+        const json = JSON.parse(data);
+        let mappedData = [];
+        
+        if (json.success && json.data) {
+          mappedData = json.data.map(ex => ({
+            id: ex.exerciseId,
+            name: ex.name,
+            muscleGroup: ex.bodyParts && ex.bodyParts.length > 0 ? ex.bodyParts[0] : 'Other',
+            gifUrl: ex.gifUrl || null,
+            equipment: ex.equipments && ex.equipments.length > 0 ? ex.equipments[0] : 'body weight'
+          }));
+          
+          searchCache.set(encodedQuery, mappedData);
+        }
+        
+        res.json([...customMatches, ...mappedData]);
+      } catch (err) {
+        console.error("Error parsing ExerciseDB response", err);
+        res.json(customMatches);
+      }
+    });
+  }).on('error', (err) => {
+    console.error("ExerciseDB proxy error:", err);
+    res.json(customMatches);
+  });
 });
 
 module.exports = router;

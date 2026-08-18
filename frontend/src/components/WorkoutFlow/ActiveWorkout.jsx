@@ -45,7 +45,8 @@ export default function ActiveWorkout() {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length > 2) {
         try {
-          const res = await fetch(`http://localhost:5000/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
           if (!res.ok) throw new Error('Network response was not ok');
           const data = await res.json();
           setSearchResults(data);
