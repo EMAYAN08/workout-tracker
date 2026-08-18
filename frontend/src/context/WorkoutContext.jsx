@@ -29,10 +29,11 @@ export function WorkoutProvider({ children }) {
   });
 
   // Rest Timer
-  const [restTimer, setRestTimer] = useState(() => {
-    const saved = localStorage.getItem('workout_rest_timer');
-    return saved ? parseInt(saved, 10) : 0;
+  const [restEndTime, setRestEndTime] = useState(() => {
+    const saved = localStorage.getItem('workout_rest_end_time');
+    return saved ? parseInt(saved, 10) : null;
   });
+  const [restTimer, setRestTimer] = useState(0);
 
   // Workout History
   const [workoutHistory, setWorkoutHistory] = useState([]);
@@ -166,8 +167,12 @@ export function WorkoutProvider({ children }) {
   }, [workoutDuration]);
 
   useEffect(() => {
-    localStorage.setItem('workout_rest_timer', restTimer.toString());
-  }, [restTimer]);
+    if (restEndTime) {
+      localStorage.setItem('workout_rest_end_time', restEndTime.toString());
+    } else {
+      localStorage.removeItem('workout_rest_end_time');
+    }
+  }, [restEndTime]);
 
   // Timers
   useEffect(() => {
@@ -182,24 +187,52 @@ export function WorkoutProvider({ children }) {
 
   useEffect(() => {
     let interval;
-    if (restTimer > 0) {
-      interval = setInterval(() => {
-        setRestTimer(prev => {
-          if (prev <= 1) {
-            if ("Notification" in window && Notification.permission === "granted") {
-              new Notification("Rest Time Over!", {
-                body: "Time for your next set! Let's get it.",
-                icon: "/pwa-192x192.png"
-              });
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (restEndTime) {
+      const updateTimer = () => {
+        const remaining = Math.max(0, Math.ceil((restEndTime - Date.now()) / 1000));
+        setRestTimer(remaining);
+        if (remaining <= 0) {
+          setRestEndTime(null);
+        }
+      };
+      updateTimer();
+      interval = setInterval(updateTimer, 1000);
+    } else {
+      setRestTimer(0);
     }
     return () => clearInterval(interval);
-  }, [restTimer]);
+  }, [restEndTime]);
+
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const subscribeToPush = async () => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+          });
+        }
+        return subscription;
+      } catch (e) {
+        console.error('Push subscription failed', e);
+        return null;
+      }
+    }
+    return null;
+  };
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -232,7 +265,7 @@ export function WorkoutProvider({ children }) {
       exercises: []
     });
     setWorkoutDuration(0);
-    setRestTimer(0);
+    setRestEndTime(null);
   };
 
   const startWorkoutFromRoutine = (routine) => {
@@ -254,7 +287,7 @@ export function WorkoutProvider({ children }) {
       }))
     });
     setWorkoutDuration(0);
-    setRestTimer(0);
+    setRestEndTime(null);
   };
 
   const finishWorkout = async () => {
@@ -262,7 +295,7 @@ export function WorkoutProvider({ children }) {
       if (activeWorkout.exercises.length === 0) {
         setActiveWorkout(null);
         setWorkoutDuration(0);
-        setRestTimer(0);
+        setRestEndTime(null);
         return;
       }
 
@@ -285,13 +318,13 @@ export function WorkoutProvider({ children }) {
     
     setActiveWorkout(null);
     setWorkoutDuration(0);
-    setRestTimer(0);
+    setRestEndTime(null);
   };
 
   const cancelWorkout = () => {
     setActiveWorkout(null);
     setWorkoutDuration(0);
-    setRestTimer(0);
+    setRestEndTime(null);
   };
 
   const addExercise = (exercise) => {
@@ -323,15 +356,28 @@ export function WorkoutProvider({ children }) {
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
   };
 
-  const completeSet = (exerciseIndex, setIndex) => {
+  const completeSet = async (exerciseIndex, setIndex) => {
     if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
+      await Notification.requestPermission();
     }
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
-    setRestTimer(60); // 1 minute default rest time
+    
+    const delaySeconds = 60;
+    setRestEndTime(Date.now() + delaySeconds * 1000);
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      const subscription = await subscribeToPush();
+      if (subscription) {
+        fetch(`${API_URL}/api/push/schedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription, delaySeconds })
+        }).catch(err => console.error('Failed to schedule push', err));
+      }
+    }
   };
 
   const uncompleteSet = (exerciseIndex, setIndex) => {
