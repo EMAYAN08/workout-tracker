@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { parseISO, startOfDay, format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subMonths, isSameMonth } from 'date-fns';
-import { Info, ChevronDown, Flame, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import InfoPopover from './InfoPopover';
 // Helper to get month grid (columns of weeks, rows of days Mon-Sun)
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
@@ -127,7 +126,6 @@ export default function ConsistencyMap({ onMapClick }) {
   };
 
   const { current, best } = getStreaks();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Handle dropdown selection and adjust chunk if switching sizes
   React.useEffect(() => {
@@ -178,51 +176,27 @@ export default function ConsistencyMap({ onMapClick }) {
       
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <h2 className="text-text font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">Consistency Map</h2>
-          <InfoPopover 
-            title="Consistency Map" 
-            description="Tracks the days you logged a workout. The darker the square, the more workouts you completed that day. Keep the grid dark to build your streak!" 
-            className="mt-1"
-            align="left"
-          />
-        </div>
+        <h2 className="text-text font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">Consistency Map</h2>
 
-        {/* Dropdown */}
-        <div className="relative">
+        {/* Navigation */}
+        <div className="flex items-center gap-1 bg-surface-light rounded-full p-1 border border-border">
           <button 
-            onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(!isDropdownOpen); }}
-            className="flex items-center gap-1.5 sm:gap-2 bg-surface-light hover:bg-surface text-text text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border transition-colors whitespace-nowrap"
+            onClick={(e) => { e.stopPropagation(); setChunkOffset(prev => Math.min(prev + 1, monthPairs.length - 1)); }}
+            disabled={chunkOffset >= monthPairs.length - 1}
+            className={`p-1.5 rounded-full transition-colors ${chunkOffset >= monthPairs.length - 1 ? 'text-textMuted/30 cursor-not-allowed' : 'text-text hover:bg-surface hover:text-primary'}`}
           >
-            <span>{monthPairs[chunkOffset]?.label || 'All Time'}</span>
-            <ChevronDown size={14} className={`transition-transform text-textMuted ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronLeft size={16} />
           </button>
-
-          <AnimatePresence>
-            {isDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-auto left-0 sm:left-auto sm:right-0 top-full mt-2 w-48 bg-surface border border-border-strong rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col"
-                >
-                  {monthPairs.map((pair) => (
-                    <button
-                      key={pair.id}
-                      onClick={(e) => { e.stopPropagation(); setChunkOffset(pair.id); setIsDropdownOpen(false); }}
-                      className={`text-left px-4 py-3 text-sm font-semibold transition-colors ${
-                        chunkOffset === pair.id ? 'bg-primary/10 text-primary' : 'text-text hover:bg-surface-light'
-                      }`}
-                    >
-                      {pair.label}
-                    </button>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+          <span className="text-xs sm:text-sm font-semibold text-text px-2 min-w-[120px] text-center">
+            {monthPairs[chunkOffset]?.label || 'All Time'}
+          </span>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setChunkOffset(prev => Math.max(prev - 1, 0)); }}
+            disabled={chunkOffset <= 0}
+            className={`p-1.5 rounded-full transition-colors ${chunkOffset <= 0 ? 'text-textMuted/30 cursor-not-allowed' : 'text-text hover:bg-surface hover:text-primary'}`}
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
