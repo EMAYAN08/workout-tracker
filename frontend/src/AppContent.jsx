@@ -14,8 +14,60 @@ export default function AppContent() {
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedDate, setSelectedDate] = useState(null);
 
+  const [direction, setDirection] = useState(0);
+
+  const tabOrder = ['home', 'routines', 'custom_exercises', 'dashboard'];
+  
+  const navigateTab = (newTab) => {
+    const currentIdx = tabOrder.indexOf(currentTab);
+    const newIdx = tabOrder.indexOf(newTab);
+    if (currentIdx !== -1 && newIdx !== -1) {
+      setDirection(newIdx > currentIdx ? 1 : -1);
+    } else {
+      setDirection(0);
+    }
+    setCurrentTab(newTab);
+  };
+
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || activeWorkout) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    const currentIdx = tabOrder.indexOf(currentTab);
+    if (currentIdx === -1) return;
+
+    if (isLeftSwipe && currentIdx < tabOrder.length - 1) {
+      navigateTab(tabOrder[currentIdx + 1]);
+    }
+    if (isRightSwipe && currentIdx > 0) {
+      navigateTab(tabOrder[currentIdx - 1]);
+    }
+  };
+
+  const slideVariants = {
+    initial: (dir) => ({ x: dir > 0 ? 100 : dir < 0 ? -100 : 0, opacity: 0 }),
+    animate: { x: 0, opacity: 1, transition: { duration: 0.2, ease: 'easeOut' } },
+    exit: (dir) => ({ x: dir < 0 ? 100 : dir > 0 ? -100 : 0, opacity: 0, transition: { duration: 0.2, ease: 'easeIn' } })
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300">
+    <div 
+      className="min-h-screen bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300 overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       
       {/* Premium Solid Header */}
       <header className="app-header sticky top-0 z-40 p-4 pt-safe flex justify-between items-center min-h-16">
@@ -63,14 +115,12 @@ export default function AppContent() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background">
-        <AnimatePresence mode="wait">
+      <main className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden">
+        <AnimatePresence mode="wait" custom={direction}>
           {activeWorkout ? (
             <motion.div
               key="active"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="w-full pb-8"
             >
               <ActiveWorkout />
@@ -78,9 +128,7 @@ export default function AppContent() {
           ) : currentTab === 'home' ? (
             <motion.div 
               key="home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="flex flex-col items-center justify-center min-h-[70vh] px-4"
             >
               <Dumbbell className="text-primary w-16 h-16 mb-6" strokeWidth={1.5} />
@@ -103,7 +151,7 @@ export default function AppContent() {
               
               <div className="mt-6">
                 <button
-                  onClick={() => setCurrentTab('routines')}
+                  onClick={() => navigateTab('routines')}
                   className="text-textMuted font-bold hover:text-primary transition-colors text-sm underline underline-offset-4"
                 >
                   Or start from a routine
@@ -113,19 +161,15 @@ export default function AppContent() {
           ) : currentTab === 'custom_exercises' ? (
             <motion.div
               key="custom_exercises"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="px-4 pt-4"
             >
-              <CustomExercises onNavigate={setCurrentTab} />
+              <CustomExercises onNavigate={navigateTab} />
             </motion.div>
           ) : currentTab === 'routines' ? (
             <motion.div
               key="routines"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="px-4 pt-4"
             >
               <RoutinesMain />
@@ -133,42 +177,34 @@ export default function AppContent() {
           ) : currentTab === 'dashboard' ? (
             <motion.div 
               key="dashboard"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="px-2"
             >
-              <Dashboard onMapClick={() => setCurrentTab('calendar')} />
+              <Dashboard onMapClick={() => navigateTab('calendar')} />
             </motion.div>
           ) : currentTab === 'calendar' ? (
             <motion.div 
               key="calendar"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="px-2"
             >
-              <CalendarView onDayClick={(date) => { setSelectedDate(date); setCurrentTab('workout-detail'); }} />
+              <CalendarView onDayClick={(date) => { setSelectedDate(date); navigateTab('workout-detail'); }} onBack={() => navigateTab('dashboard')} />
             </motion.div>
           ) : currentTab === 'workout-detail' ? (
             <motion.div 
               key="workout-detail"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="px-2"
             >
-              <WorkoutDetailView date={selectedDate} onBack={() => setCurrentTab('calendar')} />
+              <WorkoutDetailView date={selectedDate} onBack={() => navigateTab('calendar')} />
             </motion.div>
           ) : (
             <motion.div
-              key="dashboard"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              key="default"
+              custom={direction} variants={slideVariants} initial="initial" animate="animate" exit="exit"
               className="px-4 pt-4"
             >
-              <Dashboard onMapClick={() => setCurrentTab('calendar')} />
+              <Dashboard onMapClick={() => navigateTab('calendar')} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -183,28 +219,28 @@ export default function AppContent() {
         >
           <div className="flex justify-around items-center max-w-lg mx-auto">
             <button 
-              onClick={() => setCurrentTab('home')}
+              onClick={() => navigateTab('home')}
               className={`flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'home' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <Activity size={24} strokeWidth={currentTab === 'home' ? 2.5 : 2} />
               <span className="text-[10px] font-semibold mt-0.5">Workout</span>
             </button>
             <button 
-              onClick={() => setCurrentTab('routines')}
+              onClick={() => navigateTab('routines')}
               className={`flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'routines' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <ClipboardList size={24} strokeWidth={currentTab === 'routines' ? 2.5 : 2} />
               <span className="text-[10px] font-semibold mt-0.5">Routines</span>
             </button>
             <button 
-              onClick={() => setCurrentTab('custom_exercises')}
+              onClick={() => navigateTab('custom_exercises')}
               className={`flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'custom_exercises' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <Database size={24} strokeWidth={currentTab === 'custom_exercises' ? 2.5 : 2} />
               <span className="text-[10px] font-semibold mt-0.5">Exercises</span>
             </button>
             <button 
-              onClick={() => setCurrentTab('dashboard')}
+              onClick={() => navigateTab('dashboard')}
               className={`flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'dashboard' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <LayoutDashboard size={24} strokeWidth={currentTab === 'dashboard' ? 2.5 : 2} />

@@ -340,29 +340,25 @@ export default function ActiveWorkout() {
             )}
             
             {searchQuery.length > 2 && (
-              <div className="mt-4 mb-8 panel p-6 flex flex-col items-center text-center">
-                <Dumbbell size={32} className="text-primary opacity-50 mb-3" />
-                <h3 className="text-lg font-bold text-text mb-1">Create Custom Exercise</h3>
-                <p className="text-sm text-textMuted mb-6">Create "{searchQuery}" as a custom exercise to use anytime.</p>
-                
-                <div className="w-full max-w-xs space-y-4">
-                  <div className="text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1 block">Muscle Group</label>
-                    <select 
-                      value={newMuscleGroup} 
-                      onChange={e => setNewMuscleGroup(e.target.value)}
-                      className="input-premium w-full py-2.5 px-3 text-sm capitalize"
-                    >
-                      {muscleGroups.map(mg => <option key={mg} value={mg}>{mg}</option>)}
-                    </select>
-                  </div>
-                  
-                  <button 
+              <div className="mt-4 mb-8 flex flex-col items-center justify-center py-4 border-t border-border">
+                <p className="text-textMuted font-semibold text-xs mb-3 text-center">Didn't find what you're looking for?</p>
+                <div className="flex items-center gap-2 w-full max-w-sm">
+                  <select
+                    value={newMuscleGroup}
+                    onChange={(e) => setNewMuscleGroup(e.target.value)}
+                    className="w-[120px] bg-surface-light border border-border rounded-lg px-2 py-2 text-sm text-text font-semibold focus:outline-none focus:border-primary capitalize min-h-touch"
+                  >
+                    {muscleGroups.map(mg => (
+                      <option key={mg} value={mg}>{mg}</option>
+                    ))}
+                  </select>
+                  <button
                     onClick={handleCreateCustom}
                     disabled={isCreatingCustom}
-                    className="w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-light transition-colors disabled:opacity-50"
+                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors disabled:opacity-50 min-h-touch truncate"
                   >
-                    {isCreatingCustom ? 'Creating...' : 'Create & Add'}
+                    {isCreatingCustom ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={16} className="shrink-0" />}
+                    <span className="truncate">Create "{searchQuery}"</span>
                   </button>
                 </div>
               </div>

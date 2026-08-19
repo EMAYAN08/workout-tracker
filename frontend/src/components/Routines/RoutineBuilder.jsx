@@ -40,9 +40,18 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   }, [searchQuery]);
 
   const handleAddExercise = (exercise) => {
+    let initialSets = [{ reps: 10, weight: 0, type: 'Working' }];
+    if (exercise.defaultSets && exercise.defaultSets.length > 0) {
+      initialSets = exercise.defaultSets.map(s => ({
+        reps: s.reps || 10,
+        weight: s.weight || 0,
+        type: 'Working'
+      }));
+    }
+
     setExercises(prev => [...prev, {
       ...exercise,
-      defaultSets: [{ reps: 10, weight: 0, type: 'Working' }]
+      defaultSets: initialSets
     }]);
     setIsSearching(false);
     setSearchQuery('');
@@ -242,35 +251,35 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
             />
           </div>
 
-          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-            {searchResults.length > 0 ? (
-              searchResults.map(ex => (
-                <button 
-                  key={ex.id}
-                  onClick={() => handleAddExercise(ex)}
-                  className="flex items-center gap-3 p-3 bg-surface-light hover:bg-white/5 rounded-xl transition-colors border border-transparent hover:border-border text-left"
-                >
-                  {ex.gifUrl ? (
-                    <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light" loading="lazy" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light">
-                      <Dumbbell size={20} className="text-textMuted" />
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-bold text-text capitalize leading-tight">{ex.name}</h4>
-                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
+          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar pb-4">
+            {searchResults.map(ex => (
+              <button 
+                key={ex.id}
+                onClick={() => handleAddExercise(ex)}
+                className="flex items-center gap-3 p-3 bg-surface-light hover:bg-white/5 rounded-xl transition-colors border border-transparent hover:border-border text-left min-h-touch"
+              >
+                {ex.gifUrl ? (
+                  <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light" loading="lazy" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
+                    <Dumbbell size={20} className="text-textMuted" />
                   </div>
-                </button>
-              ))
-            ) : searchQuery.length > 2 ? (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <p className="text-textMuted font-semibold text-sm mb-3">No exercises found for "{searchQuery}"</p>
-                <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                )}
+                <div>
+                  <h4 className="font-bold text-text capitalize leading-tight">{ex.name}</h4>
+                  <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
+                </div>
+              </button>
+            ))}
+
+            {searchQuery.length > 2 && (
+              <div className="flex flex-col items-center justify-center py-4 border-t border-border mt-2">
+                <p className="text-textMuted font-semibold text-xs mb-3 text-center">Didn't find what you're looking for?</p>
+                <div className="flex items-center gap-2 w-full">
                   <select
                     value={newMuscleGroup}
                     onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-full bg-surface-light border border-border rounded-lg px-3 py-2 text-sm text-text font-semibold focus:outline-none focus:border-primary"
+                    className="w-[120px] bg-surface-light border border-border rounded-lg px-2 py-2 text-sm text-text font-semibold focus:outline-none focus:border-primary capitalize min-h-touch"
                   >
                     {muscleGroups.map(mg => (
                       <option key={mg} value={mg}>{mg}</option>
@@ -279,14 +288,16 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   <button
                     onClick={handleCreateCustom}
                     disabled={isCreatingCustom}
-                    className="w-full bg-primary hover:bg-primary-light text-white font-bold py-2 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors disabled:opacity-50 min-h-touch truncate"
                   >
-                    {isCreatingCustom ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={16} />}
-                    Create Custom
+                    {isCreatingCustom ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={16} className="shrink-0" />}
+                    <span className="truncate">Create "{searchQuery}"</span>
                   </button>
                 </div>
               </div>
-            ) : (
+            )}
+            
+            {searchResults.length === 0 && searchQuery.length <= 2 && (
               <div className="text-center py-4 text-textMuted text-sm font-semibold">
                 Type at least 3 characters
               </div>

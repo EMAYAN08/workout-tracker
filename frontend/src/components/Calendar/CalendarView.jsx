@@ -7,7 +7,7 @@ import {
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CalendarView({ onDayClick }) {
+export default function CalendarView({ onDayClick, onBack }) {
   const { workoutHistory } = useWorkout();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -37,15 +37,40 @@ export default function CalendarView({ onDayClick }) {
 
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+  // Swipe to go back
+  const [touchStart, setTouchStart] = useState(null);
+  const onTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
+  const onTouchEnd = (e) => {
+    if (!touchStart) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    if (touchEnd - touchStart > 100) {
+      if (onBack) onBack();
+    }
+  };
+
   return (
-    <div className="flex flex-col w-full pb-8 pt-2">
+    <div 
+      className="flex flex-col w-full pb-8 pt-2 h-full"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       <div className="flex items-center justify-between mb-6 px-2">
-        <h1 className="text-2xl font-black text-text tracking-tight flex items-center gap-2">
-          <CalendarIcon className="text-primary" size={24} /> History
-        </h1>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className="p-2 -ml-2 text-textMuted hover:text-text rounded-full hover:bg-surface-light transition-colors min-w-touch min-h-touch flex items-center justify-center"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+          <h1 className="text-2xl font-black text-text tracking-tight flex items-center gap-2">
+            <CalendarIcon className="text-primary" size={24} /> History
+          </h1>
+        </div>
         <button 
           onClick={goToToday}
-          className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors"
+          className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors min-h-touch"
         >
           Today
         </button>

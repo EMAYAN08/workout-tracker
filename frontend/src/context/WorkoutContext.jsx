@@ -74,12 +74,16 @@ export function WorkoutProvider({ children }) {
     }
   };
 
-  const createCustomExercise = async (name, muscleGroup) => {
+  const createCustomExercise = async (name, muscleGroup, defaultSets = []) => {
     try {
+      // Generate a client-side ID since the backend expects one
+      const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
+      const payload = { id: tempId, name, muscleGroup, defaultSets };
+
       const res = await fetch(`${API_URL}/api/exercises/custom`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, muscleGroup })
+        body: JSON.stringify(payload)
       });
       const newEx = await res.json();
       setCustomExercises(prev => [...prev, newEx]);
@@ -87,6 +91,17 @@ export function WorkoutProvider({ children }) {
     } catch (err) {
       console.error("Failed to create custom exercise", err);
       return null;
+    }
+  };
+
+  const deleteCustomExercise = async (id) => {
+    try {
+      await fetch(`${API_URL}/api/exercises/custom/${id}`, {
+        method: 'DELETE'
+      });
+      setCustomExercises(prev => prev.filter(ex => ex.id !== id));
+    } catch (err) {
+      console.error("Failed to delete custom exercise", err);
     }
   };
 
@@ -340,11 +355,21 @@ export function WorkoutProvider({ children }) {
       defaultWeight = highestSet.weight.toString();
     }
 
+    let initialSets = [{ reps: '', weight: defaultWeight, type: 'Working', completedAt: null }];
+    if (exercise.defaultSets && exercise.defaultSets.length > 0) {
+      initialSets = exercise.defaultSets.map(s => ({
+        reps: s.reps ? String(s.reps) : '',
+        weight: s.weight ? String(s.weight) : defaultWeight,
+        type: 'Working',
+        completedAt: null
+      }));
+    }
+
     setActiveWorkout(prev => ({
       ...prev,
       exercises: [...prev.exercises, { 
         ...exercise, 
-        sets: [{ reps: '', weight: defaultWeight, type: 'Working', completedAt: null }] 
+        sets: initialSets 
       }]
     }));
   };
@@ -464,7 +489,7 @@ export function WorkoutProvider({ children }) {
       workoutDuration,
       restTimer, setRestTimer,
       workoutHistory,
-      customExercises, createCustomExercise,
+      customExercises, createCustomExercise, deleteCustomExercise,
       routines, createRoutine, updateRoutine, deleteRoutine,
       getStreaks
     }}>

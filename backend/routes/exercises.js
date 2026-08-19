@@ -17,19 +17,31 @@ router.get('/custom', async (req, res) => {
 // Add new custom exercise
 router.post('/custom', async (req, res) => {
   try {
-    const { id, name, muscleGroup, gifUrl } = req.body;
+    const { id, name, muscleGroup, gifUrl, defaultSets } = req.body;
     
     if (!id || !name || !muscleGroup) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const newExercise = new CustomExercise({ id, name, muscleGroup, gifUrl });
+    const newExercise = new CustomExercise({ id, name, muscleGroup, gifUrl, defaultSets: defaultSets || [] });
     await newExercise.save();
 
     res.status(201).json(newExercise);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to add custom exercise' });
+  }
+});
+
+// Delete custom exercise
+router.delete('/custom/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await CustomExercise.findOneAndDelete({ id });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete custom exercise' });
   }
 });
 
