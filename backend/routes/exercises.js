@@ -51,7 +51,7 @@ const searchCache = new Map();
 
 router.get('/search', async (req, res) => {
   const query = req.query.q;
-  if (!query || query.length < 3) {
+  if (!query || query.length < 1) {
     return res.json([]);
   }
 
@@ -61,9 +61,14 @@ router.get('/search', async (req, res) => {
   let customMatches = [];
   try {
     const customExercises = await CustomExercise.find();
-    customMatches = customExercises.filter(ex => ex.name.includes(lowerQuery));
+    customMatches = customExercises.filter(ex => ex.name.toLowerCase().includes(lowerQuery));
   } catch (error) {
     console.error(error);
+  }
+
+  // If query is too short for the external API, just return custom matches immediately
+  if (query.length < 3) {
+    return res.json(customMatches);
   }
 
   if (searchCache.has(encodedQuery)) {

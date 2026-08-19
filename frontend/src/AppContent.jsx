@@ -221,9 +221,13 @@ export default function AppContent() {
       {!activeWorkout && (
         <motion.div 
           initial={{ y: 0, scale: 1 }}
-          animate={{ y: isNavVisible ? 0 : 40, scale: isNavVisible ? 1 : 0.9, opacity: isNavVisible ? 1 : 0.8 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
-          className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-full backdrop-blur-xl bg-surface/80 border border-border/50 shadow-2xl overflow-hidden py-2 px-4"
+          animate={{ 
+            y: isNavVisible ? 0 : 15, 
+            scale: isNavVisible ? 1 : 0.85, 
+            opacity: isNavVisible ? 1 : 0.75 
+          }}
+          transition={{ duration: 0.35, ease: 'easeInOut' }}
+          className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-full backdrop-blur-xl bg-surface/80 border border-border/50 shadow-2xl overflow-hidden py-2 px-4 origin-bottom"
           style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
         >
           <div className="flex justify-around items-center w-full relative">
@@ -232,28 +236,48 @@ export default function AppContent() {
               className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'home' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <Activity size={24} strokeWidth={currentTab === 'home' ? 2.5 : 2} />
-              <span className="text-[9px] font-bold">Workout</span>
+              <motion.span 
+                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
+                className="text-[9px] font-bold overflow-hidden"
+              >
+                Workout
+              </motion.span>
             </button>
             <button 
               onClick={() => navigateTab('routines')}
               className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'routines' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <ClipboardList size={24} strokeWidth={currentTab === 'routines' ? 2.5 : 2} />
-              <span className="text-[9px] font-bold">Routines</span>
+              <motion.span 
+                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
+                className="text-[9px] font-bold overflow-hidden"
+              >
+                Routines
+              </motion.span>
             </button>
             <button 
               onClick={() => navigateTab('custom_exercises')}
               className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'custom_exercises' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <Database size={24} strokeWidth={currentTab === 'custom_exercises' ? 2.5 : 2} />
-              <span className="text-[9px] font-bold">Exercises</span>
+              <motion.span 
+                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
+                className="text-[9px] font-bold overflow-hidden"
+              >
+                Exercises
+              </motion.span>
             </button>
             <button 
               onClick={() => navigateTab('dashboard')}
               className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'dashboard' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
             >
               <LayoutDashboard size={24} strokeWidth={currentTab === 'dashboard' ? 2.5 : 2} />
-              <span className="text-[9px] font-bold">Profile</span>
+              <motion.span 
+                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
+                className="text-[9px] font-bold overflow-hidden"
+              >
+                Profile
+              </motion.span>
             </button>
           </div>
         </motion.div>

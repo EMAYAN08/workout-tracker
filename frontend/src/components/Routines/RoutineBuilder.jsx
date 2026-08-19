@@ -261,20 +261,20 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 className="flex items-center gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left min-h-touch"
               >
                 {ex.gifUrl ? (
-                  <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light" loading="lazy" />
+                  <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0" loading="lazy" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
-                    <Dumbbell size={20} className="text-textMuted" />
+                    <Dumbbell size={20} className="text-primary" />
                   </div>
                 )}
-                <div>
-                  <h4 className="font-bold text-text capitalize leading-tight">{ex.name}</h4>
-                  <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
+                <div className="flex-1 min-w-0 py-1">
+                  <h4 className="font-bold text-text capitalize text-sm mb-0.5 leading-snug">{ex.name}</h4>
+                  <p className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</p>
                 </div>
               </button>
             ))}
 
-            {searchQuery.length > 2 && (
+            {searchQuery.length > 0 && (
               <div className="flex flex-col items-center justify-center py-6 mt-4 border-t border-border/50 bg-surface/30 rounded-xl px-4">
                 <p className="text-textMuted font-semibold text-sm mb-4 text-center">Didn't find what you're looking for?</p>
                 <div className="flex items-center gap-3 w-full max-w-sm">
@@ -299,7 +299,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               </div>
             )}
             
-            {searchResults.length === 0 && searchQuery.length <= 2 && (
+            {searchResults.length === 0 && searchQuery.length === 0 && (
               <div className="flex flex-col items-center justify-center flex-1 opacity-50 py-12">
                 <Search size={48} className="text-textMuted mb-4" />
                 <p className="text-text font-bold">Search for an exercise</p>

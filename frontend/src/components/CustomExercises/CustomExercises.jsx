@@ -30,9 +30,9 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
             <Dumbbell size={20} className="text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-bold text-text capitalize text-base truncate">{ex.name}</h4>
-              <span className="text-[9px] font-black uppercase tracking-widest bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded shrink-0">Custom</span>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h4 className="font-bold text-text capitalize text-base leading-snug">{ex.name}</h4>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Custom</span>
             </div>
             <p className="text-xs text-textMuted font-semibold capitalize flex items-center gap-2">
               {ex.muscleGroup}
@@ -102,7 +102,7 @@ export default function CustomExercises({ onNavigate }) {
   const muscleGroupsList = Object.keys(groupedExercises).sort();
 
   const handleCreate = async () => {
-    if (newName.trim().length < 3) return;
+    if (newName.trim().length < 1) return;
     setIsSubmitting(true);
     await createCustomExercise(newName.trim(), newMuscleGroup, defaultSets);
     setNewName('');
@@ -209,7 +209,7 @@ export default function CustomExercises({ onNavigate }) {
                     <div className="col-span-1 flex justify-center">
                       <button 
                         onClick={() => removeSet(sIdx)}
-                        className="text-textMuted hover:text-red-500 transition-colors p-1 min-h-touch min-w-touch flex justify-center items-center"
+                        className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -221,7 +221,7 @@ export default function CustomExercises({ onNavigate }) {
             
             <button 
               onClick={handleCreate}
-              disabled={isSubmitting || newName.trim().length < 3}
+              disabled={isSubmitting || newName.trim().length < 1}
               className="w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-light transition-colors disabled:opacity-50 mt-4 min-h-touch"
             >
               {isSubmitting ? 'Creating...' : 'Save Custom Exercise'}
