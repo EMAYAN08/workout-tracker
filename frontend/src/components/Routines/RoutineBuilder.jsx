@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
+import { convertWeight } from '../../utils/calculations';
 import { Search, Plus, Save, X, Dumbbell, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,7 +45,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     if (exercise.defaultSets && exercise.defaultSets.length > 0) {
       initialSets = exercise.defaultSets.map(s => ({
         reps: s.reps || 10,
-        weight: s.weight || 0,
+        weight: convertWeight(s.weight || 0, exercise.unitSaved || 'lbs', unit),
         type: 'Working'
       }));
     }
@@ -230,33 +231,34 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="panel p-4"
+          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex flex-col"
         >
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-text">Search Exercise</h3>
-            <button onClick={() => setIsSearching(false)} className="text-textMuted hover:text-text">
+          <div className="p-4 pt-safe flex items-center gap-3 border-b border-border/50 bg-surface/50">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
+              <input 
+                autoFocus
+                type="text" 
+                placeholder="Search exercise..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-surface-light border border-border rounded-xl pl-10 pr-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <button 
+              onClick={() => setIsSearching(false)}
+              className="p-3 text-textMuted hover:text-text rounded-full bg-surface-light min-w-touch min-h-touch flex items-center justify-center"
+            >
               <X size={20} />
             </button>
           </div>
-          
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={18} />
-            <input 
-              autoFocus
-              type="text" 
-              placeholder="e.g. Bench Press" 
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-surface-light border border-border rounded-xl pl-10 pr-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
-            />
-          </div>
 
-          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar pb-4">
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2 pb-safe">
             {searchResults.map(ex => (
               <button 
                 key={ex.id}
                 onClick={() => handleAddExercise(ex)}
-                className="flex items-center gap-3 p-3 bg-surface-light hover:bg-white/5 rounded-xl transition-colors border border-transparent hover:border-border text-left min-h-touch"
+                className="flex items-center gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left min-h-touch"
               >
                 {ex.gifUrl ? (
                   <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light" loading="lazy" />
@@ -273,13 +275,13 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
             ))}
 
             {searchQuery.length > 2 && (
-              <div className="flex flex-col items-center justify-center py-4 border-t border-border mt-2">
-                <p className="text-textMuted font-semibold text-xs mb-3 text-center">Didn't find what you're looking for?</p>
-                <div className="flex items-center gap-2 w-full">
+              <div className="flex flex-col items-center justify-center py-6 mt-4 border-t border-border/50 bg-surface/30 rounded-xl px-4">
+                <p className="text-textMuted font-semibold text-sm mb-4 text-center">Didn't find what you're looking for?</p>
+                <div className="flex items-center gap-3 w-full max-w-sm">
                   <select
                     value={newMuscleGroup}
                     onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-[120px] bg-surface-light border border-border rounded-lg px-2 py-2 text-sm text-text font-semibold focus:outline-none focus:border-primary capitalize min-h-touch"
+                    className="w-1/3 bg-surface-light border border-border rounded-xl px-3 py-3 text-sm text-text font-semibold focus:outline-none focus:border-primary capitalize min-h-touch"
                   >
                     {muscleGroups.map(mg => (
                       <option key={mg} value={mg}>{mg}</option>
@@ -288,9 +290,9 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   <button
                     onClick={handleCreateCustom}
                     disabled={isCreatingCustom}
-                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors disabled:opacity-50 min-h-touch truncate"
+                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-touch truncate shadow-lg shadow-primary/20"
                   >
-                    {isCreatingCustom ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={16} className="shrink-0" />}
+                    {isCreatingCustom ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={18} className="shrink-0" />}
                     <span className="truncate">Create "{searchQuery}"</span>
                   </button>
                 </div>
@@ -298,8 +300,10 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
             )}
             
             {searchResults.length === 0 && searchQuery.length <= 2 && (
-              <div className="text-center py-4 text-textMuted text-sm font-semibold">
-                Type at least 3 characters
+              <div className="flex flex-col items-center justify-center flex-1 opacity-50 py-12">
+                <Search size={48} className="text-textMuted mb-4" />
+                <p className="text-text font-bold">Search for an exercise</p>
+                <p className="text-textMuted text-sm mt-1">Type at least 3 characters</p>
               </div>
             )}
           </div>

@@ -17,13 +17,15 @@ router.get('/custom', async (req, res) => {
 // Add new custom exercise
 router.post('/custom', async (req, res) => {
   try {
-    const { id, name, muscleGroup, gifUrl, defaultSets } = req.body;
+    const { id, name, muscleGroup, gifUrl, defaultSets, unitSaved } = req.body;
     
     if (!id || !name || !muscleGroup) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const newExercise = new CustomExercise({ id, name, muscleGroup, gifUrl, defaultSets: defaultSets || [] });
+    const newExercise = new CustomExercise({ 
+      id, name, muscleGroup, gifUrl, unitSaved: unitSaved || 'lbs', defaultSets: defaultSets || [] 
+    });
     await newExercise.save();
 
     res.status(201).json(newExercise);

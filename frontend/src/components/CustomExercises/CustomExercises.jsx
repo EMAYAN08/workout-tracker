@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
+import { convertWeight } from '../../utils/calculations';
 import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -7,10 +8,10 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="relative overflow-hidden rounded-xl bg-red-500 mb-2">
+    <div className="relative mb-2">
       {/* Delete Background Button */}
-      <div className="absolute top-0 bottom-0 right-0 w-20 flex items-center justify-center">
-        <button onClick={() => onDelete(ex.id)} className="w-full h-full flex flex-col items-center justify-center text-white">
+      <div className="absolute top-0 bottom-0 right-0 w-24 flex items-center justify-end pr-4 rounded-r-xl bg-red-500 overflow-hidden">
+        <button onClick={() => onDelete(ex.id)} className="h-full flex flex-col items-center justify-center text-white">
           <Trash2 size={20} />
           <span className="text-[10px] font-bold mt-1">Delete</span>
         </button>
@@ -21,10 +22,10 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
         drag="x"
         dragConstraints={{ left: -80, right: 0 }}
         dragElastic={0.2}
-        className="relative z-10 bg-surface shadow-sm rounded-xl border border-border flex flex-col"
+        className="relative z-10 bg-surface shadow-sm rounded-xl border border-border flex flex-col w-full"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="p-4 flex items-center gap-4">
+        <div className="p-4 flex items-center gap-4 bg-surface rounded-xl">
           <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
             <Dumbbell size={20} className="text-primary" />
           </div>
@@ -54,7 +55,7 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="px-4 pb-4 overflow-hidden"
+              className="px-4 pb-4 overflow-hidden bg-surface rounded-b-xl -mt-2 pt-2"
             >
                <div className="pt-3 border-t border-border mt-1">
                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-2">Default Sets</h5>
@@ -62,7 +63,9 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
                    {ex.defaultSets.map((s, i) => (
                      <div key={i} className="flex justify-between items-center text-sm font-mono bg-surface-light px-3 py-1.5 rounded-lg border border-border/50">
                        <span className="text-textMuted font-bold">Set {i+1}</span>
-                       <span className="text-text font-bold">{s.weight} <span className="text-xs text-textMuted uppercase">{unit}</span> × {s.reps}</span>
+                       <span className="text-text font-bold">
+                         {convertWeight(s.weight, ex.unitSaved || 'lbs', unit)} <span className="text-xs text-textMuted uppercase">{unit}</span> × {s.reps}
+                       </span>
                      </div>
                    ))}
                  </div>

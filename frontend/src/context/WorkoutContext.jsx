@@ -78,7 +78,7 @@ export function WorkoutProvider({ children }) {
     try {
       // Generate a client-side ID since the backend expects one
       const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
-      const payload = { id: tempId, name, muscleGroup, defaultSets };
+      const payload = { id: tempId, name, muscleGroup, defaultSets, unitSaved: unit };
 
       const res = await fetch(`${API_URL}/api/exercises/custom`, {
         method: 'POST',
@@ -359,7 +359,7 @@ export function WorkoutProvider({ children }) {
     if (exercise.defaultSets && exercise.defaultSets.length > 0) {
       initialSets = exercise.defaultSets.map(s => ({
         reps: s.reps ? String(s.reps) : '',
-        weight: s.weight ? String(s.weight) : defaultWeight,
+        weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : defaultWeight,
         type: 'Working',
         completedAt: null
       }));

@@ -5,6 +5,7 @@ const CustomExerciseSchema = new mongoose.Schema({
   name: { type: String, required: true },
   muscleGroup: { type: String, required: true },
   gifUrl: { type: String, default: null },
+  unitSaved: { type: String, default: 'lbs' },
   defaultSets: [{
     reps: { type: Number, default: 0 },
     weight: { type: Number, default: 0 }
