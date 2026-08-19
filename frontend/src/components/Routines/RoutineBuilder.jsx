@@ -258,18 +258,18 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               <button 
                 key={ex.id}
                 onClick={() => handleAddExercise(ex)}
-                className="flex items-center gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left min-h-touch"
+                className="flex items-start gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left w-full min-h-touch"
               >
                 {ex.gifUrl ? (
-                  <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0" loading="lazy" />
+                  <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0 mt-0.5" loading="lazy" />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0 mt-0.5">
                     <Dumbbell size={20} className="text-primary" />
                   </div>
                 )}
-                <div className="flex-1 min-w-0 py-1">
-                  <h4 className="font-bold text-text capitalize text-sm mb-0.5 leading-snug">{ex.name}</h4>
-                  <p className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</p>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-primary tracking-wider mb-0.5">{ex.muscleGroup}</p>
+                  <h4 className="font-bold text-text capitalize text-sm leading-relaxed break-words">{ex.name}</h4>
                 </div>
               </button>
             ))}

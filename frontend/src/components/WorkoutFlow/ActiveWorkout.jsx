@@ -314,23 +314,23 @@ export default function ActiveWorkout() {
               <button 
                 key={res.id} 
                 onClick={() => handleAddExercise(res)}
-                className="flex items-center gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left min-h-touch"
+                className="flex items-start gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left w-full min-h-touch"
               >
                 {res.gifUrl ? (
-                  <img src={res.gifUrl} alt={res.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0" loading="lazy" />
+                  <img src={res.gifUrl} alt={res.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0 mt-0.5" loading="lazy" />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0 mt-0.5">
                     <Dumbbell size={20} className="text-primary" />
                   </div>
                 )}
-                <div className="flex-1 min-w-0 py-1">
-                  <div className="flex items-start justify-between gap-2 mb-0.5">
-                    <h4 className="font-bold text-text capitalize text-sm leading-snug">{res.name}</h4>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] uppercase font-bold text-primary tracking-wider">{res.muscleGroup}</span>
                     {res.isCustom && (
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Custom</span>
+                      <span className="text-[9px] font-black uppercase text-yellow-500 bg-yellow-500/20 px-1.5 py-0.5 rounded">Custom</span>
                     )}
                   </div>
-                  <p className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{res.muscleGroup}</p>
+                  <h4 className="font-bold text-text capitalize text-sm leading-relaxed break-words">{res.name}</h4>
                 </div>
               </button>
             ))}

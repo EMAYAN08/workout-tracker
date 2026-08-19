@@ -179,7 +179,13 @@ export default function CustomExercises({ onNavigate }) {
             <div className="mt-2 border-t border-border pt-4">
               <div className="flex justify-between items-center mb-3">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-textMuted block">Default Sets (Optional)</label>
-                <button onClick={() => setDefaultSets([...defaultSets, { reps: 0, weight: 0 }])} className="text-xs font-bold text-primary hover:text-primary-light flex items-center gap-1 min-h-touch px-2">
+                <button 
+                  onClick={() => {
+                    const lastSet = defaultSets.length > 0 ? defaultSets[defaultSets.length - 1] : { reps: 0, weight: 0 };
+                    setDefaultSets([...defaultSets, { reps: lastSet.reps, weight: lastSet.weight }]);
+                  }} 
+                  className="text-xs font-bold text-primary hover:text-primary-light flex items-center gap-1 min-h-touch px-2"
+                >
                   <Plus size={14} /> Add Set
                 </button>
               </div>
@@ -188,23 +194,29 @@ export default function CustomExercises({ onNavigate }) {
                 {defaultSets.map((set, sIdx) => (
                   <div key={sIdx} className="grid grid-cols-12 gap-2 items-center">
                     <div className="col-span-1 text-center font-mono font-bold text-textMuted text-xs">{sIdx + 1}</div>
-                    <div className="col-span-5">
+                    <div className="col-span-5 relative">
                       <input 
                         type="number"
                         value={set.weight || ''}
                         onChange={e => updateSet(sIdx, 'weight', e.target.value)}
-                        placeholder={"Weight " + unit}
-                        className="w-full bg-surface-light rounded-lg px-2 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
+                        placeholder="0"
+                        className="w-full bg-surface-light rounded-lg pl-3 pr-10 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
                       />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase text-textMuted pointer-events-none">
+                        {unit}
+                      </span>
                     </div>
-                    <div className="col-span-5">
+                    <div className="col-span-5 relative">
                       <input 
                         type="number"
                         value={set.reps || ''}
                         onChange={e => updateSet(sIdx, 'reps', e.target.value)}
-                        placeholder="Reps"
-                        className="w-full bg-surface-light rounded-lg px-2 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
+                        placeholder="0"
+                        className="w-full bg-surface-light rounded-lg pl-3 pr-10 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
                       />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase text-textMuted pointer-events-none">
+                        Reps
+                      </span>
                     </div>
                     <div className="col-span-1 flex justify-center">
                       <button 
