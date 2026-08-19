@@ -285,53 +285,55 @@ export default function ActiveWorkout() {
         </motion.button>
       ) : (
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: "100%" }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed inset-0 z-[60] flex justify-center bg-background/80 backdrop-blur-md"
+          exit={{ opacity: 0, y: "100%" }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          className="fixed inset-0 z-[60] flex justify-center items-end sm:items-center bg-black/60 backdrop-blur-sm sm:p-6"
         >
-          <div className="w-full max-w-lg h-full bg-background shadow-2xl flex flex-col relative sm:border-x sm:border-border/50">
-            <div className="p-4 pt-safe flex items-center gap-3 border-b border-border bg-surface/50 shrink-0">
+          <div className="w-full max-w-lg h-[92vh] sm:h-[85vh] bg-background rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col relative overflow-hidden border border-border/50">
+            <div className="p-4 pt-6 sm:pt-4 flex items-center gap-3 border-b border-border/50 bg-surface/50 backdrop-blur-xl shrink-0">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
                 <input 
                   autoFocus
                   type="text" 
                   value={searchQuery}
                   onChange={handleSearch}
                   placeholder="Search exercise..."
-                  className="w-full bg-surface-light border border-border rounded-xl pl-10 pr-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
+                  className="w-full bg-surface-light border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text font-bold focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
               <button 
                 onClick={() => setIsSearching(false)}
-                className="p-3 text-textMuted hover:text-text rounded-full bg-surface-light min-w-touch min-h-touch flex items-center justify-center shrink-0"
+                className="p-3.5 text-textMuted hover:text-text rounded-2xl bg-surface-light border border-border/50 min-w-touch min-h-touch flex items-center justify-center shrink-0"
               >
                 <X size={20} />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
               {searchResults.map(res => (
                 <button 
                   key={res.id} 
                   onClick={() => handleAddExercise(res)}
-                  className="flex items-start gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left w-full min-h-touch"
+                  className="w-full flex items-center gap-4 p-3 bg-surface/40 hover:bg-surface rounded-2xl transition-all border border-border/30 hover:border-primary/40 text-left min-h-touch group"
                 >
-                  {res.gifUrl ? (
-                    <img src={res.gifUrl} alt={res.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0 mt-0.5" loading="lazy" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0 mt-0.5">
-                      <Dumbbell size={20} className="text-primary" />
-                    </div>
-                  )}
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[10px] uppercase font-bold text-primary tracking-wider">{res.muscleGroup}</span>
+                  <div className="w-14 h-14 shrink-0 rounded-[14px] bg-white overflow-hidden flex items-center justify-center shadow-sm">
+                    {res.gifUrl ? (
+                      <img src={res.gifUrl} alt={res.name} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <Dumbbell size={24} className="text-primary/50" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 py-1">
+                    <h4 className="text-text font-bold text-[15px] leading-snug break-words mb-1.5">{res.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider">{res.muscleGroup}</span>
                       {res.isCustom && (
-                        <span className="text-[9px] font-black uppercase text-yellow-500 bg-yellow-500/20 px-1.5 py-0.5 rounded">Custom</span>
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-primary/10 text-primary tracking-widest">Custom</span>
                       )}
                     </div>
-                    <h4 className="font-bold text-text capitalize text-sm leading-relaxed break-words">{res.name}</h4>
                   </div>
                 </button>
               ))}
@@ -346,13 +348,13 @@ export default function ActiveWorkout() {
             </div>
 
             {searchQuery.length > 0 && (
-              <div className="shrink-0 p-4 border-t border-border bg-surface/95 backdrop-blur-xl pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <div className="shrink-0 p-4 border-t border-border/50 bg-surface/80 backdrop-blur-xl pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <p className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 text-center">Didn't find it?</p>
                 <div className="flex items-center gap-3 w-full">
                   <select
                     value={newMuscleGroup}
                     onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-1/3 bg-background border border-border rounded-xl px-3 py-3 text-sm text-text font-bold focus:outline-none focus:border-primary capitalize min-h-touch"
+                    className="w-1/3 bg-surface-light border border-border/50 rounded-xl px-3 py-3.5 text-sm text-text font-bold focus:outline-none focus:border-primary capitalize min-h-touch"
                   >
                     {muscleGroups.map(mg => (
                       <option key={mg} value={mg}>{mg}</option>
@@ -361,7 +363,7 @@ export default function ActiveWorkout() {
                   <button
                     onClick={handleCreateCustom}
                     disabled={isCreatingCustom || searchQuery.trim().length < 1}
-                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-touch truncate shadow-lg shadow-primary/20"
+                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-touch shadow-lg shadow-primary/20"
                   >
                     {isCreatingCustom ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={18} className="shrink-0" />}
                     <span className="truncate">Create "{searchQuery}"</span>
