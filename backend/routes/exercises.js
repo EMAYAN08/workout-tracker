@@ -35,6 +35,29 @@ router.post('/custom', async (req, res) => {
   }
 });
 
+// Update custom exercise
+router.put('/custom/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, muscleGroup, defaultSets, unitSaved } = req.body;
+
+    const updatedExercise = await CustomExercise.findOneAndUpdate(
+      { id },
+      { name, muscleGroup, defaultSets, unitSaved },
+      { new: true }
+    );
+
+    if (!updatedExercise) {
+      return res.status(404).json({ error: 'Custom exercise not found' });
+    }
+
+    res.json(updatedExercise);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update custom exercise' });
+  }
+});
+
 // Delete custom exercise
 router.delete('/custom/:id', async (req, res) => {
   try {

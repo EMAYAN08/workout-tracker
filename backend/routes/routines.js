@@ -17,8 +17,11 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const routineData = req.body;
-    if (!routineData || !routineData.id || !routineData.name) {
+    if (!routineData || !routineData.name) {
       return res.status(400).json({ error: 'Invalid routine data' });
+    }
+    if (!routineData.id) {
+      routineData.id = `rt_${Date.now()}`;
     }
 
     const newRoutine = new Routine(routineData);

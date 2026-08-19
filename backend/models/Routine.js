@@ -11,7 +11,8 @@ const ExerciseSchema = new mongoose.Schema({
   name: { type: String, required: true },
   muscleGroup: { type: String, required: true },
   gifUrl: { type: String, default: null },
-  sets: [SetSchema]
+  unitSaved: { type: String, default: 'lbs' },
+  defaultSets: [SetSchema]
 }, { _id: false });
 
 const RoutineSchema = new mongoose.Schema({
