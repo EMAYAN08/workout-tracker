@@ -287,62 +287,72 @@ export default function ActiveWorkout() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex flex-col"
+          className="fixed inset-0 z-[60] flex justify-center bg-background/80 backdrop-blur-md"
         >
-          <div className="p-4 pt-safe flex items-center gap-3 border-b border-border/50 bg-surface/50">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-              <input 
-                autoFocus
-                type="text" 
-                value={searchQuery}
-                onChange={handleSearch}
-                placeholder="Search exercise..."
-                className="w-full bg-surface-light border border-border rounded-xl pl-10 pr-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <button 
-              onClick={() => setIsSearching(false)}
-              className="p-3 text-textMuted hover:text-text rounded-full bg-surface-light min-w-touch min-h-touch flex items-center justify-center"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2 pb-safe">
-            {searchResults.map(res => (
+          <div className="w-full max-w-lg h-full bg-background shadow-2xl flex flex-col relative sm:border-x sm:border-border/50">
+            <div className="p-4 pt-safe flex items-center gap-3 border-b border-border bg-surface/50 shrink-0">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  placeholder="Search exercise..."
+                  className="w-full bg-surface-light border border-border rounded-xl pl-10 pr-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
               <button 
-                key={res.id} 
-                onClick={() => handleAddExercise(res)}
-                className="flex items-start gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left w-full min-h-touch"
+                onClick={() => setIsSearching(false)}
+                className="p-3 text-textMuted hover:text-text rounded-full bg-surface-light min-w-touch min-h-touch flex items-center justify-center shrink-0"
               >
-                {res.gifUrl ? (
-                  <img src={res.gifUrl} alt={res.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0 mt-0.5" loading="lazy" />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0 mt-0.5">
-                    <Dumbbell size={20} className="text-primary" />
-                  </div>
-                )}
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] uppercase font-bold text-primary tracking-wider">{res.muscleGroup}</span>
-                    {res.isCustom && (
-                      <span className="text-[9px] font-black uppercase text-yellow-500 bg-yellow-500/20 px-1.5 py-0.5 rounded">Custom</span>
-                    )}
-                  </div>
-                  <h4 className="font-bold text-text capitalize text-sm leading-relaxed break-words">{res.name}</h4>
-                </div>
+                <X size={20} />
               </button>
-            ))}
+            </div>
             
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+              {searchResults.map(res => (
+                <button 
+                  key={res.id} 
+                  onClick={() => handleAddExercise(res)}
+                  className="flex items-start gap-3 p-3 bg-surface hover:bg-surface-light rounded-xl transition-colors border border-transparent hover:border-border text-left w-full min-h-touch"
+                >
+                  {res.gifUrl ? (
+                    <img src={res.gifUrl} alt={res.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light shrink-0 mt-0.5" loading="lazy" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0 mt-0.5">
+                      <Dumbbell size={20} className="text-primary" />
+                    </div>
+                  )}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[10px] uppercase font-bold text-primary tracking-wider">{res.muscleGroup}</span>
+                      {res.isCustom && (
+                        <span className="text-[9px] font-black uppercase text-yellow-500 bg-yellow-500/20 px-1.5 py-0.5 rounded">Custom</span>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-text capitalize text-sm leading-relaxed break-words">{res.name}</h4>
+                  </div>
+                </button>
+              ))}
+              
+              {searchResults.length === 0 && searchQuery.length === 0 && (
+                <div className="flex flex-col items-center justify-center flex-1 opacity-50 py-12">
+                  <Search size={48} className="text-textMuted mb-4" />
+                  <p className="text-text font-bold">Search for an exercise</p>
+                  <p className="text-textMuted text-sm mt-1">Type at least 1 character</p>
+                </div>
+              )}
+            </div>
+
             {searchQuery.length > 0 && (
-              <div className="flex flex-col items-center justify-center py-6 mt-4 border-t border-border/50 bg-surface/30 rounded-xl px-4">
-                <p className="text-textMuted font-semibold text-sm mb-4 text-center">Didn't find what you're looking for?</p>
-                <div className="flex items-center gap-3 w-full max-w-sm">
+              <div className="shrink-0 p-4 border-t border-border bg-surface/95 backdrop-blur-xl pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 text-center">Didn't find it?</p>
+                <div className="flex items-center gap-3 w-full">
                   <select
                     value={newMuscleGroup}
                     onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-1/3 bg-surface-light border border-border rounded-xl px-3 py-3 text-sm text-text font-semibold focus:outline-none focus:border-primary capitalize min-h-touch"
+                    className="w-1/3 bg-background border border-border rounded-xl px-3 py-3 text-sm text-text font-bold focus:outline-none focus:border-primary capitalize min-h-touch"
                   >
                     {muscleGroups.map(mg => (
                       <option key={mg} value={mg}>{mg}</option>
@@ -357,14 +367,6 @@ export default function ActiveWorkout() {
                     <span className="truncate">Create "{searchQuery}"</span>
                   </button>
                 </div>
-              </div>
-            )}
-            
-            {searchResults.length === 0 && searchQuery.length === 0 && (
-              <div className="flex flex-col items-center justify-center flex-1 opacity-50 py-12">
-                <Search size={48} className="text-textMuted mb-4" />
-                <p className="text-text font-bold">Search for an exercise</p>
-                <p className="text-textMuted text-sm mt-1">Type at least 1 character</p>
               </div>
             )}
           </div>
