@@ -36,6 +36,7 @@ export default function ActiveWorkout() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [visibleLimit, setVisibleLimit] = useState(5);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   
@@ -66,6 +67,7 @@ export default function ActiveWorkout() {
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
+    setVisibleLimit(5);
   };
 
   const handleAddExercise = (exercise) => {
@@ -313,7 +315,7 @@ export default function ActiveWorkout() {
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-              {searchResults.map(res => (
+              {searchResults.slice(0, visibleLimit).map(res => (
                 <button 
                   key={res.id} 
                   onClick={() => handleAddExercise(res)}
@@ -338,6 +340,15 @@ export default function ActiveWorkout() {
                 </button>
               ))}
               
+              {searchResults.length > visibleLimit && (
+                <button 
+                  onClick={() => setVisibleLimit(prev => prev + 5)}
+                  className="w-full py-3 mt-2 bg-surface-light hover:bg-surface rounded-xl text-primary font-bold text-sm border border-border/50 transition-colors"
+                >
+                  Load More Results ({searchResults.length - visibleLimit} remaining)
+                </button>
+              )}
+
               {searchResults.length === 0 && searchQuery.length === 0 && (
                 <div className="flex flex-col items-center justify-center flex-1 opacity-50 py-12">
                   <Search size={48} className="text-textMuted mb-4" />

@@ -13,6 +13,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [visibleLimit, setVisibleLimit] = useState(5);
   
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
@@ -244,7 +245,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   type="text" 
                   placeholder="Search exercise..." 
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={e => { setSearchQuery(e.target.value); setVisibleLimit(5); }}
                   className="w-full bg-surface-light border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text font-bold focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
@@ -257,7 +258,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-              {searchResults.map(ex => (
+              {searchResults.slice(0, visibleLimit).map(ex => (
                 <button 
                   key={ex.id}
                   onClick={() => handleAddExercise(ex)}
@@ -281,6 +282,15 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   </div>
                 </button>
               ))}
+
+              {searchResults.length > visibleLimit && (
+                <button 
+                  onClick={() => setVisibleLimit(prev => prev + 5)}
+                  className="w-full py-3 mt-2 bg-surface-light hover:bg-surface rounded-xl text-primary font-bold text-sm border border-border/50 transition-colors"
+                >
+                  Load More Results ({searchResults.length - visibleLimit} remaining)
+                </button>
+              )}
 
               {searchResults.length === 0 && searchQuery.length === 0 && (
                 <div className="flex flex-col items-center justify-center flex-1 opacity-50 py-12">
