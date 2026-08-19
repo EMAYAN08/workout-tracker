@@ -127,7 +127,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Push Day, Full Body"
-          className="w-full bg-surface-light border border-border rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
+          className="w-full bg-surface-light border border-border rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors text-base"
         />
       </div>
 
@@ -173,7 +173,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                       value={set.weight || ''}
                       onChange={e => updateSet(exIdx, sIdx, 'weight', Number(e.target.value))}
                       placeholder="Weight"
-                      className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows"
+                      className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
                     />
                   </div>
                   <div className="col-span-5">
@@ -182,7 +182,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                       value={set.reps || ''}
                       onChange={e => updateSet(exIdx, sIdx, 'reps', Number(e.target.value))}
                       placeholder="Reps"
-                      className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows"
+                      className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
                     />
                   </div>
                   <div className="col-span-1 flex justify-center">

@@ -12,15 +12,15 @@ const formatTime = (seconds) => {
 
 const StepperInput = ({ value, onChange, step = 1, placeholder }) => (
   <div className="flex items-center w-full bg-surface-light rounded-lg overflow-hidden border border-border focus-within:border-primary transition-colors">
-    <button onClick={() => onChange(String(Number(value || 0) - step))} className="px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold">-</button>
+    <button onClick={() => onChange(String(Number(value || 0) - step))} className="min-w-touch min-h-touch px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none">-</button>
     <input 
       type="number" 
       value={value} 
       onChange={(e) => onChange(e.target.value)}
-      className="flex-1 w-full bg-transparent text-center font-mono font-bold py-2 text-text focus:outline-none placeholder-textMuted/50 hide-arrows"
+      className="flex-1 w-full bg-transparent text-center font-mono font-bold py-2 text-text focus:outline-none placeholder-textMuted/50 hide-arrows text-base"
       placeholder={placeholder}
     />
-    <button onClick={() => onChange(String(Number(value || 0) + step))} className="px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold">+</button>
+    <button onClick={() => onChange(String(Number(value || 0) + step))} className="min-w-touch min-h-touch px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none">+</button>
   </div>
 );
 
@@ -378,7 +378,7 @@ export default function ActiveWorkout() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 bg-blue-500/20 backdrop-blur-xl text-white p-1.5 pl-4 rounded-full shadow-[0_8px_32px_rgba(59,130,246,0.3)] flex items-center gap-3 z-50 border border-blue-400/30"
+            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 bg-blue-500/20 backdrop-blur-xl text-white p-1.5 pl-4 rounded-full shadow-[0_8px_32px_rgba(59,130,246,0.3)] flex items-center gap-3 z-50 border border-blue-400/30"
           >
             <div className="flex items-center gap-2">
               <Timer size={18} className="text-white/80" />

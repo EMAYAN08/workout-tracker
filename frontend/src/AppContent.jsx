@@ -15,10 +15,10 @@ export default function AppContent() {
   const [selectedDate, setSelectedDate] = useState(null);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24 relative selection:bg-primary/30 transition-colors duration-300">
+    <div className="min-h-screen bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300">
       
       {/* Premium Solid Header */}
-      <header className="app-header sticky top-0 z-40 p-4 flex justify-between items-center h-16">
+      <header className="app-header sticky top-0 z-40 p-4 pt-safe flex justify-between items-center min-h-16">
         <div className="flex items-center gap-2">
           <div className="text-primary">
             <Activity className="w-6 h-6" strokeWidth={2.5} />
