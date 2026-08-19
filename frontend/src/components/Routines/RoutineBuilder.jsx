@@ -291,7 +291,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               )}
             </div>
 
-            {searchQuery.length > 0 && (
+            {searchQuery.length > 0 && searchResults.length === 0 && (
               <div className="shrink-0 p-4 border-t border-border/50 bg-surface/80 backdrop-blur-xl pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <p className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 text-center">Didn't find it?</p>
                 <div className="flex items-center gap-3 w-full">
