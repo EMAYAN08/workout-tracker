@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { convertWeight } from '../utils/calculations';
 import { differenceInDays, parseISO, startOfDay, isSameDay } from 'date-fns';
 
@@ -7,6 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const WorkoutContext = createContext();
 
 export function WorkoutProvider({ children }) {
+  const pushTaskIdRef = useRef(null);
+
   // Global preferences
   const [unit, setUnit] = useState(() => {
     return localStorage.getItem('workout_unit') || 'lbs';
@@ -105,6 +107,23 @@ export function WorkoutProvider({ children }) {
     }
   };
 
+  const updateCustomExercise = async (id, payload) => {
+    try {
+      const res = await fetch(`${API_URL}/api/exercises/custom/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Update failed');
+      const updatedEx = await res.json();
+      setCustomExercises(prev => prev.map(ex => ex.id === id ? updatedEx : ex));
+      return updatedEx;
+    } catch (err) {
+      console.error("Failed to update custom exercise", err);
+      return null;
+    }
+  };
+
   const createRoutine = async (routineData) => {
     try {
       const res = await fetch(`${API_URL}/api/routines`, {
@@ -112,6 +131,7 @@ export function WorkoutProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(routineData)
       });
+      if (!res.ok) throw new Error('Create failed');
       const newRoutine = await res.json();
       setRoutines(prev => [...prev, newRoutine]);
       return newRoutine;
@@ -305,8 +325,25 @@ export function WorkoutProvider({ children }) {
     setRestEndTime(null);
   };
 
+  const cancelPushNotification = async () => {
+    if (pushTaskIdRef.current) {
+      try {
+        await fetch(`${API_URL}/api/push/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: pushTaskIdRef.current })
+        });
+      } catch (err) {
+        console.error('Failed to cancel push', err);
+      }
+      pushTaskIdRef.current = null;
+    }
+  };
+
   const finishWorkout = async () => {
     try {
+      await cancelPushNotification();
+      
       if (activeWorkout.exercises.length === 0) {
         setActiveWorkout(null);
         setWorkoutDuration(0);
@@ -336,7 +373,8 @@ export function WorkoutProvider({ children }) {
     setRestEndTime(null);
   };
 
-  const cancelWorkout = () => {
+  const cancelWorkout = async () => {
+    await cancelPushNotification();
     setActiveWorkout(null);
     setWorkoutDuration(0);
     setRestEndTime(null);
@@ -381,6 +419,19 @@ export function WorkoutProvider({ children }) {
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
   };
 
+  const reorderActiveExercise = (index, direction) => {
+    if (!activeWorkout) return;
+    setActiveWorkout(prev => {
+      const newExercises = [...prev.exercises];
+      if (direction === 'up' && index > 0) {
+        [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
+      } else if (direction === 'down' && index < newExercises.length - 1) {
+        [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
+      }
+      return { ...prev, exercises: newExercises };
+    });
+  };
+
   const completeSet = async (exerciseIndex, setIndex) => {
     if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission();
@@ -396,11 +447,19 @@ export function WorkoutProvider({ children }) {
     if ("Notification" in window && Notification.permission === "granted") {
       const subscription = await subscribeToPush();
       if (subscription) {
-        fetch(`${API_URL}/api/push/schedule`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription, delaySeconds })
-        }).catch(err => console.error('Failed to schedule push', err));
+        try {
+          const pushRes = await fetch(`${API_URL}/api/push/schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription, delaySeconds })
+          });
+          const pushData = await pushRes.json();
+          if (pushData.taskId) {
+            pushTaskIdRef.current = pushData.taskId;
+          }
+        } catch (err) {
+          console.error('Failed to schedule push', err);
+        }
       }
     }
   };
@@ -485,11 +544,11 @@ export function WorkoutProvider({ children }) {
       unit, toggleUnit,
       theme, toggleTheme,
       activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
-      addExercise, updateSet, completeSet, uncompleteSet, addSetToExercise, removeSet,
+      addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
       workoutDuration,
       restTimer, setRestTimer,
       workoutHistory,
-      customExercises, createCustomExercise, deleteCustomExercise,
+      customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise,
       routines, createRoutine, updateRoutine, deleteRoutine,
       getStreaks
     }}>

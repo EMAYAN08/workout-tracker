@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
-import { Search, Plus, Save, X, Dumbbell, Trash2 } from 'lucide-react';
+import { Search, Plus, Save, X, Dumbbell, Trash2, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
@@ -9,6 +9,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   const [name, setName] = useState(initialRoutine?.name || '');
   const [exercises, setExercises] = useState(initialRoutine?.exercises || []);
+  const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
   
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,13 +51,30 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
       }));
     }
 
-    setExercises(prev => [...prev, {
-      ...exercise,
-      defaultSets: initialSets
-    }]);
+    setExercises(prev => {
+      const newExercises = [...prev, { ...exercise, defaultSets: initialSets }];
+      setExpandedExerciseIndex(newExercises.length - 1);
+      return newExercises;
+    });
     setIsSearching(false);
     setSearchQuery('');
     setSearchResults([]);
+  };
+
+  const moveExercise = (index, direction) => {
+    setExercises(prev => {
+      const newExercises = [...prev];
+      if (direction === 'up' && index > 0) {
+        [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
+        if (expandedExerciseIndex === index) setExpandedExerciseIndex(index - 1);
+        else if (expandedExerciseIndex === index - 1) setExpandedExerciseIndex(index);
+      } else if (direction === 'down' && index < newExercises.length - 1) {
+        [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
+        if (expandedExerciseIndex === index) setExpandedExerciseIndex(index + 1);
+        else if (expandedExerciseIndex === index + 1) setExpandedExerciseIndex(index);
+      }
+      return newExercises;
+    });
   };
 
   const handleCreateCustom = async () => {
@@ -142,79 +160,113 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
       </div>
 
       <div className="flex flex-col gap-3">
-        {exercises.map((ex, exIdx) => (
-          <div key={`${ex.id}-${exIdx}`} className="panel overflow-hidden relative">
-            <div className="p-4 flex items-center justify-between bg-surface-light/50 border-b border-border">
-              <div className="flex items-center gap-3">
-                {ex.gifUrl ? (
-                  <img src={ex.gifUrl} alt={ex.name} className="w-10 h-10 rounded-full object-cover bg-white" loading="lazy" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center">
-                    <Dumbbell size={16} className="text-textMuted" />
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-bold text-text capitalize">{ex.name}</h3>
-                  <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => removeExercise(exIdx)}
-                className="p-2 text-textMuted hover:text-red-500 transition-colors"
+        {exercises.map((ex, exIdx) => {
+          const isExpanded = expandedExerciseIndex === exIdx;
+          return (
+            <div key={`${ex.id}-${exIdx}`} className="panel overflow-hidden relative">
+              <div 
+                className="p-4 flex items-center justify-between bg-surface-light/50 border-b border-border cursor-pointer"
+                onClick={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
               >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-4 flex flex-col gap-2">
-              <div className="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-textMuted px-2 mb-1">
-                <div className="col-span-1 text-center">SET</div>
-                <div className="col-span-5 text-center">LBS/KGS</div>
-                <div className="col-span-5 text-center">REPS</div>
-                <div className="col-span-1 text-center"></div>
-              </div>
-              
-              {ex.defaultSets?.map((set, sIdx) => (
-                <div key={sIdx} className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-1 text-center font-mono font-bold text-textMuted">{sIdx + 1}</div>
-                  <div className="col-span-5">
-                    <input 
-                      type="number"
-                      value={set.weight || ''}
-                      onChange={e => updateSet(exIdx, sIdx, 'weight', Number(e.target.value))}
-                      placeholder="Weight"
-                      className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
-                    />
+                <div className="flex items-center gap-3">
+                  {ex.gifUrl ? (
+                    <img src={ex.gifUrl} alt={ex.name} className="w-10 h-10 rounded-full object-cover bg-white" loading="lazy" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center shrink-0">
+                      <Dumbbell size={16} className="text-textMuted" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-bold text-text capitalize line-clamp-1">{ex.name}</h3>
+                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
                   </div>
-                  <div className="col-span-5">
-                    <input 
-                      type="number"
-                      value={set.reps || ''}
-                      onChange={e => updateSet(exIdx, sIdx, 'reps', Number(e.target.value))}
-                      placeholder="Reps"
-                      className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
-                    />
-                  </div>
-                  <div className="col-span-1 flex justify-center">
-                    <button 
-                      onClick={() => removeSet(exIdx, sIdx)}
-                      className="text-textMuted hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={14} />
+                </div>
+                
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  {exIdx > 0 && (
+                    <button onClick={() => moveExercise(exIdx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
+                      <ArrowUp size={16} />
                     </button>
-                  </div>
+                  )}
+                  {exIdx < exercises.length - 1 && (
+                    <button onClick={() => moveExercise(exIdx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
+                      <ArrowDown size={16} />
+                    </button>
+                  )}
+                  <button onClick={() => removeExercise(exIdx)} className="p-1.5 text-textMuted hover:text-red-500 transition-colors ml-1">
+                    <Trash2 size={16} />
+                  </button>
+                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
+                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </button>
                 </div>
-              ))}
-              
-              <button 
-                onClick={() => addSet(exIdx)}
-                className="mt-2 text-primary font-bold text-sm hover:text-primary-light transition-colors py-1 w-full flex items-center justify-center gap-1 bg-primary/5 rounded-lg border border-primary/10"
-              >
-                <Plus size={16} /> Add Set
-              </button>
+              </div>
+
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 flex flex-col gap-2">
+                      <div className="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-textMuted px-2 mb-1">
+                        <div className="col-span-1 text-center">SET</div>
+                        <div className="col-span-5 text-center">LBS/KGS</div>
+                        <div className="col-span-5 text-center">REPS</div>
+                        <div className="col-span-1 text-center"></div>
+                      </div>
+                      
+                      {ex.defaultSets?.map((set, sIdx) => (
+                        <div key={sIdx} className="grid grid-cols-12 gap-2 items-center">
+                          <div className="col-span-1 text-center font-mono font-bold text-textMuted">{sIdx + 1}</div>
+                          <div className="col-span-5">
+                            <input 
+                              type="number"
+                              inputMode="decimal"
+                              pattern="[0-9]*"
+                              value={set.weight || ''}
+                              onChange={e => updateSet(exIdx, sIdx, 'weight', Number(e.target.value))}
+                              placeholder="Weight"
+                              className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
+                            />
+                          </div>
+                          <div className="col-span-5">
+                            <input 
+                              type="number"
+                              inputMode="decimal"
+                              pattern="[0-9]*"
+                              value={set.reps || ''}
+                              onChange={e => updateSet(exIdx, sIdx, 'reps', Number(e.target.value))}
+                              placeholder="Reps"
+                              className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
+                            />
+                          </div>
+                          <div className="col-span-1 flex justify-center">
+                            <button 
+                              onClick={() => removeSet(exIdx, sIdx)}
+                              className="text-textMuted hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <button 
+                        onClick={() => addSet(exIdx)}
+                        className="mt-2 text-primary font-bold text-sm hover:text-primary-light transition-colors py-1 w-full flex items-center justify-center gap-1 bg-primary/5 rounded-lg border border-primary/10"
+                      >
+                        <Plus size={16} /> Add Set
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add Exercise Trigger */}

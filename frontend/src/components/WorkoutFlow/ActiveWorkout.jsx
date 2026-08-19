@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
-import { Plus, Minus, Timer, History, Trash2, Check, Dumbbell, Search, X } from 'lucide-react';
+import { Plus, Minus, Timer, History, Trash2, Check, Dumbbell, Search, X, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPreviousPerformance } from '../../utils/calculations';
 
@@ -15,6 +15,8 @@ const StepperInput = ({ value, onChange, step = 1, placeholder }) => (
     <button onClick={() => onChange(String(Number(value || 0) - step))} className="min-w-touch min-h-touch px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none">-</button>
     <input 
       type="number" 
+      inputMode="decimal"
+      pattern="[0-9]*"
       value={value} 
       onChange={(e) => onChange(e.target.value)}
       className="flex-1 w-full bg-transparent text-center font-mono font-bold py-2 text-text focus:outline-none placeholder-textMuted/50 hide-arrows text-base"
@@ -27,7 +29,7 @@ const StepperInput = ({ value, onChange, step = 1, placeholder }) => (
 export default function ActiveWorkout() {
   const { 
     activeWorkout, workoutDuration, 
-    addExercise, updateSet, completeSet, uncompleteSet, addSetToExercise, removeSet, 
+    addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet, 
     restTimer, setRestTimer, unit, workoutHistory,
     createCustomExercise
   } = useWorkout();
@@ -126,8 +128,20 @@ export default function ActiveWorkout() {
                   <span className={completedSetsCount === ex.sets.length && ex.sets.length > 0 ? "text-green-500" : ""}>{completedSetsCount}</span> / {ex.sets.length} Sets Completed
                 </p>
               </div>
-              <div className="text-textMuted/30 group-hover:text-primary/50 px-2 transition-colors">
-                <Plus size={20} />
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                {idx > 0 && (
+                  <button onClick={() => reorderActiveExercise(idx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
+                    <ArrowUp size={16} />
+                  </button>
+                )}
+                {idx < activeWorkout.exercises.length - 1 && (
+                  <button onClick={() => reorderActiveExercise(idx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
+                    <ArrowDown size={16} />
+                  </button>
+                )}
+                <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
+                  <ChevronDown size={18} />
+                </button>
               </div>
             </motion.div>
           );
@@ -170,11 +184,23 @@ export default function ActiveWorkout() {
                 ) : (
                   <p className="text-xs font-semibold text-textMuted mt-0.5 capitalize">{ex.muscleGroup}</p>
                 )}
+                </div>
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  {idx > 0 && (
+                    <button onClick={() => reorderActiveExercise(idx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
+                      <ArrowUp size={16} />
+                    </button>
+                  )}
+                  {idx < activeWorkout.exercises.length - 1 && (
+                    <button onClick={() => reorderActiveExercise(idx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
+                      <ArrowDown size={16} />
+                    </button>
+                  )}
+                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
+                    <ChevronUp size={18} />
+                  </button>
+                </div>
               </div>
-              <div className="text-textMuted/30 group-hover:text-primary/50 px-2 transition-colors">
-                <Minus size={20} />
-              </div>
-            </div>
             
             <div className="px-2 pb-4">
               {/* Sets Table Header */}

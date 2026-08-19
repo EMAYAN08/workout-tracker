@@ -13,6 +13,7 @@ export default function AppContent() {
   const { activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit, theme, toggleTheme } = useWorkout();
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedDate, setSelectedDate] = useState(null);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const [direction, setDirection] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -108,10 +109,16 @@ export default function AppContent() {
                 Cancel
               </button>
               <button 
-                onClick={finishWorkout}
-                className="bg-primary hover:bg-primary-light text-white px-5 py-1.5 rounded-md font-bold text-sm transition-transform active:scale-95"
+                onClick={async () => {
+                  setIsFinishing(true);
+                  await finishWorkout();
+                  setIsFinishing(false);
+                }}
+                disabled={isFinishing}
+                className="bg-primary hover:bg-primary-light text-white px-5 py-1.5 rounded-md font-bold text-sm transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-2"
               >
-                Finish
+                {isFinishing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : null}
+                {isFinishing ? 'Finishing...' : 'Finish'}
               </button>
             </div>
           )}

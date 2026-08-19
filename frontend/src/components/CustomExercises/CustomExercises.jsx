@@ -1,18 +1,22 @@
 import React, { useMemo, useState } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
-import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const SwipeableExercise = ({ ex, onDelete, unit }) => {
+const SwipeableExercise = ({ ex, onDelete, onEdit, unit }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
     <div className="relative mb-2">
       {/* Delete Background Button */}
-      <div className="absolute top-0 bottom-0 right-0 w-24 flex items-center justify-end pr-4 rounded-r-xl bg-red-500 overflow-hidden">
-        <button onClick={() => onDelete(ex.id)} className="h-full flex flex-col items-center justify-center text-white">
-          <Trash2 size={20} />
+      <div className="absolute top-0 bottom-0 right-0 w-32 flex items-center justify-end pr-2 rounded-r-xl bg-red-500 overflow-hidden">
+        <button onClick={() => onEdit(ex)} className="h-full px-3 flex flex-col items-center justify-center text-white/90 hover:text-white bg-blue-500 mr-1">
+          <Edit2 size={18} />
+          <span className="text-[10px] font-bold mt-1">Edit</span>
+        </button>
+        <button onClick={() => onDelete(ex.id)} className="h-full px-3 flex flex-col items-center justify-center text-white/90 hover:text-white">
+          <Trash2 size={18} />
           <span className="text-[10px] font-bold mt-1">Delete</span>
         </button>
       </div>
@@ -20,7 +24,7 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
       {/* Foreground Draggable Card */}
       <motion.div 
         drag="x"
-        dragConstraints={{ left: -80, right: 0 }}
+        dragConstraints={{ left: -140, right: 0 }}
         dragElastic={0.2}
         className="relative z-10 bg-surface shadow-sm rounded-xl border border-border flex flex-col w-full"
         onClick={() => setExpanded(!expanded)}
@@ -64,7 +68,7 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
                      <div key={i} className="flex justify-between items-center text-sm font-mono bg-surface-light px-3 py-1.5 rounded-lg border border-border/50">
                        <span className="text-textMuted font-bold">Set {i+1}</span>
                        <span className="text-text font-bold">
-                         {convertWeight(s.weight, ex.unitSaved || 'lbs', unit)} <span className="text-xs text-textMuted uppercase">{unit}</span> × {s.reps}
+                         {convertWeight(s.weight, ex.unitSaved || 'lbs', unit)} <span className="text-xs text-textMuted uppercase">{unit}</span> - {s.reps} Reps
                        </span>
                      </div>
                    ))}
@@ -79,9 +83,11 @@ const SwipeableExercise = ({ ex, onDelete, unit }) => {
 };
 
 export default function CustomExercises({ onNavigate }) {
-  const { customExercises, createCustomExercise, deleteCustomExercise, unit } = useWorkout();
+  const { customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise, unit } = useWorkout();
   
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  
   const [newName, setNewName] = useState('');
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
   const [defaultSets, setDefaultSets] = useState([{ reps: 0, weight: 0 }]);
@@ -101,16 +107,37 @@ export default function CustomExercises({ onNavigate }) {
 
   const muscleGroupsList = Object.keys(groupedExercises).sort();
 
-  const handleCreate = async () => {
+  const handleEditInit = (ex) => {
+    setEditingId(ex.id);
+    setNewName(ex.name);
+    setNewMuscleGroup(ex.muscleGroup);
+    setDefaultSets(ex.defaultSets?.length > 0 ? [...ex.defaultSets] : [{ reps: 0, weight: 0 }]);
+    setIsCreating(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSave = async () => {
     if (newName.trim().length < 1) return;
     setIsSubmitting(true);
-    await createCustomExercise(newName.trim(), newMuscleGroup, defaultSets);
+    
+    if (editingId) {
+      await updateCustomExercise(editingId, {
+        name: newName.trim(),
+        muscleGroup: newMuscleGroup,
+        defaultSets,
+        unitSaved: unit
+      });
+    } else {
+      await createCustomExercise(newName.trim(), newMuscleGroup, defaultSets);
+    }
+    
+    setEditingId(null);
     setNewName('');
     setNewMuscleGroup('chest');
     setDefaultSets([{ reps: 0, weight: 0 }]);
     setIsCreating(false);
     setIsSubmitting(false);
-  };
+  };;
 
   const updateSet = (index, field, value) => {
     const newSets = [...defaultSets];
@@ -197,6 +224,8 @@ export default function CustomExercises({ onNavigate }) {
                     <div className="col-span-5 relative">
                       <input 
                         type="number"
+                        inputMode="decimal"
+                        pattern="[0-9]*"
                         value={set.weight || ''}
                         onChange={e => updateSet(sIdx, 'weight', e.target.value)}
                         placeholder="0"
@@ -209,6 +238,8 @@ export default function CustomExercises({ onNavigate }) {
                     <div className="col-span-5 relative">
                       <input 
                         type="number"
+                        inputMode="decimal"
+                        pattern="[0-9]*"
                         value={set.reps || ''}
                         onChange={e => updateSet(sIdx, 'reps', e.target.value)}
                         placeholder="0"
@@ -232,11 +263,11 @@ export default function CustomExercises({ onNavigate }) {
             </div>
             
             <button 
-              onClick={handleCreate}
+              onClick={handleSave}
               disabled={isSubmitting || newName.trim().length < 1}
               className="w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-light transition-colors disabled:opacity-50 mt-4 min-h-touch"
             >
-              {isSubmitting ? 'Creating...' : 'Save Custom Exercise'}
+              {isSubmitting ? 'Saving...' : (editingId ? 'Update Custom Exercise' : 'Save Custom Exercise')}
             </button>
           </motion.div>
         )}
@@ -257,7 +288,7 @@ export default function CustomExercises({ onNavigate }) {
               <h3 className="text-sm font-black uppercase tracking-widest text-textMuted pl-2">{group}</h3>
               <div className="flex flex-col">
                 {groupedExercises[group].map((ex, idx) => (
-                  <SwipeableExercise key={ex.id} ex={ex} onDelete={deleteCustomExercise} unit={unit} />
+                  <SwipeableExercise key={ex.id} ex={ex} onDelete={deleteCustomExercise} onEdit={handleEditInit} unit={unit} />
                 ))}
               </div>
             </div>
