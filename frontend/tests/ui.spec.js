@@ -19,15 +19,17 @@ test.describe("Workout Tracker UI Tests", () => {
     await page.getByRole("button", { name: "Add Exercise" }).click();
     
     // Check search UI
-    const searchInput = page.getByPlaceholder("Search exercise...");
+    const searchInput = page.locator("input[placeholder=\"Search exercise...\"]");
     await expect(searchInput).toBeVisible();
+    
+    // Wait and find the X button to close search
+    await page.locator(".lucide-x").first().click();
     
     // Cancel workout to cleanup
     await page.getByRole("button", { name: "Cancel" }).click();
   });
 
   test("should navigate to Custom Exercises and verify UI", async ({ page }) => {
-    // Click Exercises tab
     await page.getByRole("button", { name: "Exercises", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Custom", exact: true })).toBeVisible();
   });
