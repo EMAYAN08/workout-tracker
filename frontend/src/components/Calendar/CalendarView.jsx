@@ -121,7 +121,8 @@ export default function CalendarView({ onDayClick, onBack }) {
               const isDayToday = isToday(day);
               const isFuture = isAfter(day, new Date()) && !isDayToday;
 
-              return <div key={i} className="flex justify-center">
+              return (
+                <div key={i} className="flex justify-center">
                     <motion.button
                       whileHover={hasWorkout ? { scale: 1.05 } : {}}
                       whileTap={hasWorkout ? { scale: 0.95 } : {}}
