@@ -102,6 +102,12 @@ export function WorkoutProvider({ children }) {
         method: 'DELETE'
       });
       setCustomExercises(prev => prev.filter(ex => ex.id !== id));
+      
+      // Keep routines perfectly in sync visually
+      setRoutines(prev => prev.map(routine => ({
+        ...routine,
+        exercises: routine.exercises.filter(ex => ex.id !== id)
+      })));
     } catch (err) {
       console.error("Failed to delete custom exercise", err);
     }
@@ -117,6 +123,16 @@ export function WorkoutProvider({ children }) {
       if (!res.ok) throw new Error('Update failed');
       const updatedEx = await res.json();
       setCustomExercises(prev => prev.map(ex => ex.id === id ? updatedEx : ex));
+      
+      // Keep routines perfectly in sync visually
+      setRoutines(prev => prev.map(routine => {
+        if (!routine.exercises.some(ex => ex.id === id)) return routine;
+        return {
+          ...routine,
+          exercises: routine.exercises.map(ex => ex.id === id ? { ...ex, ...updatedEx } : ex)
+        };
+      }));
+      
       return updatedEx;
     } catch (err) {
       console.error("Failed to update custom exercise", err);

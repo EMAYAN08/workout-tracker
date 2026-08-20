@@ -48,8 +48,21 @@ router.put('/custom/:id', async (req, res) => {
     );
 
     if (!updatedExercise) {
-      return res.status(404).json({ error: 'Custom exercise not found' });
+      return res.status(404).json({ error: 'Exercise not found' });
     }
+
+    const Routine = require('../models/Routine');
+    await Routine.updateMany(
+      { 'exercises.id': id },
+      { 
+        $set: { 
+          'exercises.$.name': updatedExercise.name,
+          'exercises.$.muscleGroup': updatedExercise.muscleGroup,
+          'exercises.$.defaultSets': updatedExercise.defaultSets,
+          'exercises.$.unitSaved': updatedExercise.unitSaved
+        }
+      }
+    );
 
     res.json(updatedExercise);
   } catch (error) {
@@ -63,6 +76,13 @@ router.delete('/custom/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await CustomExercise.findOneAndDelete({ id });
+    
+    const Routine = require('../models/Routine');
+    await Routine.updateMany(
+      {},
+      { $pull: { exercises: { id: id } } }
+    );
+    
     res.json({ success: true });
   } catch (error) {
     console.error(error);
