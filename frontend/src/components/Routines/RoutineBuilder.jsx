@@ -219,7 +219,11 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                       <ArrowDown size={16} />
                     </button>
                   )}
-                  <button onClick={() => removeExercise(exIdx)} className="p-1.5 text-textMuted hover:text-red-500 transition-colors ml-1">
+                  <button 
+                    onClick={() => removeExercise(exIdx)} 
+                    className="p-1.5 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg ml-1"
+                    title="Delete Exercise"
+                  >
                     <Trash2 size={16} />
                   </button>
                   <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
@@ -272,7 +276,8 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                           <div className="col-span-1 flex justify-center">
                             <button 
                               onClick={() => removeSet(exIdx, sIdx)}
-                              className="text-textMuted hover:text-red-500 transition-colors"
+                              className="p-1.5 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-md flex items-center justify-center"
+                              title="Delete Set"
                             >
                               <Trash2 size={14} />
                             </button>
