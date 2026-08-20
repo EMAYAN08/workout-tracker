@@ -10,6 +10,38 @@ import InfoPopover from './InfoPopover';
 import WorkoutDurationChart from './WorkoutDurationChart';
 import StrengthChart from './StrengthChart';
 
+const AnimatedNumber = ({ value }) => {
+  const [displayValue, setDisplayValue] = React.useState(0);
+
+  React.useEffect(() => {
+    let startTime;
+    const duration = 1200; 
+
+    const step = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const current = ease * value;
+      
+      setDisplayValue(current);
+      
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        setDisplayValue(value);
+      }
+    };
+    
+    requestAnimationFrame(step);
+  }, [value]);
+
+  if (value % 1 !== 0) {
+    return <span>{displayValue.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>;
+  }
+  return <span>{Math.floor(displayValue).toLocaleString()}</span>;
+};
+
 const CustomDropdown = ({ options, value, onChange, searchable = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,52 +217,60 @@ export default function Dashboard({ onMapClick }) {
       {/* Lifetime Stats Overview - 2x2 Grid */}
       <div className="grid grid-cols-2 gap-3">
         {/* Total Workouts */}
-        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
           <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary z-10 shrink-0">
-            <Activity size={16} />
+          <div className="flex items-center gap-2 z-10">
+            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Activity size={14} />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Total Workouts</p>
           </div>
-          <div className="z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Total Workouts</p>
-            <p className="text-2xl font-black text-text font-mono leading-none">{workoutHistory.length}</p>
+          <div className="z-10 mt-2">
+            <p className="text-2xl font-black text-text font-mono leading-none"><AnimatedNumber value={workoutHistory.length} /></p>
           </div>
         </div>
         
         {/* Total Volume */}
-        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 z-10 shrink-0">
-            <TrendingUp size={16} />
+          <div className="flex items-center gap-2 z-10">
+            <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+              <TrendingUp size={14} />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Total Volume</p>
           </div>
-          <div className="z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Total Volume</p>
+          <div className="z-10 mt-2">
             <p className="text-2xl font-black text-text font-mono leading-none">
-              {convertWeight(workoutHistory.reduce((acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0), 0), 'lbs', unit).toLocaleString()} <span className="text-sm text-textMuted font-sans font-semibold">{unit}</span>
+              <AnimatedNumber value={convertWeight(workoutHistory.reduce((acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0), 0), 'lbs', unit)} /> <span className="text-sm text-textMuted font-sans font-semibold">{unit}</span>
             </p>
           </div>
         </div>
 
         {/* Current Streak */}
-        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
           <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 z-10 shrink-0">
-            <Flame size={16} fill="currentColor" />
+          <div className="flex items-center gap-2 z-10">
+            <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 shrink-0">
+              <Flame size={14} fill="currentColor" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Current Streak</p>
           </div>
-          <div className="z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Current Streak</p>
-            <p className="text-2xl font-black text-text font-mono leading-none">{current} <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
+          <div className="z-10 mt-2">
+            <p className="text-2xl font-black text-text font-mono leading-none"><AnimatedNumber value={current} /> <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
           </div>
         </div>
 
         {/* Best Streak */}
-        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
           <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 z-10 shrink-0">
-            <Trophy size={16} />
+          <div className="flex items-center gap-2 z-10">
+            <div className="w-7 h-7 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 shrink-0">
+              <Trophy size={14} />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Best Streak</p>
           </div>
-          <div className="z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Best Streak</p>
-            <p className="text-2xl font-black text-text font-mono leading-none">{best} <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
+          <div className="z-10 mt-2">
+            <p className="text-2xl font-black text-text font-mono leading-none"><AnimatedNumber value={best} /> <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
           </div>
         </div>
       </div>
