@@ -101,10 +101,10 @@ export default function AppContent() {
           </button>
           
           {activeWorkout && (
-            <div className="flex items-center gap-2 ml-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 ml-1 sm:ml-2">
               <button 
                 onClick={cancelWorkout}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1.5 rounded-md font-bold text-sm transition-transform active:scale-95"
+                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-2 sm:px-4 py-1.5 rounded-md font-bold text-xs sm:text-sm transition-transform active:scale-95"
               >
                 Cancel
               </button>
@@ -115,9 +115,9 @@ export default function AppContent() {
                   setIsFinishing(false);
                 }}
                 disabled={isFinishing}
-                className="bg-primary hover:bg-primary-light text-white px-5 py-1.5 rounded-md font-bold text-sm transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                className="bg-primary hover:bg-primary-light text-white px-3 sm:px-5 py-1.5 rounded-md font-bold text-xs sm:text-sm transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-1 sm:gap-2"
               >
-                {isFinishing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : null}
+                {isFinishing ? <span className="animate-spin h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full" /> : null}
                 {isFinishing ? 'Finishing...' : 'Finish'}
               </button>
             </div>

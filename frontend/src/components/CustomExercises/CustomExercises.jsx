@@ -17,7 +17,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit }) => {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
               <h4 className="font-bold text-text capitalize text-base leading-snug">{ex.name}</h4>
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Custom</span>
+              
             </div>
             <p className="text-xs text-textMuted font-semibold capitalize flex items-center gap-2">
               {ex.muscleGroup}

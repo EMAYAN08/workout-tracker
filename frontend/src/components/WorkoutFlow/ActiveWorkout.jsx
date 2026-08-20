@@ -12,17 +12,17 @@ const formatTime = (seconds) => {
 
 const StepperInput = ({ value, onChange, step = 1, placeholder }) => (
   <div className="flex items-center w-full bg-surface-light rounded-lg overflow-hidden border border-border focus-within:border-primary transition-colors">
-    <button onClick={() => onChange(String(Number(value || 0) - step))} className="min-w-touch min-h-touch px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none">-</button>
+    <button onClick={() => onChange(String(Number(value || 0) - step))} className="w-8 shrink-0 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none flex items-center justify-center">-</button>
     <input 
       type="number" 
       inputMode="decimal"
       pattern="[0-9]*"
       value={value} 
       onChange={(e) => onChange(e.target.value)}
-      className="flex-1 w-full bg-transparent text-center font-mono font-bold py-2 text-text focus:outline-none placeholder-textMuted/50 hide-arrows text-base"
+      className="flex-1 w-full bg-transparent text-center font-mono font-bold py-2 text-text focus:outline-none placeholder-textMuted/50 hide-arrows text-sm sm:text-base px-0"
       placeholder={placeholder}
     />
-    <button onClick={() => onChange(String(Number(value || 0) + step))} className="min-w-touch min-h-touch px-3 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none">+</button>
+    <button onClick={() => onChange(String(Number(value || 0) + step))} className="w-8 shrink-0 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none flex items-center justify-center">+</button>
   </div>
 );
 
@@ -120,9 +120,7 @@ export default function ActiveWorkout() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-bold text-text capitalize line-clamp-1 group-hover:text-primary transition-colors">{ex.name}</h3>
-                  {ex.isCustom && (
-                    <span className="text-[9px] font-black uppercase tracking-widest bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded">Custom</span>
-                  )}
+                  
                 </div>
                 <p className="text-xs font-semibold text-textMuted mt-0.5">
                   <span className={completedSetsCount === ex.sets.length && ex.sets.length > 0 ? "text-green-500" : ""}>{completedSetsCount}</span> / {ex.sets.length} Sets Completed
@@ -169,9 +167,7 @@ export default function ActiveWorkout() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-bold text-text capitalize leading-tight group-hover:text-primary transition-colors">{ex.name}</h3>
-                  {ex.isCustom && (
-                    <span className="text-[9px] font-black uppercase tracking-widest bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded">Custom</span>
-                  )}
+                  
                 </div>
                 {prevPerformance ? (
                   <p className="text-xs font-semibold text-textMuted mt-0.5 flex flex-wrap gap-x-2 gap-y-1 items-center">
@@ -357,9 +353,7 @@ export default function ActiveWorkout() {
                       <h4 className="text-text font-bold text-[15px] leading-snug break-words mb-1.5">{res.name}</h4>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider">{res.muscleGroup}</span>
-                        {res.isCustom && (
-                          <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-primary/10 text-primary tracking-widest">Custom</span>
-                        )}
+                        
                       </div>
                     </div>
                   </button>

@@ -8,7 +8,33 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   const { createRoutine, updateRoutine, createCustomExercise, unit } = useWorkout();
 
   const [name, setName] = useState(initialRoutine?.name || '');
-  const [exercises, setExercises] = useState(initialRoutine?.exercises || []);
+  const [exercises, setExercises] = useState(() => {
+    if (!initialRoutine?.exercises) return [];
+    return initialRoutine.exercises.map(ex => ({
+      ...ex,
+      unitSaved: unit,
+      defaultSets: ex.defaultSets.map(s => ({
+        ...s,
+        weight: convertWeight(s.weight, ex.unitSaved || 'lbs', unit)
+      }))
+    }));
+  });
+  const prevUnit = React.useRef(unit);
+
+  useEffect(() => {
+    if (prevUnit.current !== unit) {
+      setExercises(prevExercises => prevExercises.map(ex => ({
+        ...ex,
+        unitSaved: unit,
+        defaultSets: ex.defaultSets.map(s => ({
+          ...s,
+          weight: convertWeight(s.weight, prevUnit.current, unit)
+        }))
+      })));
+      prevUnit.current = unit;
+    }
+  }, [unit]);
+
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
   
   const [isSearching, setIsSearching] = useState(false);
@@ -52,7 +78,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     }
 
     setExercises(prev => {
-      const newExercises = [...prev, { ...exercise, defaultSets: initialSets }];
+      const newExercises = [...prev, { ...exercise, unitSaved: unit, defaultSets: initialSets }];
       setExpandedExerciseIndex(newExercises.length - 1);
       return newExercises;
     });
@@ -327,9 +353,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                       <h4 className="text-text font-bold text-[15px] leading-snug break-words mb-1.5">{ex.name}</h4>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider">{ex.muscleGroup}</span>
-                        {ex.isCustom && (
-                          <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-primary/10 text-primary tracking-widest">Custom</span>
-                        )}
+                        
                       </div>
                     </div>
                   </button>
