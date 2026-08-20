@@ -46,7 +46,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onCreateNew}
-          className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl p-4 flex items-center justify-center gap-2 font-bold transition-colors"
+          className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 backdrop-blur-md rounded-xl p-4 flex items-center justify-center gap-2 font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)]"
         >
           <Plus size={20} /> Create New Routine
         </motion.button>

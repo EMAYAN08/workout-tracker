@@ -165,12 +165,12 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           >
             Cancel
           </button>
-          <button 
-            onClick={handleSave}
-            className="px-5 py-2 rounded-lg bg-primary hover:bg-primary-light text-white font-black transition-transform active:scale-95 flex items-center gap-2"
-          >
-            <Save size={18} /> Save
-          </button>
+            <button 
+              onClick={handleSave}
+              className="px-5 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 backdrop-blur-md font-black transition-all active:scale-95 flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+            >
+              <Save size={18} /> Save
+            </button>
         </div>
       </div>
 

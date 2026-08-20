@@ -169,14 +169,14 @@ export default function AppContent() {
                 Track your workout and get stronger.
               </p>
               
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={startWorkout}
-                className="bg-primary text-white text-lg font-bold py-4 px-12 rounded-xl w-full max-w-xs shadow-lg shadow-primary/20"
-              >
-                Start Empty Workout
-              </motion.button>
+              <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={startWorkout}
+                  className="bg-primary/10 text-primary border border-primary/20 backdrop-blur-md hover:bg-primary/20 hover:border-primary/30 transition-all text-lg font-bold py-4 px-12 rounded-xl w-full max-w-xs shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                >
+                  Start Empty Workout
+                </motion.button>
               
               <div className="mt-6">
                 <button
