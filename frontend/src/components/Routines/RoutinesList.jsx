@@ -68,13 +68,13 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => onEdit(routine)}
-                    className="p-2 text-textMuted hover:text-primary transition-colors bg-surface-light rounded-lg"
+                    className="p-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 backdrop-blur-md transition-all rounded-lg"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button 
                     onClick={(e) => handleDelete(e, routine.id)}
-                    className="p-2 text-textMuted hover:text-red-500 transition-colors bg-surface-light rounded-lg"
+                    className="p-2 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg"
                   >
                     <Trash2 size={16} />
                   </button>
