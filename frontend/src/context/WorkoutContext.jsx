@@ -340,7 +340,7 @@ export function WorkoutProvider({ children }) {
     }
   };
 
-  const finishWorkout = async () => {
+  const finishWorkout = async () => { if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
     try {
       await cancelPushNotification();
       
@@ -436,6 +436,7 @@ export function WorkoutProvider({ children }) {
     if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission();
     }
+    if (navigator.vibrate) navigator.vibrate(40);
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();

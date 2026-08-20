@@ -1,13 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { useWorkout } from './context/WorkoutContext';
 import ActiveWorkout from './components/WorkoutFlow/ActiveWorkout';
-import Dashboard from './components/Dashboard/Dashboard';
-import CustomExercises from './components/CustomExercises/CustomExercises';
-import RoutinesMain from './components/Routines/RoutinesMain';
+const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
+const CustomExercises = React.lazy(() => import('./components/CustomExercises/CustomExercises'));
+const RoutinesMain = React.lazy(() => import('./components/Routines/RoutinesMain'));
 import { Play, Activity, LayoutDashboard, Settings2, Dumbbell, Square, Sun, Moon, Database, ClipboardList, CalendarDays, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CalendarView from './components/Calendar/CalendarView';
-import WorkoutDetailView from './components/Calendar/WorkoutDetailView';
+const CalendarView = React.lazy(() => import('./components/Calendar/CalendarView'));
+const WorkoutDetailView = React.lazy(() => import('./components/Calendar/WorkoutDetailView'));
 
 export default function AppContent() {
   const { activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit, theme, toggleTheme } = useWorkout();
@@ -64,7 +64,7 @@ export default function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
+    <div className="min-h-[100dvh] bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
       
       {/* Premium Solid Header */}
       <header className="app-header sticky top-0 z-40 p-4 pt-safe flex justify-between items-center min-h-16">
@@ -130,7 +130,7 @@ export default function AppContent() {
         className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden"
         onScroll={handleScroll}
       >
-        <AnimatePresence mode="wait" custom={direction}>
+        <React.Suspense fallback={<div className="flex h-full items-center justify-center"><div className="animate-spin w-8 h-8 rounded-full border-4 border-primary border-t-transparent"></div></div>}>          <AnimatePresence mode="wait" custom={direction}>
           {activeWorkout ? (
             <motion.div
               key="active"
@@ -221,7 +221,7 @@ export default function AppContent() {
               <Dashboard onMapClick={() => navigateTab('calendar')} />
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>        </React.Suspense>
       </main>
 
       {/* Floating Pill Navigation */}
