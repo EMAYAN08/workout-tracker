@@ -83,7 +83,7 @@ export default function AppContent() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
-            className="p-2 rounded-full hover:bg-surface-light transition-all text-textMuted hover:text-text"
+            className="p-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/30 transition-all active:scale-95 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
             title="Refresh Data"
           >
             <RefreshCw size={18} />
@@ -91,7 +91,7 @@ export default function AppContent() {
         
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-full hover:bg-surface-light transition-all text-textMuted hover:text-text"
+            className="p-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/30 transition-all active:scale-95 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
