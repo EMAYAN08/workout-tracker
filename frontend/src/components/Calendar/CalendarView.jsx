@@ -59,21 +59,16 @@ export default function CalendarView({ onDayClick, onBack }) {
           {onBack && (
             <button 
               onClick={onBack}
-              className="p-2 -ml-2 text-textMuted hover:text-text rounded-full hover:bg-surface-light transition-colors min-w-touch min-h-touch flex items-center justify-center"
+              className="py-2 px-1 -ml-2 text-textMuted hover:text-text rounded-full hover:bg-surface-light transition-colors min-w-touch min-h-touch flex items-center justify-center gap-1"
             >
               <ChevronLeft size={24} />
+              <span className="font-bold text-sm pr-2">Back</span>
             </button>
           )}
           <h1 className="text-2xl font-black text-text tracking-tight flex items-center gap-2">
             <CalendarIcon className="text-primary" size={24} /> History
           </h1>
         </div>
-        <button 
-          onClick={goToToday}
-          className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors min-h-touch"
-        >
-          Today
-        </button>
       </div>
 
       <div className="panel p-5 sm:p-6 flex flex-col gap-6 relative overflow-hidden shadow-xl shadow-black/5">
@@ -126,34 +121,25 @@ export default function CalendarView({ onDayClick, onBack }) {
               const isDayToday = isToday(day);
               const isFuture = isAfter(day, new Date()) && !isDayToday;
 
-              return (
-                <div key={i} className="flex justify-center">
-                  <motion.button
-                    whileHover={hasWorkout ? { scale: 1.05 } : {}}
-                    whileTap={hasWorkout ? { scale: 0.95 } : {}}
-                    onClick={() => { if (hasWorkout) onDayClick(dateKey); }}
-                    disabled={!hasWorkout}
-                    className={`
-                      relative w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center rounded-full font-bold transition-all
-                      ${!isCurrentMonth ? 'opacity-0 pointer-events-none' : ''}
-                      ${isDayToday ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface' : ''}
-                      ${hasWorkout ? 'bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer shadow-sm' : 'text-text hover:bg-surface-light cursor-default'}
-                      ${isFuture ? 'text-textMuted/30' : ''}
-                      ${!hasWorkout && !isFuture && !isDayToday && isCurrentMonth ? 'text-textMuted' : ''}
-                    `}
-                  >
-                    <span className="text-sm sm:text-base z-10">{format(day, 'd')}</span>
-                    
-                    {/* Subtle dot indicators for multiple workouts */}
-                    {hasWorkout && dayWorkouts.length > 1 && (
-                      <div className="absolute bottom-1 sm:bottom-1.5 flex gap-0.5 z-10">
-                        {dayWorkouts.map((_, idx) => (
-                          <div key={idx} className="w-1 h-1 rounded-full bg-current opacity-70" />
-                        ))}
-                      </div>
-                    )}
-                  </motion.button>
-                </div>
+              return <div key={i} className="flex justify-center">
+                    <motion.button
+                      whileHover={hasWorkout ? { scale: 1.05 } : {}}
+                      whileTap={hasWorkout ? { scale: 0.95 } : {}}
+                      onClick={() => { if (hasWorkout) onDayClick(dateKey); }}
+                      disabled={!hasWorkout}
+                      className={`
+                        relative w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center rounded-full font-bold transition-all
+                        ${!isCurrentMonth ? 'opacity-0 pointer-events-none' : ''}
+                        ${isDayToday ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-surface text-amber-500' : ''}
+                        ${hasWorkout ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)] cursor-pointer' : 'cursor-default'}
+                        ${!hasWorkout && isDayToday ? 'bg-surface-light' : ''}
+                        ${!hasWorkout && !isFuture && !isDayToday && isCurrentMonth ? 'text-textMuted hover:bg-surface-light' : ''}
+                        ${isFuture ? 'text-textMuted/20' : ''}
+                      `}
+                    >
+                      <span className="text-sm sm:text-base z-10">{format(day, 'd')}</span>
+                    </motion.button>
+                  </div>
               );
             })}
           </div>
