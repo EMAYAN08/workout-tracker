@@ -67,32 +67,28 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
+                    onClick={() => handleStartRoutine(routine)}
+                    className="p-2 text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/30 backdrop-blur-md transition-all rounded-lg"
+                    title="Start Routine"
+                  >
+                    <Play size={16} fill="currentColor" />
+                  </button>
+                  <button 
                     onClick={() => onEdit(routine)}
                     className="p-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 backdrop-blur-md transition-all rounded-lg"
+                    title="Edit Routine"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button 
                     onClick={(e) => handleDelete(e, routine.id)}
                     className="p-2 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg"
+                    title="Delete Routine"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               </div>
-              
-              <div className="text-sm text-textMuted line-clamp-2">
-                {routine.exercises?.map(ex => ex.name).join(', ') || 'No exercises added yet'}
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleStartRoutine(routine)}
-                className="w-full bg-primary hover:bg-primary-light text-white py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors mt-2"
-              >
-                <Play size={18} fill="currentColor" /> Start Routine
-              </motion.button>
             </motion.div>
           ))
         )}

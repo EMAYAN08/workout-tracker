@@ -26,18 +26,18 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit }) => {
             </div>
           </div>
           
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(ex); }} 
-              className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-xl transition-colors"
+              className="p-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 backdrop-blur-md transition-all rounded-lg"
             >
-              <Edit2 size={18} />
+              <Edit2 size={16} />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); onDelete(ex.id); }} 
-              className="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+              className="p-2 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg"
             >
-              <Trash2 size={18} />
+              <Trash2 size={16} />
             </button>
             <ChevronDown size={18} className={`text-textMuted ml-1 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
           </div>
