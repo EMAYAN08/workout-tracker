@@ -149,7 +149,7 @@ export default function CustomExercises({ onNavigate }) {
           </h2>
           <button 
             onClick={() => setIsCreating(true)}
-            className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-md hover:bg-primary-light transition-colors min-h-touch"
+            className="flex items-center gap-1 bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg text-sm font-bold shadow-[0_0_12px_rgba(59,130,246,0.15)] hover:bg-primary/20 hover:border-primary/50 backdrop-blur-md transition-all active:scale-95"
           >
             <Plus size={16} /> Create
           </button>

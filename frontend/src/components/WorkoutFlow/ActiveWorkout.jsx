@@ -274,7 +274,7 @@ export default function ActiveWorkout() {
               <div className="px-4 mt-4 mb-2 flex gap-2">
                 <button 
                   onClick={() => addSetToExercise(idx)}
-                  className="flex-1 py-3 text-sm font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 backdrop-blur-md rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(59,130,246,0.1)]"
                 >
                   <Plus size={16} /> New Set
                 </button>
@@ -284,7 +284,7 @@ export default function ActiveWorkout() {
                       setExpandedExerciseIndex(idx + 1);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="flex-1 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-light rounded-xl transition-colors shadow-lg shadow-primary/20"
+                    className="flex-1 py-3 text-sm font-bold text-primary bg-primary/10 border border-primary/30 hover:bg-primary/20 hover:border-primary/50 backdrop-blur-md rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)]"
                   >
                     Next Exercise
                   </button>
@@ -296,16 +296,15 @@ export default function ActiveWorkout() {
       })}
 
       {/* Add Exercise Area */}
-      {!isSearching ? (
-        <motion.button 
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setIsSearching(true)}
-          className="w-full py-4 mt-2 rounded-xl flex items-center justify-center gap-2 font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-        >
-          <Plus size={20} strokeWidth={2.5} />
-          Add Exercise
-        </motion.button>
-      ) : (
+        {!isSearching ? (
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsSearching(true)}
+            className="w-full py-4 mt-2 rounded-xl flex items-center justify-center gap-2 font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 backdrop-blur-md transition-all shadow-[0_0_12px_rgba(59,130,246,0.1)]"
+          >
+            <Plus size={20} /> Add Exercise
+          </motion.button>
+        ) : (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
