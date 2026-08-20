@@ -10,13 +10,11 @@ import InfoPopover from './InfoPopover';
 import WorkoutDurationChart from './WorkoutDurationChart';
 import StrengthChart from './StrengthChart';
 
-const StatCard = ({ icon: Icon, title, value, unit, colorClass, description }) => {
-  const [showInfo, setShowInfo] = React.useState(false);
-
+const StatCard = ({ icon: Icon, title, value, unit, colorClass, description, isActive, onToggle }) => {
   return (
     <div 
       className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px] cursor-pointer"
-      onClick={() => setShowInfo(!showInfo)}
+      onClick={onToggle}
     >
       <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110 ${colorClass.bg}`} />
       
@@ -34,7 +32,7 @@ const StatCard = ({ icon: Icon, title, value, unit, colorClass, description }) =
       </div>
 
       <AnimatePresence>
-        {showInfo && (
+        {isActive && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -160,6 +158,7 @@ const CustomDropdown = ({ options, value, onChange, searchable = false }) => {
 export default function Dashboard({ onMapClick }) {
   const { workoutHistory, unit, getStreaks } = useWorkout();
   const { current, best } = getStreaks();
+  const [activeInfoCard, setActiveInfoCard] = useState(null);
   
   // Exercise Progression Chart State
   const [metric, setMetric] = useState('1rm'); // '1rm' or 'volume'
@@ -261,6 +260,8 @@ export default function Dashboard({ onMapClick }) {
           value={workoutHistory.length}
           colorClass={{ bg: 'bg-primary/5', iconBg: 'bg-primary/20', text: 'text-primary' }}
           description="The total number of workout sessions you've logged."
+          isActive={activeInfoCard === "Total Workouts"}
+          onToggle={() => setActiveInfoCard(activeInfoCard === "Total Workouts" ? null : "Total Workouts")}
         />
         <StatCard
           icon={TrendingUp}
@@ -269,6 +270,8 @@ export default function Dashboard({ onMapClick }) {
           unit={unit}
           colorClass={{ bg: 'bg-blue-500/5', iconBg: 'bg-blue-500/20', text: 'text-blue-500' }}
           description="Total weight lifted across all your workouts."
+          isActive={activeInfoCard === "Total Volume"}
+          onToggle={() => setActiveInfoCard(activeInfoCard === "Total Volume" ? null : "Total Volume")}
         />
         <StatCard
           icon={Flame}
@@ -277,6 +280,8 @@ export default function Dashboard({ onMapClick }) {
           unit="Days"
           colorClass={{ bg: 'bg-orange-500/5', iconBg: 'bg-orange-500/20', text: 'text-orange-500', fill: true }}
           description="Current number of consecutive days you've logged a workout."
+          isActive={activeInfoCard === "Current Streak"}
+          onToggle={() => setActiveInfoCard(activeInfoCard === "Current Streak" ? null : "Current Streak")}
         />
         <StatCard
           icon={Trophy}
@@ -285,6 +290,8 @@ export default function Dashboard({ onMapClick }) {
           unit="Days"
           colorClass={{ bg: 'bg-yellow-500/5', iconBg: 'bg-yellow-500/20', text: 'text-yellow-500' }}
           description="Your all-time longest streak of consecutive workout days."
+          isActive={activeInfoCard === "Best Streak"}
+          onToggle={() => setActiveInfoCard(activeInfoCard === "Best Streak" ? null : "Best Streak")}
         />
       </div>
 
