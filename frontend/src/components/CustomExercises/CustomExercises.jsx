@@ -4,32 +4,13 @@ import { convertWeight } from '../../utils/calculations';
 import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const SwipeableExercise = ({ ex, onDelete, onEdit, unit }) => {
+const CustomExerciseCard = ({ ex, onDelete, onEdit, unit }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
     <div className="relative mb-2">
-      {/* Delete Background Button */}
-      <div className="absolute top-0 bottom-0 right-0 w-32 flex items-center justify-end pr-2 rounded-r-xl bg-red-500 overflow-hidden">
-        <button onClick={() => onEdit(ex)} className="h-full px-3 flex flex-col items-center justify-center text-white/90 hover:text-white bg-blue-500 mr-1">
-          <Edit2 size={18} />
-          <span className="text-[10px] font-bold mt-1">Edit</span>
-        </button>
-        <button onClick={() => onDelete(ex.id)} className="h-full px-3 flex flex-col items-center justify-center text-white/90 hover:text-white">
-          <Trash2 size={18} />
-          <span className="text-[10px] font-bold mt-1">Delete</span>
-        </button>
-      </div>
-
-      {/* Foreground Draggable Card */}
-      <motion.div 
-        drag="x"
-        dragConstraints={{ left: -140, right: 0 }}
-        dragElastic={0.2}
-        className="relative z-10 bg-surface shadow-sm rounded-xl border border-border flex flex-col w-full"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="p-4 flex items-center gap-4 bg-surface rounded-xl">
+      <div className="relative z-10 bg-surface shadow-sm rounded-xl border border-border flex flex-col w-full">
+        <div className="p-4 flex items-center gap-4 bg-surface rounded-xl cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
             <Dumbbell size={20} className="text-primary" />
           </div>
@@ -47,8 +28,22 @@ const SwipeableExercise = ({ ex, onDelete, onEdit, unit }) => {
               )}
             </p>
           </div>
-          <div className="text-textMuted opacity-50 shrink-0 pr-2">
-            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <div className="flex items-center gap-1 shrink-0 pr-1">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(ex); }} 
+              className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+            >
+              <Edit2 size={18} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(ex.id); }} 
+              className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              <Trash2 size={18} />
+            </button>
+            <div className="text-textMuted opacity-50 ml-1">
+              {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </div>
           </div>
         </div>
         
@@ -77,7 +72,7 @@ const SwipeableExercise = ({ ex, onDelete, onEdit, unit }) => {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 };
@@ -288,7 +283,7 @@ export default function CustomExercises({ onNavigate }) {
               <h3 className="text-sm font-black uppercase tracking-widest text-textMuted pl-2">{group}</h3>
               <div className="flex flex-col">
                 {groupedExercises[group].map((ex, idx) => (
-                  <SwipeableExercise key={ex.id} ex={ex} onDelete={deleteCustomExercise} onEdit={handleEditInit} unit={unit} />
+                  <CustomExerciseCard key={ex.id} ex={ex} onDelete={deleteCustomExercise} onEdit={handleEditInit} unit={unit} />
                 ))}
               </div>
             </div>
