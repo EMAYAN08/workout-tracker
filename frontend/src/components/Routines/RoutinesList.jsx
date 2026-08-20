@@ -26,7 +26,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
       if (!exercises) return [];
       const categories = new Set();
       exercises.forEach(ex => {
-        if (ex.category) categories.add(ex.category);
+        if (ex.muscleGroup) categories.add(ex.muscleGroup);
       });
       return Array.from(categories);
     };
