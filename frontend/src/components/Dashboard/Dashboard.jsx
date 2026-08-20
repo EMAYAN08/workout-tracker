@@ -10,6 +10,45 @@ import InfoPopover from './InfoPopover';
 import WorkoutDurationChart from './WorkoutDurationChart';
 import StrengthChart from './StrengthChart';
 
+const StatCard = ({ icon: Icon, title, value, unit, colorClass, description }) => {
+  const [showInfo, setShowInfo] = React.useState(false);
+
+  return (
+    <div 
+      className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px] cursor-pointer"
+      onClick={() => setShowInfo(!showInfo)}
+    >
+      <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110 ${colorClass.bg}`} />
+      
+      <div className="flex items-center gap-2 z-10">
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${colorClass.iconBg} ${colorClass.text}`}>
+          <Icon size={14} fill={colorClass.fill ? "currentColor" : "none"} />
+        </div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">{title}</p>
+      </div>
+      
+      <div className="z-10 mt-2">
+        <p className="text-2xl font-black text-text font-mono leading-none">
+          <AnimatedNumber value={value} /> {unit && <span className="text-sm text-textMuted font-sans font-semibold">{unit}</span>}
+        </p>
+      </div>
+
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 backdrop-blur-xl bg-surface/70 flex items-center justify-center p-3 text-center"
+          >
+            <p className="text-xs font-semibold text-text">{description}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const AnimatedNumber = ({ value }) => {
   const [displayValue, setDisplayValue] = React.useState(0);
 
@@ -216,63 +255,37 @@ export default function Dashboard({ onMapClick }) {
 
       {/* Lifetime Stats Overview - 2x2 Grid */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Total Workouts */}
-        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="flex items-center gap-2 z-10">
-            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
-              <Activity size={14} />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Total Workouts</p>
-          </div>
-          <div className="z-10 mt-2">
-            <p className="text-2xl font-black text-text font-mono leading-none"><AnimatedNumber value={workoutHistory.length} /></p>
-          </div>
-        </div>
-        
-        {/* Total Volume */}
-        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="flex items-center gap-2 z-10">
-            <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
-              <TrendingUp size={14} />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Total Volume</p>
-          </div>
-          <div className="z-10 mt-2">
-            <p className="text-2xl font-black text-text font-mono leading-none">
-              <AnimatedNumber value={convertWeight(workoutHistory.reduce((acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0), 0), 'lbs', unit)} /> <span className="text-sm text-textMuted font-sans font-semibold">{unit}</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Current Streak */}
-        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="flex items-center gap-2 z-10">
-            <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 shrink-0">
-              <Flame size={14} fill="currentColor" />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Current Streak</p>
-          </div>
-          <div className="z-10 mt-2">
-            <p className="text-2xl font-black text-text font-mono leading-none"><AnimatedNumber value={current} /> <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
-          </div>
-        </div>
-
-        {/* Best Streak */}
-        <div className="panel p-4 flex flex-col justify-between relative overflow-hidden group min-h-[96px]">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-          <div className="flex items-center gap-2 z-10">
-            <div className="w-7 h-7 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 shrink-0">
-              <Trophy size={14} />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted leading-none mt-0.5">Best Streak</p>
-          </div>
-          <div className="z-10 mt-2">
-            <p className="text-2xl font-black text-text font-mono leading-none"><AnimatedNumber value={best} /> <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
-          </div>
-        </div>
+        <StatCard
+          icon={Activity}
+          title="Total Workouts"
+          value={workoutHistory.length}
+          colorClass={{ bg: 'bg-primary/5', iconBg: 'bg-primary/20', text: 'text-primary' }}
+          description="The total number of workout sessions you've logged."
+        />
+        <StatCard
+          icon={TrendingUp}
+          title="Total Volume"
+          value={convertWeight(workoutHistory.reduce((acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0), 0), 'lbs', unit)}
+          unit={unit}
+          colorClass={{ bg: 'bg-blue-500/5', iconBg: 'bg-blue-500/20', text: 'text-blue-500' }}
+          description="Total weight lifted across all your workouts."
+        />
+        <StatCard
+          icon={Flame}
+          title="Current Streak"
+          value={current}
+          unit="Days"
+          colorClass={{ bg: 'bg-orange-500/5', iconBg: 'bg-orange-500/20', text: 'text-orange-500', fill: true }}
+          description="Current number of consecutive days you've logged a workout."
+        />
+        <StatCard
+          icon={Trophy}
+          title="Best Streak"
+          value={best}
+          unit="Days"
+          colorClass={{ bg: 'bg-yellow-500/5', iconBg: 'bg-yellow-500/20', text: 'text-yellow-500' }}
+          description="Your all-time longest streak of consecutive workout days."
+        />
       </div>
 
       {/* Consistency Map & Streaks */}
