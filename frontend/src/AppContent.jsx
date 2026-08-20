@@ -236,7 +236,7 @@ export default function AppContent() {
             opacity: 1
           }}
           transition={{ duration: 0.4, type: "spring", bounce: 0.25 }}
-          className="fixed left-1/2 -translate-x-1/2 z-50 max-w-sm rounded-full backdrop-blur-xl bg-surface/95 border border-border/50 shadow-2xl overflow-hidden flex items-center justify-center origin-center"
+          className="fixed left-1/2 -translate-x-1/2 z-50 max-w-sm rounded-full backdrop-blur-2xl backdrop-saturate-150 bg-surface/50 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex items-center justify-center origin-center"
           style={{ 
              bottom: 'max(16px, env(safe-area-inset-bottom))'
           }}
