@@ -4,7 +4,7 @@ import ActiveWorkout from './components/WorkoutFlow/ActiveWorkout';
 const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
 const CustomExercises = React.lazy(() => import('./components/CustomExercises/CustomExercises'));
 const RoutinesMain = React.lazy(() => import('./components/Routines/RoutinesMain'));
-import { Play, Activity, LayoutDashboard, Settings2, Dumbbell, Square, Sun, Moon, Database, ClipboardList, CalendarDays, RefreshCw } from 'lucide-react';
+import { Play, Activity, LayoutDashboard, Settings2, Dumbbell, Square, Sun, Moon, Database, ClipboardList, CalendarDays, RefreshCw, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 const CalendarView = React.lazy(() => import('./components/Calendar/CalendarView'));
 const WorkoutDetailView = React.lazy(() => import('./components/Calendar/WorkoutDetailView'));
@@ -227,66 +227,73 @@ export default function AppContent() {
       {/* Floating Pill Navigation */}
       {!activeWorkout && (
         <motion.div 
-          initial={{ y: 0, scale: 1 }}
+          layout
+          initial={false}
           animate={{ 
-            y: isNavVisible ? 0 : 15, 
-            scale: isNavVisible ? 1 : 0.85, 
-            opacity: isNavVisible ? 1 : 0.75 
+            width: isNavVisible ? '92%' : '64px',
+            height: isNavVisible ? 'auto' : '64px',
+            y: 0,
+            opacity: 1
           }}
-          transition={{ duration: 0.35, ease: 'easeInOut' }}
-          className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-full backdrop-blur-xl bg-surface/80 border border-border/50 shadow-2xl overflow-hidden py-2 px-4 origin-bottom"
-          style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
+          transition={{ duration: 0.4, type: "spring", bounce: 0.25 }}
+          className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-sm rounded-full backdrop-blur-xl bg-surface/90 border border-border/50 shadow-2xl overflow-hidden flex items-center justify-center origin-center"
+          style={{ 
+             paddingBottom: isNavVisible ? 'max(8px, env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
+          }}
         >
-          <div className="flex justify-around items-center w-full relative">
-            <button 
-              onClick={() => navigateTab('home')}
-              className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'home' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
-            >
-              <Activity size={24} strokeWidth={currentTab === 'home' ? 2.5 : 2} />
-              <motion.span 
-                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
-                className="text-[9px] font-bold overflow-hidden"
+          <AnimatePresence mode="wait">
+            {isNavVisible ? (
+              <motion.div 
+                key="full-nav"
+                initial={{ opacity: 0, scale: 0.9 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+                className="flex justify-around items-center w-full relative py-2 px-4"
               >
-                Workout
-              </motion.span>
-            </button>
-            <button 
-              onClick={() => navigateTab('routines')}
-              className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'routines' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
-            >
-              <ClipboardList size={24} strokeWidth={currentTab === 'routines' ? 2.5 : 2} />
-              <motion.span 
-                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
-                className="text-[9px] font-bold overflow-hidden"
+                <button 
+                  onClick={() => navigateTab('home')}
+                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'home' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                >
+                  <Activity size={24} strokeWidth={currentTab === 'home' ? 2.5 : 2} />
+                  <span className="text-[9px] font-bold overflow-hidden mt-1">Workout</span>
+                </button>
+                <button 
+                  onClick={() => navigateTab('routines')}
+                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'routines' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                >
+                  <ClipboardList size={24} strokeWidth={currentTab === 'routines' ? 2.5 : 2} />
+                  <span className="text-[9px] font-bold overflow-hidden mt-1">Routines</span>
+                </button>
+                <button 
+                  onClick={() => navigateTab('custom_exercises')}
+                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'custom_exercises' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                >
+                  <Database size={24} strokeWidth={currentTab === 'custom_exercises' ? 2.5 : 2} />
+                  <span className="text-[9px] font-bold overflow-hidden mt-1">Exercises</span>
+                </button>
+                <button 
+                  onClick={() => navigateTab('dashboard')}
+                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'dashboard' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                >
+                  <LayoutDashboard size={24} strokeWidth={currentTab === 'dashboard' ? 2.5 : 2} />
+                  <span className="text-[9px] font-bold overflow-hidden mt-1">Profile</span>
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="min-nav"
+                initial={{ opacity: 0, scale: 0 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0 }}
+                transition={{ duration: 0.2 }}
+                className="w-full h-full flex items-center justify-center cursor-pointer text-primary"
+                onClick={() => setIsNavVisible(true)}
               >
-                Routines
-              </motion.span>
-            </button>
-            <button 
-              onClick={() => navigateTab('custom_exercises')}
-              className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'custom_exercises' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
-            >
-              <Database size={24} strokeWidth={currentTab === 'custom_exercises' ? 2.5 : 2} />
-              <motion.span 
-                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
-                className="text-[9px] font-bold overflow-hidden"
-              >
-                Exercises
-              </motion.span>
-            </button>
-            <button 
-              onClick={() => navigateTab('dashboard')}
-              className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'dashboard' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
-            >
-              <LayoutDashboard size={24} strokeWidth={currentTab === 'dashboard' ? 2.5 : 2} />
-              <motion.span 
-                animate={{ height: isNavVisible ? 'auto' : 0, opacity: isNavVisible ? 1 : 0, marginTop: isNavVisible ? 2 : 0 }} 
-                className="text-[9px] font-bold overflow-hidden"
-              >
-                Profile
-              </motion.span>
-            </button>
-          </div>
+                <Menu size={28} strokeWidth={2.5} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </div>

@@ -137,37 +137,6 @@ export default function ConsistencyMap({ onMapClick }) {
 
   return (
     <div className="flex flex-col gap-4 mt-4 w-full">
-      {/* Streak Widgets */}
-      <div className="grid grid-cols-2 gap-3">
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="panel p-4 flex items-center gap-4 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 rounded-bl-full -mr-4 -mt-4" />
-          <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 z-10 shrink-0">
-            <Flame size={20} fill="currentColor" />
-          </div>
-          <div className="z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Current Streak</p>
-            <p className="text-2xl font-black text-text font-mono leading-none">{current} <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="panel p-4 flex items-center gap-4 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/10 rounded-bl-full -mr-4 -mt-4" />
-          <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 z-10 shrink-0">
-            <Trophy size={20} />
-          </div>
-          <div className="z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Best Streak</p>
-            <p className="text-2xl font-black text-text font-mono leading-none">{best} <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
-          </div>
-        </motion.div>
-      </div>
-
       {/* Consistency Map */}
       <div 
         className="panel p-5 overflow-hidden w-full flex flex-col gap-4 relative cursor-pointer hover:border-primary/50 transition-colors group"

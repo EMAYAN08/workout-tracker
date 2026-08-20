@@ -336,25 +336,32 @@ export default function ActiveWorkout() {
             {/* Scrollable Container strictly maxed to ~5 items */}
             {searchResults.length > 0 && (
               <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
-                {searchResults.map(res => (
+                {searchResults.map(ex => (
                   <button 
-                    key={res.id} 
-                    onClick={() => handleAddExercise(res)}
-                    className="w-full flex items-center gap-4 p-3 bg-surface/40 hover:bg-surface rounded-2xl transition-all border border-border/30 hover:border-primary/40 text-left min-h-touch group shrink-0"
+                    key={ex.id}
+                    onClick={() => handleAddExercise(ex)}
+                    className="w-full flex items-center justify-between gap-4 p-4 bg-surface-light/40 hover:bg-surface-light rounded-3xl transition-all text-left min-h-touch group shrink-0 border border-border/10"
                   >
-                    <div className="w-14 h-14 shrink-0 rounded-[14px] bg-white overflow-hidden flex items-center justify-center shadow-sm">
-                      {res.gifUrl ? (
-                        <img src={res.gifUrl} alt={res.name} className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <Dumbbell size={24} className="text-primary/50" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 py-1">
-                      <h4 className="text-text font-bold text-[15px] leading-snug break-words mb-1.5">{res.name}</h4>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider">{res.muscleGroup}</span>
-                        
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm overflow-hidden">
+                        {ex.gifUrl ? (
+                          <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover mix-blend-screen opacity-90" loading="lazy" style={{ filter: 'grayscale(100%) contrast(1.2)' }} />
+                        ) : (
+                          <Dumbbell size={24} className="text-primary opacity-80" />
+                        )}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-text font-bold text-base leading-snug truncate">{ex.name}</h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Dumbbell size={12} className="text-textMuted" />
+                          <span className="text-xs font-semibold text-textMuted truncate">Dumbbell</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="shrink-0 flex items-center gap-3">
+                      <span className="px-2.5 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-black uppercase tracking-widest">{ex.muscleGroup}</span>
+                      <ChevronDown size={16} className="text-textMuted -rotate-90 opacity-50" />
                     </div>
                   </button>
                 ))}

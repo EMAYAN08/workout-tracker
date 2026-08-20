@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getBest1RM, calculateVolume, convertWeight } from '../../utils/calculations';
-import { Search, Activity, TrendingUp, ChevronDown } from 'lucide-react';
+import { Search, Activity, TrendingUp, ChevronDown, Flame, Trophy, Dumbbell, Weight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConsistencyMap from './ConsistencyMap';
@@ -87,7 +87,8 @@ const CustomDropdown = ({ options, value, onChange, searchable = false }) => {
 };
 
 export default function Dashboard({ onMapClick }) {
-  const { workoutHistory, unit } = useWorkout();
+  const { workoutHistory, unit, getStreaks } = useWorkout();
+  const { current, best } = getStreaks();
   
   // Exercise Progression Chart State
   const [metric, setMetric] = useState('1rm'); // '1rm' or 'volume'
@@ -105,80 +106,56 @@ export default function Dashboard({ onMapClick }) {
     return Array.from(exercisesMap.entries()).map(([id, name]) => ({ value: id, label: name }));
   }, [workoutHistory]);
 
+  const metricOptions = [
+    { value: '1rm', label: 'Est. 1RM' },
+    { value: 'volume', label: 'Volume' }
+  ];
+
+  // Set default exercise
   React.useEffect(() => {
-    if (uniqueExercises.length > 0) {
-      if (!selectedExerciseId || !uniqueExercises.find(ex => ex.value === selectedExerciseId)) {
-        setSelectedExerciseId(uniqueExercises[0].value);
-      }
+    if (uniqueExercises.length > 0 && !selectedExerciseId) {
+      setSelectedExerciseId(uniqueExercises[0].value);
     }
   }, [uniqueExercises, selectedExerciseId]);
 
-  const metricOptions = [
-    { value: '1rm', label: 'Est. 1RM' },
-    { value: 'volume', label: 'Total Volume' }
-  ];
-
   const chartData = useMemo(() => {
-    if (!workoutHistory || workoutHistory.length === 0) return [];
-    
-    const sorted = [...workoutHistory].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    const dataPoints = [];
-    
-    sorted.forEach(wk => {
+    if (!selectedExerciseId || workoutHistory.length === 0) return [];
+
+    let data = [];
+    workoutHistory.forEach(wk => {
       const ex = wk.exercises?.find(e => e.id === selectedExerciseId);
       if (ex && ex.sets && ex.sets.length > 0) {
-        // Dummy data in DB was assuming lbs roughly, let's say DB unit is lbs
-        const dbUnit = 'lbs';
-        
-        const rawValue = metric === '1rm' ? getBest1RM(ex.sets) : calculateVolume(ex.sets);
-        // Convert to current display unit
-        const value = convertWeight(rawValue, dbUnit, unit);
-
-        dataPoints.push({
-          date: format(parseISO(wk.timestamp), 'MMM dd'),
-          value: value,
-        });
+        const date = format(parseISO(wk.timestamp), 'MMM d');
+        if (metric === '1rm') {
+          const rm = getBest1RM(ex.sets);
+          data.push({ date, value: Number(convertWeight(rm, 'lbs', unit).toFixed(1)) });
+        } else {
+          const vol = calculateVolume(ex.sets);
+          data.push({ date, value: Number(convertWeight(vol, 'lbs', unit).toFixed(1)) });
+        }
       }
     });
-    
-    return dataPoints;
+
+    return data.reverse(); 
   }, [workoutHistory, selectedExerciseId, metric, unit]);
-
-  const [weightExerciseId, setWeightExerciseId] = useState('');
-
-  React.useEffect(() => {
-    if (uniqueExercises.length > 0) {
-      if (!weightExerciseId || !uniqueExercises.find(ex => ex.value === weightExerciseId)) {
-        setWeightExerciseId(uniqueExercises[0].value);
-      }
-    }
-  }, [uniqueExercises, weightExerciseId]);
-
+  
+  // Max Weight Chart Data
   const weightChartData = useMemo(() => {
-    if (!workoutHistory || workoutHistory.length === 0) return [];
-    
-    const sorted = [...workoutHistory].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    const dataPoints = [];
-    
-    sorted.forEach(wk => {
-      const ex = wk.exercises?.find(e => e.id === weightExerciseId);
-      if (ex && ex.sets && ex.sets.length > 0) {
-        // Find the maximum weight across all sets in this workout
-        const rawValue = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
-        // We assume db stores in lbs for the dummy conversion like earlier logic
-        const value = convertWeight(rawValue, 'lbs', unit);
+    if (!selectedExerciseId || workoutHistory.length === 0) return [];
 
-        dataPoints.push({
-          date: format(parseISO(wk.timestamp), 'MMM dd'),
-          value: value,
-        });
+    let data = [];
+    workoutHistory.forEach(wk => {
+      const ex = wk.exercises?.find(e => e.id === selectedExerciseId);
+      if (ex && ex.sets && ex.sets.length > 0) {
+        const date = format(parseISO(wk.timestamp), 'MMM d');
+        // Find max weight in sets
+        const maxWeight = Math.max(...ex.sets.map(s => s.weight || 0));
+        data.push({ date, value: Number(convertWeight(maxWeight, 'lbs', unit).toFixed(1)) });
       }
     });
-    
-    return dataPoints;
-  }, [workoutHistory, weightExerciseId, unit]);
 
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
+    return data.reverse();
+  }, [workoutHistory, selectedExerciseId, unit]);
 
   const CustomTooltip = ({ active, payload, label, colorClass = "text-primary" }) => {
     if (active && payload && payload.length) {
@@ -195,32 +172,64 @@ export default function Dashboard({ onMapClick }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full pb-8">
+    <div className="flex flex-col gap-5 w-full pb-8">
       
       {/* Profile Header */}
-      <div className="flex items-center gap-4 mb-2 px-2">
-        <div className="w-16 h-16 rounded-full bg-surface-light border-2 border-primary flex items-center justify-center text-primary font-black text-2xl shadow-lg">
-          U
-        </div>
-        <div>
-          <h1 className="text-2xl font-black text-text leading-tight">User</h1>
-          <p className="text-textMuted font-semibold text-sm">Fitness Enthusiast</p>
-        </div>
+      <div className="flex flex-col gap-1 px-2 pt-2">
+        <h1 className="text-3xl font-black text-text tracking-tight">Hey User 👋</h1>
+        <p className="text-textMuted font-semibold text-sm">Here are your lifetime stats</p>
       </div>
 
-      {/* Lifetime Stats Overview */}
+      {/* Lifetime Stats Overview - 2x2 Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="panel p-4 flex flex-col justify-center">
-          <span className="text-textMuted text-[10px] font-bold uppercase tracking-wider mb-1">Total Workouts</span>
-          <span className="text-2xl font-black text-text font-mono leading-none">
-            {workoutHistory.length}
-          </span>
+        {/* Total Workouts */}
+        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary z-10 shrink-0">
+            <Activity size={16} />
+          </div>
+          <div className="z-10">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Total Workouts</p>
+            <p className="text-2xl font-black text-text font-mono leading-none">{workoutHistory.length}</p>
+          </div>
         </div>
-        <div className="panel p-4 flex flex-col justify-center">
-          <span className="text-textMuted text-[10px] font-bold uppercase tracking-wider mb-1">Total Volume</span>
-          <span className="text-2xl font-black text-text font-mono leading-none">
-            {convertWeight(workoutHistory.reduce((acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0), 0), 'lbs', unit).toLocaleString()} <span className="text-sm text-textMuted">{unit}</span>
-          </span>
+        
+        {/* Total Volume */}
+        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
+          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 z-10 shrink-0">
+            <TrendingUp size={16} />
+          </div>
+          <div className="z-10">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Total Volume</p>
+            <p className="text-2xl font-black text-text font-mono leading-none">
+              {convertWeight(workoutHistory.reduce((acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0), 0), 'lbs', unit).toLocaleString()} <span className="text-sm text-textMuted font-sans font-semibold">{unit}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Current Streak */}
+        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
+          <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 z-10 shrink-0">
+            <Flame size={16} fill="currentColor" />
+          </div>
+          <div className="z-10">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Current Streak</p>
+            <p className="text-2xl font-black text-text font-mono leading-none">{current} <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
+          </div>
+        </div>
+
+        {/* Best Streak */}
+        <div className="panel p-4 flex flex-col gap-3 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
+          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 z-10 shrink-0">
+            <Trophy size={16} />
+          </div>
+          <div className="z-10">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Best Streak</p>
+            <p className="text-2xl font-black text-text font-mono leading-none">{best} <span className="text-sm text-textMuted font-sans font-semibold">Days</span></p>
+          </div>
         </div>
       </div>
 

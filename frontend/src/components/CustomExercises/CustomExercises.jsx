@@ -8,42 +8,38 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="relative mb-2">
-      <div className="relative z-10 bg-surface shadow-sm rounded-xl border border-border flex flex-col w-full">
-        <div className="p-4 flex items-center gap-4 bg-surface rounded-xl cursor-pointer" onClick={() => setExpanded(!expanded)}>
-          <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light shrink-0">
-            <Dumbbell size={20} className="text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h4 className="font-bold text-text capitalize text-base leading-snug">{ex.name}</h4>
-              
+    <div className="relative mb-3">
+      <div className="relative z-10 bg-surface-light/40 shadow-sm rounded-3xl border border-border/10 flex flex-col w-full overflow-hidden transition-colors hover:border-primary/20">
+        <div className="p-4 flex items-center justify-between gap-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Dumbbell size={20} className="text-primary opacity-80" />
             </div>
-            <p className="text-xs text-textMuted font-semibold capitalize flex items-center gap-2">
-              {ex.muscleGroup}
-              {ex.defaultSets && ex.defaultSets.length > 0 && (
-                <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold">
-                  {ex.defaultSets.length} Sets
-                </span>
-              )}
-            </p>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-text capitalize text-base leading-snug truncate mb-1">{ex.name}</h4>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-primary/15 text-primary text-[9px] font-black uppercase tracking-widest">{ex.muscleGroup}</span>
+                {ex.defaultSets && ex.defaultSets.length > 0 && (
+                  <span className="text-[10px] font-bold text-textMuted uppercase">{ex.defaultSets.length} Sets</span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0 pr-1">
+          
+          <div className="flex items-center gap-1 shrink-0">
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(ex); }} 
-              className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+              className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-xl transition-colors"
             >
               <Edit2 size={18} />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); onDelete(ex.id); }} 
-              className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+              className="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
             >
               <Trash2 size={18} />
             </button>
-            <div className="text-textMuted opacity-50 ml-1">
-              {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </div>
+            <ChevronDown size={18} className={`text-textMuted ml-1 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
         
