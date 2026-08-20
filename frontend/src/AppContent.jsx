@@ -230,15 +230,15 @@ export default function AppContent() {
           layout
           initial={false}
           animate={{ 
-            width: isNavVisible ? '92%' : '64px',
-            height: isNavVisible ? 'auto' : '64px',
+            width: isNavVisible ? '92%' : '56px',
+            height: isNavVisible ? '72px' : '56px',
             y: 0,
             opacity: 1
           }}
           transition={{ duration: 0.4, type: "spring", bounce: 0.25 }}
-          className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-sm rounded-full backdrop-blur-xl bg-surface/90 border border-border/50 shadow-2xl overflow-hidden flex items-center justify-center origin-center"
+          className="fixed left-1/2 -translate-x-1/2 z-50 max-w-sm rounded-full backdrop-blur-xl bg-surface/95 border border-border/50 shadow-2xl overflow-hidden flex items-center justify-center origin-center"
           style={{ 
-             paddingBottom: isNavVisible ? 'max(8px, env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
+             bottom: 'max(16px, env(safe-area-inset-bottom))'
           }}
         >
           <AnimatePresence mode="wait">
@@ -249,35 +249,35 @@ export default function AppContent() {
                 animate={{ opacity: 1, scale: 1 }} 
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
-                className="flex justify-around items-center w-full relative py-2 px-4"
+                className="flex justify-around items-center w-full h-full px-2"
               >
                 <button 
                   onClick={() => navigateTab('home')}
-                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'home' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                  className={`relative z-10 flex flex-col items-center justify-center h-full w-16 transition-colors ${currentTab === 'home' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
                 >
-                  <Activity size={24} strokeWidth={currentTab === 'home' ? 2.5 : 2} />
-                  <span className="text-[9px] font-bold overflow-hidden mt-1">Workout</span>
+                  <Activity size={22} strokeWidth={currentTab === 'home' ? 2.5 : 2} />
+                  <span className="text-[10px] font-bold mt-1">Workout</span>
                 </button>
                 <button 
                   onClick={() => navigateTab('routines')}
-                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'routines' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                  className={`relative z-10 flex flex-col items-center justify-center h-full w-16 transition-colors ${currentTab === 'routines' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
                 >
-                  <ClipboardList size={24} strokeWidth={currentTab === 'routines' ? 2.5 : 2} />
-                  <span className="text-[9px] font-bold overflow-hidden mt-1">Routines</span>
+                  <ClipboardList size={22} strokeWidth={currentTab === 'routines' ? 2.5 : 2} />
+                  <span className="text-[10px] font-bold mt-1">Routines</span>
                 </button>
                 <button 
                   onClick={() => navigateTab('custom_exercises')}
-                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'custom_exercises' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                  className={`relative z-10 flex flex-col items-center justify-center h-full w-16 transition-colors ${currentTab === 'custom_exercises' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
                 >
-                  <Database size={24} strokeWidth={currentTab === 'custom_exercises' ? 2.5 : 2} />
-                  <span className="text-[9px] font-bold overflow-hidden mt-1">Exercises</span>
+                  <Database size={22} strokeWidth={currentTab === 'custom_exercises' ? 2.5 : 2} />
+                  <span className="text-[10px] font-bold mt-1">Exercises</span>
                 </button>
                 <button 
                   onClick={() => navigateTab('dashboard')}
-                  className={`relative z-10 flex flex-col items-center justify-center gap-1 p-2 w-16 transition-colors ${currentTab === 'dashboard' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
+                  className={`relative z-10 flex flex-col items-center justify-center h-full w-16 transition-colors ${currentTab === 'dashboard' ? 'text-primary' : 'text-textMuted hover:text-text'}`}
                 >
-                  <LayoutDashboard size={24} strokeWidth={currentTab === 'dashboard' ? 2.5 : 2} />
-                  <span className="text-[9px] font-bold overflow-hidden mt-1">Profile</span>
+                  <LayoutDashboard size={22} strokeWidth={currentTab === 'dashboard' ? 2.5 : 2} />
+                  <span className="text-[10px] font-bold mt-1">Profile</span>
                 </button>
               </motion.div>
             ) : (
@@ -290,7 +290,7 @@ export default function AppContent() {
                 className="w-full h-full flex items-center justify-center cursor-pointer text-primary"
                 onClick={() => setIsNavVisible(true)}
               >
-                <Menu size={28} strokeWidth={2.5} />
+                <Menu size={24} strokeWidth={2.5} />
               </motion.div>
             )}
           </AnimatePresence>
