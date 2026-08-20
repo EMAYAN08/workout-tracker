@@ -68,12 +68,17 @@ export default function AppContent() {
       
       {/* Premium Solid Header */}
       <header className="app-header sticky top-0 z-40 p-4 pt-safe flex justify-between items-center min-h-16">
-        <div className="flex items-center gap-2">
-          <div className="text-primary">
-            <Activity className="w-6 h-6" strokeWidth={2.5} />
+        <button 
+          onClick={() => navigateTab('home')}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95"
+        >
+          <div className="text-primary flex items-center justify-center">
+            <img src="/favicon.svg" alt="TrackIt Logo" className="w-7 h-7" />
           </div>
-          <span className="font-bold text-xl tracking-tight hidden sm:block">Hevy<span className="text-primary">Clone</span></span>
-        </div>
+          <span className="font-black text-xl tracking-tight hidden sm:block text-text">
+            Track<span className="text-primary">It</span>
+          </span>
+        </button>
         
         <div className="flex items-center gap-3">
           <button
