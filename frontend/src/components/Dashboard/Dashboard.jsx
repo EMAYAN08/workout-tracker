@@ -93,6 +93,7 @@ export default function Dashboard({ onMapClick }) {
   // Exercise Progression Chart State
   const [metric, setMetric] = useState('1rm'); // '1rm' or 'volume'
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
+  const [weightExerciseId, setWeightExerciseId] = useState('');
 
   const uniqueExercises = useMemo(() => {
     const exercisesMap = new Map();
@@ -113,10 +114,11 @@ export default function Dashboard({ onMapClick }) {
 
   // Set default exercise
   React.useEffect(() => {
-    if (uniqueExercises.length > 0 && !selectedExerciseId) {
-      setSelectedExerciseId(uniqueExercises[0].value);
+    if (uniqueExercises.length > 0) {
+      if (!selectedExerciseId) setSelectedExerciseId(uniqueExercises[0].value);
+      if (!weightExerciseId) setWeightExerciseId(uniqueExercises[0].value);
     }
-  }, [uniqueExercises, selectedExerciseId]);
+  }, [uniqueExercises, selectedExerciseId, weightExerciseId]);
 
   const chartData = useMemo(() => {
     if (!selectedExerciseId || workoutHistory.length === 0) return [];
@@ -141,11 +143,11 @@ export default function Dashboard({ onMapClick }) {
   
   // Max Weight Chart Data
   const weightChartData = useMemo(() => {
-    if (!selectedExerciseId || workoutHistory.length === 0) return [];
+    if (!weightExerciseId || workoutHistory.length === 0) return [];
 
     let data = [];
     workoutHistory.forEach(wk => {
-      const ex = wk.exercises?.find(e => e.id === selectedExerciseId);
+      const ex = wk.exercises?.find(e => e.id === weightExerciseId);
       if (ex && ex.sets && ex.sets.length > 0) {
         const date = format(parseISO(wk.timestamp), 'MMM d');
         // Find max weight in sets
@@ -155,7 +157,7 @@ export default function Dashboard({ onMapClick }) {
     });
 
     return data.reverse();
-  }, [workoutHistory, selectedExerciseId, unit]);
+  }, [workoutHistory, weightExerciseId, unit]);
 
   const CustomTooltip = ({ active, payload, label, colorClass = "text-primary" }) => {
     if (active && payload && payload.length) {
