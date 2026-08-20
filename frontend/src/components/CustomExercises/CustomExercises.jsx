@@ -4,13 +4,11 @@ import { convertWeight } from '../../utils/calculations';
 import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const CustomExerciseCard = ({ ex, onDelete, onEdit, unit }) => {
-  const [expanded, setExpanded] = useState(false);
-  
+const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
   return (
     <div className="relative mb-3">
       <div className="relative z-10 bg-surface-light/40 shadow-sm rounded-3xl border border-border/10 flex flex-col w-full overflow-hidden transition-colors hover:border-primary/20">
-        <div className="p-4 flex items-center justify-between gap-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <div className="p-4 flex items-center justify-between gap-4 cursor-pointer" onClick={onToggle}>
           <div className="flex items-center gap-4 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
               <Dumbbell size={20} className="text-primary opacity-80" />
@@ -39,13 +37,13 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit }) => {
             >
               <Trash2 size={16} />
             </button>
-            <ChevronDown size={18} className={`text-textMuted ml-1 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+            <ChevronDown size={18} className={`text-textMuted ml-1 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
         
         {/* Expanded View */}
         <AnimatePresence>
-          {expanded && ex.defaultSets && ex.defaultSets.length > 0 && (
+          {isExpanded && ex.defaultSets && ex.defaultSets.length > 0 && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -78,6 +76,7 @@ export default function CustomExercises({ onNavigate }) {
   
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [activeExerciseId, setActiveExerciseId] = useState(null);
   
   const [newName, setNewName] = useState('');
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
@@ -279,7 +278,15 @@ export default function CustomExercises({ onNavigate }) {
               <h3 className="text-sm font-black uppercase tracking-widest text-textMuted pl-2">{group}</h3>
               <div className="flex flex-col">
                 {groupedExercises[group].map((ex, idx) => (
-                  <CustomExerciseCard key={ex.id} ex={ex} onDelete={deleteCustomExercise} onEdit={handleEditInit} unit={unit} />
+                  <CustomExerciseCard 
+                    key={ex.id} 
+                    ex={ex} 
+                    onDelete={deleteCustomExercise} 
+                    onEdit={handleEditInit} 
+                    unit={unit} 
+                    isExpanded={activeExerciseId === ex.id}
+                    onToggle={() => setActiveExerciseId(activeExerciseId === ex.id ? null : ex.id)}
+                  />
                 ))}
               </div>
             </div>
