@@ -73,7 +73,7 @@ export default function AppContent() {
           className="flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95"
         >
           <div className="text-primary flex items-center justify-center">
-            <img src={`${import.meta.env.BASE_URL}pwa-192x192.png`} alt="TrackIt Logo" className="w-8 h-8 rounded-md" />
+            <img src={`${import.meta.env.BASE_URL}trackit-logo.jpg`} alt="TrackIt Logo" className="w-8 h-8 rounded-md" />
           </div>
           <span className="font-black text-xl tracking-tight hidden sm:block text-text">
             Track<span className="text-primary">It</span>
