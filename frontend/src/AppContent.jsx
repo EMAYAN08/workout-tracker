@@ -96,14 +96,24 @@ export default function AppContent() {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <button 
-            onClick={toggleUnit}
-            className="flex items-center gap-1 hover:bg-surface-light px-3 py-1.5 rounded-full transition-all text-sm font-bold"
-          >
-            <span className={unit === 'lbs' ? 'text-primary' : 'text-textMuted'}>LBS</span>
-            <span className="text-textMuted/30 mx-0.5">/</span>
-            <span className={unit === 'kgs' ? 'text-primary' : 'text-textMuted'}>KGS</span>
-          </button>
+            <button 
+              onClick={toggleUnit}
+              className="relative flex items-center rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md transition-transform active:scale-95 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0"
+              style={{ width: '80px', height: '30px', padding: '2px' }}
+            >
+              {/* Sliding Liquid Glass Pill */}
+              <div 
+                className={`absolute top-[2px] left-[2px] bottom-[2px] w-[36px] bg-gradient-to-tr from-primary to-primary-light rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] transition-transform duration-300 ease-out`}
+                style={{ transform: unit === 'lbs' ? 'translateX(0px)' : 'translateX(40px)' }}
+              />
+              {/* Labels */}
+              <span className={`relative z-10 w-[38px] flex items-center justify-center text-[10px] tracking-widest font-black transition-colors duration-300 ${unit === 'lbs' ? 'text-white drop-shadow-md' : 'text-primary/70 hover:text-primary'}`}>
+                LBS
+              </span>
+              <span className={`relative z-10 w-[38px] flex items-center justify-center text-[10px] tracking-widest font-black transition-colors duration-300 ${unit === 'kgs' ? 'text-white drop-shadow-md' : 'text-primary/70 hover:text-primary'}`}>
+                KGS
+              </span>
+            </button>
           
           {activeWorkout && (
             <div className="flex items-center gap-1.5 sm:gap-2 ml-1 sm:ml-2">
