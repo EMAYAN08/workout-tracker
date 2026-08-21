@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dumbbell } from 'lucide-react';
+import { Dumbbell, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -9,6 +9,18 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleRefresh = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    window.location.reload(true);
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,6 +53,17 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="min-h-[100dvh] w-full bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={handleRefresh}
+          className="p-2 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
+          title="Refresh App"
+        >
+          <RefreshCw size={18} />
+        </button>
+      </div>
+
       {/* Decorative blurred backgrounds */}
       <div className="absolute top-1/4 -left-20 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-64 h-64 bg-primary-light/20 rounded-full blur-[100px] pointer-events-none" />
