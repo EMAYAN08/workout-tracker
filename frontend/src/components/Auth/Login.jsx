@@ -51,8 +51,8 @@ export default function Login({ onLogin }) {
         className="w-full max-w-sm z-10"
       >
         <div className="flex justify-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-            <Dumbbell className="text-primary w-8 h-8" />
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(59,130,246,0.3)] overflow-hidden">
+            <img src="/trackit-logo.jpg" alt="TrackIt Logo" className="w-full h-full object-cover" />
           </div>
         </div>
 
