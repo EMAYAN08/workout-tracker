@@ -14,10 +14,6 @@ export function WorkoutProvider({ children }) {
     return localStorage.getItem('workout_unit') || 'lbs';
   });
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('workout_theme') || 'dark';
-  });
-
   // Active workout state
   const [activeWorkout, setActiveWorkout] = useState(() => {
     const saved = localStorage.getItem('workout_active');
@@ -190,16 +186,6 @@ export function WorkoutProvider({ children }) {
     fetchRoutines();
   }, []);
 
-  // Theme effect
-  useEffect(() => {
-    localStorage.setItem('workout_theme', theme);
-    if (theme === 'light') {
-      document.body.classList.add('light');
-    } else {
-      document.body.classList.remove('light');
-    }
-  }, [theme]);
-
   // Persist Data
   useEffect(() => {
     localStorage.setItem('workout_unit', unit);
@@ -283,10 +269,6 @@ export function WorkoutProvider({ children }) {
       }
     }
     return null;
-  };
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
   // Toggle Unit
@@ -559,7 +541,6 @@ export function WorkoutProvider({ children }) {
   return (
     <WorkoutContext.Provider value={{
       unit, toggleUnit,
-      theme, toggleTheme,
       activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
       addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
       workoutDuration,

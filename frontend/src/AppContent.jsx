@@ -10,7 +10,7 @@ const CalendarView = React.lazy(() => import('./components/Calendar/CalendarView
 const WorkoutDetailView = React.lazy(() => import('./components/Calendar/WorkoutDetailView'));
 
 export default function AppContent() {
-  const { activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit, theme, toggleTheme } = useWorkout();
+  const { activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit } = useWorkout();
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);
@@ -67,7 +67,7 @@ export default function AppContent() {
     <div className="min-h-[100dvh] bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
       
       {/* Premium Solid Header */}
-      <header className="app-header sticky top-0 z-40 p-4 pt-safe flex justify-between items-center min-h-16">
+      <header className="app-header fixed top-0 w-full z-50 p-4 pt-safe flex justify-between items-center min-h-16">
         <button 
           onClick={() => navigateTab('home')}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95"
@@ -83,19 +83,12 @@ export default function AppContent() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
-            className="p-2 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
+            className="p-2 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
             title="Refresh Data"
           >
             <RefreshCw size={18} />
           </button>
         
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
-          >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-
             <button 
               onClick={toggleUnit}
               className="relative flex items-center rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md transition-transform active:scale-95 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0"
@@ -142,7 +135,7 @@ export default function AppContent() {
 
       {/* Main Content Area */}
       <main 
-        className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden"
+        className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden pt-20"
         onScroll={handleScroll}
       >
         <React.Suspense fallback={<div className="flex h-full items-center justify-center"><div className="animate-spin w-8 h-8 rounded-full border-4 border-primary border-t-transparent"></div></div>}>          <AnimatePresence mode="wait" custom={direction}>
