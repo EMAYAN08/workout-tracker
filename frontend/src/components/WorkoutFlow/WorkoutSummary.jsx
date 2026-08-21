@@ -15,18 +15,21 @@ export default function WorkoutSummary({ data, onClose, unit }) {
 
   if (!data) return null;
 
-  const isRest = data.exercises.length === 0;
+  const exercises = data.exercises || [];
+  const isRest = exercises.length === 0;
 
   // Calculate volume
   let totalVolume = 0;
   let totalSets = 0;
-  data.exercises.forEach(ex => {
-    ex.sets.forEach(s => {
-      if (s.completed && s.type !== 'Warmup') {
-        totalSets++;
-        totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
-      }
-    });
+  exercises.forEach(ex => {
+    if (ex.sets) {
+      ex.sets.forEach(s => {
+        if (s.completed && s.type !== 'Warmup') {
+          totalSets++;
+          totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+        }
+      });
+    }
   });
 
   const handleShare = async () => {
@@ -118,8 +121,8 @@ export default function WorkoutSummary({ data, onClose, unit }) {
           {!isRest && (
             <div className="z-10 w-full flex flex-col gap-2">
               <h3 className="text-xs uppercase tracking-widest text-textMuted font-bold text-left mb-1">Exercises</h3>
-              {data.exercises.map(ex => {
-                const exSets = ex.sets.filter(s => s.completed && s.type !== 'Warmup').length;
+              {exercises.map(ex => {
+                const exSets = ex.sets ? ex.sets.filter(s => s.completed && s.type !== 'Warmup').length : 0;
                 if (exSets === 0) return null;
                 return (
                   <div key={ex.id} className="flex justify-between items-center bg-surface-light/30 px-3 py-2 rounded-xl text-sm border border-border/10">
