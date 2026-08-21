@@ -52,7 +52,7 @@ export default function Login({ onLogin }) {
       >
         <div className="flex justify-center mb-8">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(59,130,246,0.3)] overflow-hidden">
-            <img src="/trackit-logo.jpg" alt="TrackIt Logo" className="w-full h-full object-cover" />
+            <img src={`${import.meta.env.BASE_URL}trackit-logo.jpg`} alt="TrackIt Logo" className="w-full h-full object-cover" />
           </div>
         </div>
 
