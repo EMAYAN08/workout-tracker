@@ -21,16 +21,33 @@ export default function WorkoutSummary({ data, onClose, unit }) {
   // Calculate volume
   let totalVolume = 0;
   let totalSets = 0;
+  
+  // First pass: count completed sets
   exercises.forEach(ex => {
     if (ex.sets) {
       ex.sets.forEach(s => {
-        if (s.completed && s.type !== 'Warmup') {
+        if (s.completedAt && s.type !== 'Warmup') {
           totalSets++;
           totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
         }
       });
     }
   });
+
+  // If they forgot to check anything, just count all sets
+  const forgotToCheck = totalSets === 0 && exercises.some(ex => ex.sets?.length > 0);
+  if (forgotToCheck) {
+    exercises.forEach(ex => {
+      if (ex.sets) {
+        ex.sets.forEach(s => {
+          if (s.type !== 'Warmup') {
+            totalSets++;
+            totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+          }
+        });
+      }
+    });
+  }
 
   const handleShare = async () => {
     if (!cardRef.current) return;
@@ -63,96 +80,108 @@ export default function WorkoutSummary({ data, onClose, unit }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background/90 backdrop-blur-lg flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center p-4">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-sm flex flex-col gap-6 relative"
+        className="w-full max-w-sm flex flex-col gap-4 relative"
       >
         <button 
           onClick={onClose}
-          className="absolute -top-12 right-0 p-2 text-textMuted hover:text-text bg-surface-light rounded-full z-10"
+          className="absolute -top-12 right-0 p-2 text-textMuted hover:text-white bg-surface-light/50 backdrop-blur-md rounded-full z-10 transition-colors"
         >
           <X size={20} />
         </button>
 
         <div 
           ref={cardRef} 
-          className="bg-surface border border-border/30 rounded-3xl p-6 shadow-[0_0_40px_rgba(59,130,246,0.15)] flex flex-col items-center gap-6 relative overflow-hidden"
+          className="bg-surface/90 backdrop-blur-xl border border-border/50 rounded-[24px] p-6 shadow-[0_0_40px_rgba(59,130,246,0.1)] flex flex-col gap-6 relative overflow-hidden"
         >
           {/* Decorative background */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-primary/20 rounded-full blur-[60px] pointer-events-none -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-[60px] pointer-events-none -ml-20 -mb-20" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20" />
 
-          <div className="z-10 flex flex-col items-center gap-2 text-center mt-2">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-              {isRest ? <span className="text-3xl">???</span> : <CheckCircle size={32} strokeWidth={2.5} />}
+          {/* Header */}
+          <div className="z-10 flex flex-col items-center gap-3 text-center mt-2">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-emerald-600/20 text-emerald-500 flex items-center justify-center mb-1 shadow-[0_0_30px_rgba(16,185,129,0.2)] border border-emerald-500/20 backdrop-blur-md transform rotate-3">
+              {isRest ? <span className="text-3xl transform -rotate-3">???</span> : <CheckCircle size={32} strokeWidth={2.5} className="transform -rotate-3" />}
             </div>
-            <h1 className="text-2xl font-black text-text tracking-tight uppercase">
-              {isRest ? 'Rest Day Logged' : 'Workout Complete'}
-            </h1>
-            <p className="text-primary font-bold text-sm tracking-widest uppercase">{data.routineName}</p>
+            <div>
+              <h1 className="text-2xl font-black text-text tracking-tight uppercase">
+                {isRest ? 'Rest Day Logged' : 'Workout Complete'}
+              </h1>
+              <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mt-1 opacity-80">{data.routineName}</p>
+            </div>
           </div>
 
-          <div className="z-10 flex w-full justify-around bg-surface-light/50 p-4 rounded-2xl border border-border/20 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-1">
-              <Clock size={16} className="text-textMuted" />
-              <span className="text-text font-bold font-mono">{formatTime(data.duration)}</span>
-              <span className="text-[10px] uppercase tracking-wider text-textMuted font-bold">Time</span>
+          {/* Stats Grid */}
+          <div className="z-10 grid grid-cols-3 gap-3 w-full mt-2">
+            <div className="flex flex-col items-center justify-center bg-surface-light/40 border border-border/30 rounded-2xl p-3 backdrop-blur-sm">
+              <Clock size={18} className="text-textMuted mb-1.5" />
+              <span className="text-text font-black font-mono text-lg leading-none">{formatTime(data.duration)}</span>
+              <span className="text-[9px] uppercase tracking-widest text-textMuted font-bold mt-1">Time</span>
             </div>
-            {!isRest && (
+            {!isRest ? (
               <>
-                <div className="w-px bg-border/50" />
-                <div className="flex flex-col items-center gap-1">
-                  <Flame size={16} className="text-amber-500" />
-                  <span className="text-text font-bold font-mono">{totalSets}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-textMuted font-bold">Sets</span>
+                <div className="flex flex-col items-center justify-center bg-surface-light/40 border border-border/30 rounded-2xl p-3 backdrop-blur-sm">
+                  <Flame size={18} className="text-amber-500 mb-1.5" />
+                  <span className="text-text font-black font-mono text-lg leading-none">{totalSets}</span>
+                  <span className="text-[9px] uppercase tracking-widest text-textMuted font-bold mt-1">Sets</span>
                 </div>
-                <div className="w-px bg-border/50" />
-                <div className="flex flex-col items-center gap-1">
-                  <Weight size={16} className="text-primary" />
-                  <span className="text-text font-bold font-mono">{convertWeight(totalVolume, data.unitSaved, unit)}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-textMuted font-bold">Volume</span>
+                <div className="flex flex-col items-center justify-center bg-surface-light/40 border border-border/30 rounded-2xl p-3 backdrop-blur-sm">
+                  <Weight size={18} className="text-primary mb-1.5" />
+                  <span className="text-text font-black font-mono text-lg leading-none truncate w-full text-center">{convertWeight(totalVolume, data.unitSaved, unit)}</span>
+                  <span className="text-[9px] uppercase tracking-widest text-textMuted font-bold mt-1">Volume</span>
                 </div>
               </>
+            ) : (
+               <div className="col-span-2 flex flex-col items-center justify-center bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 backdrop-blur-sm text-emerald-500">
+                  <span className="font-black text-sm uppercase tracking-wider">Active Recovery</span>
+               </div>
             )}
           </div>
 
+          {/* Exercises List */}
           {!isRest && (
-            <div className="z-10 w-full flex flex-col gap-2">
-              <h3 className="text-xs uppercase tracking-widest text-textMuted font-bold text-left mb-1">Exercises</h3>
+            <div className="z-10 w-full flex flex-col gap-2 mt-2">
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-textMuted font-bold text-left mb-1 px-1">Exercises Performed</h3>
               {exercises.map(ex => {
-                const exSets = ex.sets ? ex.sets.filter(s => s.completed && s.type !== 'Warmup').length : 0;
+                let exSets = ex.sets ? ex.sets.filter(s => s.completedAt && s.type !== 'Warmup').length : 0;
+                if (forgotToCheck) {
+                   exSets = ex.sets ? ex.sets.filter(s => s.type !== 'Warmup').length : 0;
+                }
                 if (exSets === 0) return null;
                 return (
-                  <div key={ex.id} className="flex justify-between items-center bg-surface-light/30 px-3 py-2 rounded-xl text-sm border border-border/10">
-                    <span className="font-semibold text-text truncate max-w-[70%] capitalize">{ex.name}</span>
-                    <span className="text-primary font-bold text-xs">{exSets} Sets</span>
+                  <div key={ex.id} className="flex justify-between items-center bg-surface-light/20 px-4 py-3 rounded-2xl text-sm border border-border/5">
+                    <span className="font-bold text-text/90 truncate max-w-[75%] capitalize">{ex.name}</span>
+                    <span className="text-primary/90 font-black text-xs bg-primary/10 px-2 py-1 rounded-md">{exSets} Sets</span>
                   </div>
                 );
               })}
             </div>
           )}
 
-          <div className="z-10 w-full pt-4 border-t border-border/30 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Dumbbell size={16} className="text-textMuted" />
-              <span className="font-black tracking-tighter text-textMuted uppercase text-sm">TrackIt</span>
+          {/* Footer watermark */}
+          <div className="z-10 w-full pt-4 mt-2 border-t border-border/20 flex justify-between items-center">
+            <div className="flex items-center gap-1.5 opacity-60">
+              <Dumbbell size={14} className="text-text" />
+              <span className="font-black tracking-tighter text-text uppercase text-xs">TrackIt</span>
             </div>
-            <span className="text-xs text-textMuted font-bold">{new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span className="text-[10px] text-textMuted font-bold uppercase tracking-wider">{new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         </div>
 
-        <div className="flex gap-4 w-full">
+        {/* Action Buttons (Not shared in the image) */}
+        <div className="flex gap-3 w-full mt-2">
           <button
             onClick={onClose}
-            className="flex-1 bg-surface-light hover:bg-surface border border-border/30 text-text font-bold py-3.5 rounded-2xl transition-colors active:scale-95 text-sm"
+            className="flex-1 bg-surface hover:bg-surface-light border border-border/50 text-text font-bold py-3.5 rounded-2xl transition-colors active:scale-95 text-sm"
           >
             Close
           </button>
           <button
             onClick={handleShare}
-            className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3.5 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95 text-sm flex items-center justify-center gap-2"
+            className="flex-[2] bg-primary hover:bg-primary-light text-white font-black py-3.5 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95 text-sm flex items-center justify-center gap-2 uppercase tracking-wide"
           >
             <Share2 size={16} /> Share Card
           </button>
