@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Clock, Weight, Flame, X, Share2, Dumbbell } from 'lucide-react';
 import { convertWeight } from '../../utils/calculations';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -32,12 +32,10 @@ export default function WorkoutSummary({ data, onClose, unit }) {
   const handleShare = async () => {
     if (!cardRef.current) return;
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      const image = await toPng(cardRef.current, {
         backgroundColor: '#0a0a0a',
-        scale: 2,
-        useCORS: true
+        pixelRatio: 2
       });
-      const image = canvas.toDataURL('image/png');
       
       // If mobile with Web Share API
       if (navigator.share) {

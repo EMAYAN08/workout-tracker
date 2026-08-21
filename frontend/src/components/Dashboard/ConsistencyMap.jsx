@@ -3,7 +3,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { parseISO, startOfDay, format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subMonths, isAfter } from 'date-fns';
 import { ChevronLeft, ChevronRight, Target, Flame, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 // Helper to get month grid (columns of weeks, rows of days Mon-Sun)
 const generateMonthGrid = (date, countsMap) => {
@@ -189,11 +189,10 @@ export default function ConsistencyMap({ onMapClick }) {
   const handleShare = async () => {
     if (!mapRef.current) return;
     try {
-      const canvas = await html2canvas(mapRef.current, {
+      const image = await toPng(mapRef.current, {
         backgroundColor: '#0a0a0a',
-        scale: 2
+        pixelRatio: 2
       });
-      const image = canvas.toDataURL('image/png');
       
       if (navigator.share) {
         const blob = await (await fetch(image)).blob();
