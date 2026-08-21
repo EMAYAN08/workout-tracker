@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useWorkout } from './context/WorkoutContext';
 import ActiveWorkout from './components/WorkoutFlow/ActiveWorkout';
+import WorkoutSummary from './components/WorkoutFlow/WorkoutSummary';
 import Login from './components/Auth/Login';
 const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
 const CustomExercises = React.lazy(() => import('./components/CustomExercises/CustomExercises'));
@@ -11,7 +12,7 @@ const CalendarView = React.lazy(() => import('./components/Calendar/CalendarView
 const WorkoutDetailView = React.lazy(() => import('./components/Calendar/WorkoutDetailView'));
 
 export default function AppContent() {
-  const { username, login, activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit } = useWorkout();
+  const { username, login, activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit, completedWorkout, setCompletedWorkout } = useWorkout();
 
   if (!username) {
     return <Login onLogin={login} />;
@@ -142,6 +143,13 @@ export default function AppContent() {
             </div>
           )}
         </div>
+
+        {/* Workout Summary Overlay */}
+        <AnimatePresence>
+          {completedWorkout && (
+            <WorkoutSummary data={completedWorkout} onClose={() => setCompletedWorkout(null)} unit={unit} />
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Main Content Area */}

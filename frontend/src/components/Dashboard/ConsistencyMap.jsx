@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { parseISO, startOfDay, format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subMonths, isAfter } from 'date-fns';
-import { ChevronLeft, ChevronRight, Target, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Target, Flame, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import html2canvas from 'html2canvas';
 
 // Helper to get month grid (columns of weeks, rows of days Mon-Sun)
 const generateMonthGrid = (date, countsMap) => {
@@ -45,9 +46,12 @@ const generateMonthGrid = (date, countsMap) => {
 
 export default function ConsistencyMap({ onMapClick }) {
   const { workoutHistory } = useWorkout();
+  const mapRef = useRef(null);
   
   // 0 = current 2 months, 1 = previous 2 months, etc.
   const [chunkOffset, setChunkOffset] = useState(0);
+
+
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -182,9 +186,38 @@ export default function ConsistencyMap({ onMapClick }) {
     ? 'bg-red-500/15 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)] text-red-500'
     : 'bg-amber-500/15 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)] text-amber-500';
 
+  const handleShare = async () => {
+    if (!mapRef.current) return;
+    try {
+      const canvas = await html2canvas(mapRef.current, {
+        backgroundColor: '#0a0a0a',
+        scale: 2
+      });
+      const image = canvas.toDataURL('image/png');
+      
+      if (navigator.share) {
+        const blob = await (await fetch(image)).blob();
+        const file = new File([blob], 'consistency.png', { type: 'image/png' });
+        await navigator.share({
+          title: 'My TrackIt Consistency',
+          text: 'Check out my workout consistency on TrackIt!',
+          files: [file]
+        });
+      } else {
+        const link = document.createElement('a');
+        link.download = `trackit-consistency-${Date.now()}.png`;
+        link.href = image;
+        link.click();
+      }
+    } catch (err) {
+      console.error('Failed to share:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 mt-4 w-full">
       <div 
+        ref={mapRef}
         className="panel p-5 overflow-hidden w-full flex flex-col gap-5 relative cursor-pointer hover:border-primary/50 transition-colors group"
         onClick={onMapClick}
       >
@@ -192,10 +225,19 @@ export default function ConsistencyMap({ onMapClick }) {
       {/* Header - Using items-start to keep nav on top right on mobile */}
       <div className="flex justify-between items-start w-full gap-2">
         <div className="flex flex-col gap-1.5">
-          <h2 className="text-text font-black text-lg sm:text-xl tracking-tight whitespace-nowrap flex items-center gap-2">
-            <Target size={20} className="text-primary" />
-            Consistency Map
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-text font-black text-lg sm:text-xl tracking-tight whitespace-nowrap flex items-center gap-2">
+              <Target size={20} className="text-primary" />
+              Consistency Map
+            </h2>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleShare(); }}
+              className="p-1.5 text-textMuted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors ml-2"
+              title="Share Map"
+            >
+              <Share2 size={16} />
+            </button>
+          </div>
           
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border backdrop-blur-sm ${trendClasses}`}>

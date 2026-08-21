@@ -45,6 +45,7 @@ export function WorkoutProvider({ children }) {
     const saved = localStorage.getItem('workout_active');
     return saved ? JSON.parse(saved) : null;
   });
+  const [completedWorkout, setCompletedWorkout] = useState(null);
 
   // Global Timer
   const [workoutDuration, setWorkoutDuration] = useState(() => {
@@ -395,13 +396,15 @@ export function WorkoutProvider({ children }) {
         }
         
         await fetchHistory();
-    } catch (e) {
-      console.error("Failed to save workout", e);
-    }
-    
-    setActiveWorkout(null);
-    setWorkoutDuration(0);
-    setRestEndTime(null);
+        setCompletedWorkout(payload);
+      } catch (e) {
+        console.error("Failed to save workout", e);
+      }
+      
+      setActiveWorkout(null);
+      setWorkoutDuration(0);
+      setRestEndTime(null);
+      localStorage.removeItem('workout_active');
   };
 
   const cancelWorkout = async () => {
@@ -581,7 +584,8 @@ export function WorkoutProvider({ children }) {
       workoutHistory,
       customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise,
       routines, createRoutine, updateRoutine, deleteRoutine,
-      getStreaks
+      getStreaks,
+      completedWorkout, setCompletedWorkout
     }}>
       {children}
     </WorkoutContext.Provider>
