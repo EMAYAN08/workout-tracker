@@ -79,7 +79,7 @@ export default function ConsistencyMap({ onMapClick }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const { displayMonths, monthPairs, activeDaysInChunk, totalValidDaysInChunk, yearLabel } = useMemo(() => {
+  const { displayMonths, monthPairs, activeDaysInChunk, score, previousScore, yearLabel } = useMemo(() => {
     const now = startOfDay(new Date());
     
     const pairs = [];
@@ -95,22 +95,29 @@ export default function ConsistencyMap({ onMapClick }) {
     }
 
     const activePair = pairs[chunkOffset] || pairs[0];
+    const prevPair = pairs[chunkOffset + 1];
     
     let activeDays = 0;
     let validDays = 0;
+    
+    let prevActiveDays = 0;
+    let prevValidDays = 0;
 
     const generatedMonths = activePair.dates.map(date => {
       const grid = generateMonthGrid(date, countsMap);
       
-      // Calculate active days & valid days (past/present days) for the score
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
       const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
       
       days.forEach(d => {
         if (!isAfter(d, now)) {
-          validDays++;
-          if (countsMap.get(d.getTime()) > 0) {
+          const data = countsMap.get(d.getTime());
+          const isRestOnly = data && data.hasRestDay && !data.hasRealWorkout;
+          if (!isRestOnly) {
+            validDays++;
+          }
+          if (data && data.hasRealWorkout) {
             activeDays++;
           }
         }
@@ -122,13 +129,36 @@ export default function ConsistencyMap({ onMapClick }) {
       };
     });
     
+    if (prevPair) {
+      prevPair.dates.forEach(date => {
+        const monthStart = startOfMonth(date);
+        const monthEnd = endOfMonth(date);
+        const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+        days.forEach(d => {
+          if (!isAfter(d, now)) {
+            const data = countsMap.get(d.getTime());
+            const isRestOnly = data && data.hasRestDay && !data.hasRealWorkout;
+            if (!isRestOnly) {
+              prevValidDays++;
+            }
+            if (data && data.hasRealWorkout) {
+              prevActiveDays++;
+            }
+          }
+        });
+      });
+    }
+    
     const yearLabel = format(activePair.dates[activePair.dates.length - 1], 'yyyy');
+    
+    const calcScore = (act, val) => Math.min(Math.round((act / (val || 1)) * 100), 100);
 
     return {
       displayMonths: generatedMonths,
       monthPairs: pairs,
       activeDaysInChunk: activeDays,
-      totalValidDaysInChunk: validDays || 1, // avoid division by zero
+      score: calcScore(activeDays, validDays),
+      previousScore: prevPair ? calcScore(prevActiveDays, prevValidDays) : calcScore(activeDays, validDays),
       yearLabel
     };
   }, [countsMap, chunkOffset, monthsToShow]);
@@ -140,9 +170,17 @@ export default function ConsistencyMap({ onMapClick }) {
     }
   }, [monthsToShow, chunkOffset, monthPairs.length]);
 
-  const score = Math.min(Math.round((activeDaysInChunk / totalValidDaysInChunk) * 100), 100);
-
   const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  let trendColor = 'amber';
+  if (score > previousScore) trendColor = 'emerald';
+  else if (score < previousScore) trendColor = 'red';
+
+  const trendClasses = trendColor === 'emerald' 
+    ? 'bg-emerald-500/15 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)] text-emerald-500' 
+    : trendColor === 'red'
+    ? 'bg-red-500/15 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)] text-red-500'
+    : 'bg-amber-500/15 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)] text-amber-500';
 
   return (
     <div className="flex flex-col gap-4 mt-4 w-full">
@@ -160,9 +198,9 @@ export default function ConsistencyMap({ onMapClick }) {
           </h2>
           
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/30 backdrop-blur-sm shadow-[0_0_10px_rgba(245,158,11,0.2)]">
-              <Flame size={14} className="text-amber-500" />
-              <span className="text-amber-500 font-bold text-[11px] uppercase tracking-wide">Score: {score}%</span>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border backdrop-blur-sm ${trendClasses}`}>
+              <Flame size={14} className="currentColor" />
+              <span className="font-bold text-[11px] uppercase tracking-wide">Score: {score}%</span>
             </div>
             <span className="text-textMuted text-xs font-semibold">{activeDaysInChunk} Days</span>
           </div>
