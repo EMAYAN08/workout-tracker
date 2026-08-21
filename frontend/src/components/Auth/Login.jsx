@@ -58,14 +58,17 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-[100dvh] w-full bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
-      <div className="absolute top-4 right-4 z-50">
+      <div 
+        className="absolute right-4 sm:right-6 z-50"
+        style={{ top: 'max(1.5rem, calc(env(safe-area-inset-top, 2rem) + 0.5rem))' }}
+      >
         <button
           type="button"
           onClick={handleRefresh}
-          className="p-2 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
+          className="p-2.5 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
           title="Refresh App"
         >
-          <RefreshCw size={18} />
+          <RefreshCw size={20} />
         </button>
       </div>
 
