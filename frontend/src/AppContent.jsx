@@ -34,10 +34,12 @@ export default function AppContent() {
 
   const handleScroll = (e) => {
     const currentScrollY = e.target.scrollTop;
-    if (currentScrollY > lastScrollY.current + 15) {
+    
+    // Shrink nav bar on any significant scroll (up or down)
+    if (Math.abs(currentScrollY - lastScrollY.current) > 15) {
       setIsNavVisible(false);
     }
-    if (currentScrollY < 20) setIsNavVisible(true);
+    
     lastScrollY.current = currentScrollY;
   };
 
@@ -230,25 +232,24 @@ export default function AppContent() {
         </AnimatePresence>        </React.Suspense>
       </main>
 
-      {/* Floating Pill Navigation */}
-      {!activeWorkout && (
-        <motion.div 
-          layout
-          initial={false}
-          animate={{ 
-            width: isNavVisible ? '92%' : '56px',
-            height: isNavVisible ? '72px' : '56px',
-            left: isNavVisible ? '50%' : '100%',
-            x: isNavVisible ? '-50%' : 'calc(-100% - 16px)',
-            y: 0,
-            opacity: 1
-          }}
-          transition={{ duration: 0.4, type: "spring", bounce: 0.25 }}
-          className="fixed z-50 max-w-sm rounded-full backdrop-blur-2xl backdrop-saturate-150 bg-surface/50 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex items-center justify-center origin-center"
-          style={{ 
-             bottom: 'max(16px, env(safe-area-inset-bottom))'
-          }}
-        >
+        {/* Floating Pill Navigation */}
+        {!activeWorkout && (
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+            style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+          >
+            <div className="w-full max-w-sm px-4 flex justify-start">
+              <motion.div 
+                layout
+                initial={false}
+                animate={{ 
+                  width: isNavVisible ? '100%' : '56px',
+                  height: isNavVisible ? '72px' : '56px',
+                  opacity: 1
+                }}
+                transition={{ duration: 0.4, type: "spring", bounce: 0.25 }}
+                className="pointer-events-auto rounded-full backdrop-blur-2xl backdrop-saturate-150 bg-surface/50 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex items-center justify-center origin-left"
+              >
           <AnimatePresence mode="wait">
             {isNavVisible ? (
               <motion.div 
@@ -303,6 +304,8 @@ export default function AppContent() {
             )}
           </AnimatePresence>
         </motion.div>
+        </div>
+      </div>
       )}
     </div>
   );
