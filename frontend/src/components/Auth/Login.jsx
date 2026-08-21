@@ -10,15 +10,19 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = (e) => {
+    e.preventDefault();
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
           registration.unregister();
         }
+      }).finally(() => {
+        window.location.href = window.location.pathname;
       });
+    } else {
+      window.location.href = window.location.pathname;
     }
-    window.location.reload(true);
   };
 
 
@@ -56,6 +60,7 @@ export default function Login({ onLogin }) {
       
       <div className="absolute top-4 right-4 z-50">
         <button
+          type="button"
           onClick={handleRefresh}
           className="p-2 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
           title="Refresh App"
