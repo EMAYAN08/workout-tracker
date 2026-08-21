@@ -16,6 +16,7 @@ const ExerciseSchema = new mongoose.Schema({
 }, { _id: false });
 
 const WorkoutSchema = new mongoose.Schema({
+  username: { type: String, required: true },
   id: { type: String, required: true, unique: true },
   timestamp: { type: Date, default: Date.now },
   endTime: { type: Date, default: null },

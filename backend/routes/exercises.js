@@ -6,7 +6,7 @@ const CustomExercise = require('../models/CustomExercise');
 // Get all custom exercises
 router.get('/custom', async (req, res) => {
   try {
-    const exercises = await CustomExercise.find();
+    const exercises = await CustomExercise.find({ username: req.query.username });
     res.json(exercises);
   } catch (error) {
     console.error(error);
@@ -23,7 +23,8 @@ router.post('/custom', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const newExercise = new CustomExercise({ 
+    const newExercise = new CustomExercise({
+      username: req.body.username, 
       id, name, muscleGroup, gifUrl, unitSaved: unitSaved || 'lbs', defaultSets: defaultSets || [] 
     });
     await newExercise.save();
@@ -103,7 +104,7 @@ router.get('/search', async (req, res) => {
   
   let customMatches = [];
   try {
-    const customExercises = await CustomExercise.find();
+    const customExercises = await CustomExercise.find({ username: req.query.username });
     customMatches = customExercises.filter(ex => ex.name.toLowerCase().includes(lowerQuery));
   } catch (error) {
     console.error(error);

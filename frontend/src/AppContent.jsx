@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useWorkout } from './context/WorkoutContext';
 import ActiveWorkout from './components/WorkoutFlow/ActiveWorkout';
+import Login from './components/Auth/Login';
 const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
 const CustomExercises = React.lazy(() => import('./components/CustomExercises/CustomExercises'));
 const RoutinesMain = React.lazy(() => import('./components/Routines/RoutinesMain'));
@@ -10,7 +11,11 @@ const CalendarView = React.lazy(() => import('./components/Calendar/CalendarView
 const WorkoutDetailView = React.lazy(() => import('./components/Calendar/WorkoutDetailView'));
 
 export default function AppContent() {
-  const { activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit } = useWorkout();
+  const { username, login, activeWorkout, startWorkout, finishWorkout, cancelWorkout, unit, toggleUnit } = useWorkout();
+
+  if (!username) {
+    return <Login onLogin={login} />;
+  }
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);

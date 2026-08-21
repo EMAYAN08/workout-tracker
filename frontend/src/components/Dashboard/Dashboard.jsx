@@ -156,7 +156,7 @@ const CustomDropdown = ({ options, value, onChange, searchable = false }) => {
 };
 
 export default function Dashboard({ onMapClick }) {
-  const { workoutHistory, unit, getStreaks } = useWorkout();
+  const { username, logout, workoutHistory, unit, getStreaks } = useWorkout();
   const { current, best } = getStreaks();
   const [activeInfoCard, setActiveInfoCard] = useState(null);
   
@@ -247,9 +247,17 @@ export default function Dashboard({ onMapClick }) {
     <div className="flex flex-col gap-5 w-full pb-8">
       
       {/* Profile Header */}
-      <div className="flex flex-col gap-1 px-2 pt-2">
-        <h1 className="text-3xl font-black text-text tracking-tight">Hey User 👋</h1>
-        <p className="text-textMuted font-semibold text-sm">Here are your lifetime stats</p>
+      <div className="flex justify-between items-start px-2 pt-2">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-black text-text tracking-tight capitalize">Hey {username || 'User'} 👋</h1>
+          <p className="text-textMuted font-semibold text-sm">Here are your lifetime stats</p>
+        </div>
+        <button 
+          onClick={logout}
+          className="bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition-transform"
+        >
+          Logout
+        </button>
       </div>
 
       {/* Lifetime Stats Overview - 2x2 Grid */}

@@ -5,7 +5,7 @@ const Workout = require('../models/Workout');
 // Get all workouts
 router.get('/', async (req, res) => {
   try {
-    const workouts = await Workout.find().sort({ timestamp: -1 });
+    const workouts = await Workout.find({ username: req.query.username }).sort({ timestamp: -1 });
     res.json(workouts);
   } catch (error) {
     console.error(error);

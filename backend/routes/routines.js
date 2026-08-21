@@ -5,7 +5,7 @@ const Routine = require('../models/Routine');
 // Get all routines
 router.get('/', async (req, res) => {
   try {
-    const routines = await Routine.find();
+    const routines = await Routine.find({ username: req.query.username });
     res.json(routines);
   } catch (error) {
     console.error(error);
@@ -41,7 +41,7 @@ router.put('/:id', async (req, res) => {
     const routineData = req.body;
 
     const updatedRoutine = await Routine.findOneAndUpdate(
-      { id: routineId },
+      { id: routineId, username: req.query.username || req.body.username },
       { $set: routineData },
       { new: true }
     );
@@ -62,7 +62,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const routineId = req.params.id;
     
-    const deletedRoutine = await Routine.findOneAndDelete({ id: routineId });
+    const deletedRoutine = await Routine.findOneAndDelete({ id: routineId, username: req.query.username || req.body.username });
     if (!deletedRoutine) {
       return res.status(404).json({ error: 'Routine not found' });
     }

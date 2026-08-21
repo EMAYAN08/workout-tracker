@@ -7,6 +7,32 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const WorkoutContext = createContext();
 
 export function WorkoutProvider({ children }) {
+  const [username, setUsername] = useState(() => localStorage.getItem('workout_username') || null);
+
+  const login = (user) => {
+    localStorage.setItem('workout_username', user);
+    setUsername(user);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('workout_username');
+    setUsername(null);
+  };
+
+  const apiFetch = async (endpoint, options = {}) => {
+    const user = username || localStorage.getItem('workout_username');
+    const url = new URL(API_URL + endpoint);
+    if (user) url.searchParams.append('username', user);
+    
+    if (options.body && typeof options.body === 'string') {
+       const bodyObj = JSON.parse(options.body);
+       if (user) bodyObj.username = user;
+       options.body = JSON.stringify(bodyObj);
+    }
+    
+    return fetch(url.toString(), options);
+  };
+
   const pushTaskIdRef = useRef(null);
 
   // Global preferences
@@ -44,7 +70,7 @@ export function WorkoutProvider({ children }) {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/workouts`);
+      const res = await apiFetch(`/api/workouts`);
       const data = await res.json();
       setWorkoutHistory(data);
     } catch (err) {
@@ -54,7 +80,7 @@ export function WorkoutProvider({ children }) {
 
   const fetchCustomExercises = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/exercises/custom`);
+      const res = await apiFetch(`/api/exercises/custom`);
       const data = await res.json();
       setCustomExercises(data);
     } catch (err) {
@@ -64,7 +90,7 @@ export function WorkoutProvider({ children }) {
 
   const fetchRoutines = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/routines`);
+      const res = await apiFetch(`/api/routines`);
       const data = await res.json();
       setRoutines(data);
     } catch (err) {
@@ -78,7 +104,7 @@ export function WorkoutProvider({ children }) {
       const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
       const payload = { id: tempId, name, muscleGroup, defaultSets, unitSaved: unit };
 
-      const res = await fetch(`${API_URL}/api/exercises/custom`, {
+      const res = await apiFetch(`/api/exercises/custom`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -94,7 +120,7 @@ export function WorkoutProvider({ children }) {
 
   const deleteCustomExercise = async (id) => {
     try {
-      await fetch(`${API_URL}/api/exercises/custom/${id}`, {
+      await apiFetch(`/api/exercises/custom/${id}`, {
         method: 'DELETE'
       });
       setCustomExercises(prev => prev.filter(ex => ex.id !== id));
@@ -111,7 +137,7 @@ export function WorkoutProvider({ children }) {
 
   const updateCustomExercise = async (id, payload) => {
     try {
-      const res = await fetch(`${API_URL}/api/exercises/custom/${id}`, {
+      const res = await apiFetch(`/api/exercises/custom/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -138,7 +164,7 @@ export function WorkoutProvider({ children }) {
 
   const createRoutine = async (routineData) => {
     try {
-      const res = await fetch(`${API_URL}/api/routines`, {
+      const res = await apiFetch(`/api/routines`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(routineData)
@@ -155,7 +181,7 @@ export function WorkoutProvider({ children }) {
 
   const deleteRoutine = async (id) => {
     try {
-      await fetch(`${API_URL}/api/routines/${id}`, {
+      await apiFetch(`/api/routines/${id}`, {
         method: 'DELETE'
       });
       setRoutines(prev => prev.filter(r => r.id !== id));
@@ -166,7 +192,7 @@ export function WorkoutProvider({ children }) {
 
   const updateRoutine = async (id, routineData) => {
     try {
-      const res = await fetch(`${API_URL}/api/routines/${id}`, {
+      const res = await apiFetch(`/api/routines/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(routineData)
@@ -326,7 +352,7 @@ export function WorkoutProvider({ children }) {
   const cancelPushNotification = async () => {
     if (pushTaskIdRef.current) {
       try {
-        await fetch(`${API_URL}/api/push/cancel`, {
+        await apiFetch(`/api/push/cancel`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ taskId: pushTaskIdRef.current })
@@ -356,7 +382,7 @@ export function WorkoutProvider({ children }) {
         unitSaved: unit
       };
       
-      await fetch(`${API_URL}/api/workouts`, {
+      await apiFetch(`/api/workouts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -447,7 +473,7 @@ export function WorkoutProvider({ children }) {
       const subscription = await subscribeToPush();
       if (subscription) {
         try {
-          const pushRes = await fetch(`${API_URL}/api/push/schedule`, {
+          const pushRes = await apiFetch(`/api/push/schedule`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ subscription, delaySeconds })
@@ -540,7 +566,7 @@ export function WorkoutProvider({ children }) {
 
   return (
     <WorkoutContext.Provider value={{
-      unit, toggleUnit,
+      username, login, logout, unit, toggleUnit,
       activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
       addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
       workoutDuration,
