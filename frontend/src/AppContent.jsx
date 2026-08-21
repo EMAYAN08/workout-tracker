@@ -64,10 +64,10 @@ export default function AppContent() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] relative selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
+    <div className="h-[100dvh] w-full bg-background flex flex-col relative selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
       
       {/* Premium Solid Header */}
-      <header className="app-header fixed top-0 w-full z-50 p-4 pt-safe flex justify-between items-center min-h-16">
+      <header className="app-header flex-shrink-0 z-40 p-4 pt-safe flex justify-between items-center min-h-16 relative">
         <button 
           onClick={() => navigateTab('home')}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95"
@@ -135,7 +135,7 @@ export default function AppContent() {
 
       {/* Main Content Area */}
       <main 
-        className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden pt-20"
+        className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden pb-[calc(6rem+env(safe-area-inset-bottom))] relative"
         onScroll={handleScroll}
       >
         <React.Suspense fallback={<div className="flex h-full items-center justify-center"><div className="animate-spin w-8 h-8 rounded-full border-4 border-primary border-t-transparent"></div></div>}>          <AnimatePresence mode="wait" custom={direction}>
