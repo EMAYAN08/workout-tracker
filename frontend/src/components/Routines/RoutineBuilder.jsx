@@ -5,9 +5,10 @@ import { Search, Plus, Save, X, Dumbbell, Trash2, ChevronDown, ChevronUp, ArrowU
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
-  const { createRoutine, updateRoutine, createCustomExercise, unit } = useWorkout();
+  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, unit } = useWorkout();
 
   const [name, setName] = useState(initialRoutine?.name || '');
+  const [newCustomExIds, setNewCustomExIds] = useState([]);
   const [exercises, setExercises] = useState(() => {
     if (!initialRoutine?.exercises) return [];
     return initialRoutine.exercises.map(ex => ({
@@ -108,6 +109,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     const newEx = await createCustomExercise(searchQuery, newMuscleGroup);
     if (newEx) {
       handleAddExercise(newEx);
+      setNewCustomExIds(prev => [...prev, newEx.id]);
     }
     setIsCreatingCustom(false);
   };
@@ -147,6 +149,13 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
       await updateRoutine(initialRoutine.id, routineData);
     } else {
       await createRoutine(routineData);
+    }
+    
+    // Sync newly created custom exercises' default sets with the defined routine sets
+    for (const ex of exercises) {
+      if (newCustomExIds.includes(ex.id)) {
+        await updateCustomExercise(ex.id, { defaultSets: ex.defaultSets });
+      }
     }
     
     onSaveSuccess();

@@ -64,6 +64,7 @@ export function WorkoutProvider({ children }) {
   
   // Custom Exercises
   const [customExercises, setCustomExercises] = useState([]);
+  const newlyCreatedCustomExIds = useRef([]);
 
   // Routines
   const [routines, setRoutines] = useState([]);
@@ -112,6 +113,7 @@ export function WorkoutProvider({ children }) {
       });
       const newEx = await res.json();
       setCustomExercises(prev => [...prev, newEx]);
+      newlyCreatedCustomExIds.current.push(newEx.id);
       return newEx;
     } catch (err) {
       console.error("Failed to create custom exercise", err);
@@ -375,13 +377,24 @@ export function WorkoutProvider({ children }) {
         duration: workoutDuration,
         unitSaved: unit
       };
-      
-      await apiFetch(`/api/workouts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      await fetchHistory();
+            await apiFetch(`/api/workouts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        // Sync newly created custom exercises' default sets with what was actually performed
+        for (const ex of activeWorkout.exercises) {
+          if (newlyCreatedCustomExIds.current.includes(ex.id)) {
+            // Map the active workout 'sets' to 'defaultSets' for the custom exercise template
+            const mappedSets = ex.sets.map(s => ({ reps: s.reps, weight: s.weight, type: s.type || 'Working' }));
+            if (mappedSets.length > 0) {
+              await updateCustomExercise(ex.id, { defaultSets: mappedSets });
+            }
+          }
+        }
+        
+        await fetchHistory();
     } catch (e) {
       console.error("Failed to save workout", e);
     }
