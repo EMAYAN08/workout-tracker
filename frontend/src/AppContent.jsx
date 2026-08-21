@@ -91,19 +91,25 @@ export default function AppContent() {
         
             <button 
             onClick={toggleUnit}
-            className="relative flex items-center justify-between rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md transition-transform active:scale-95 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0"
-            style={{ width: '80px', height: '30px', padding: '2px' }}
+            className="relative rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md transition-transform active:scale-95 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0"
+            style={{ width: '80px', height: '30px' }}
           >
             {/* Sliding Liquid Glass Pill */}
             <div 
-              className={`absolute top-[2px] left-[2px] bottom-[2px] w-[36px] bg-gradient-to-tr from-primary to-primary-light rounded-full shadow-[0_0_12px_rgba(59,130,246,0.5)] transition-transform duration-300 ease-out`}
-              style={{ transform: unit === 'lbs' ? 'translateX(0px)' : 'translateX(40px)' }}
+              className={`absolute top-[2px] bottom-[2px] w-[36px] bg-gradient-to-tr from-primary to-primary-light rounded-full shadow-[0_0_12px_rgba(59,130,246,0.5)] transition-transform duration-300 ease-out`}
+              style={{ left: '2px', transform: unit === 'lbs' ? 'translateX(0px)' : 'translateX(40px)' }}
             />
             {/* Labels */}
-            <span className={`relative z-10 w-[36px] flex items-center justify-center text-[10px] tracking-widest font-black transition-colors duration-300 ${unit === 'lbs' ? 'text-white drop-shadow-md' : 'text-primary/70 hover:text-primary'}`}>
+            <span 
+              className={`absolute top-[2px] bottom-[2px] flex items-center justify-center text-[10px] tracking-widest font-black transition-colors duration-300 ${unit === 'lbs' ? 'text-white drop-shadow-md' : 'text-primary/70 hover:text-primary'}`}
+              style={{ left: '2px', width: '36px' }}
+            >
               LBS
             </span>
-            <span className={`relative z-10 w-[36px] flex items-center justify-center text-[10px] tracking-widest font-black transition-colors duration-300 ${unit === 'kgs' ? 'text-white drop-shadow-md' : 'text-primary/70 hover:text-primary'}`}>
+            <span 
+              className={`absolute top-[2px] bottom-[2px] flex items-center justify-center text-[10px] tracking-widest font-black transition-colors duration-300 ${unit === 'kgs' ? 'text-white drop-shadow-md' : 'text-primary/70 hover:text-primary'}`}
+              style={{ left: '42px', width: '36px' }}
+            >
               KGS
             </span>
           </button>
