@@ -17,9 +17,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
               <h4 className="font-bold text-text capitalize text-base leading-snug truncate mb-1">{ex.name}</h4>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-md bg-primary/15 text-primary text-[9px] font-black uppercase tracking-widest">{ex.muscleGroup}</span>
-                {ex.defaultSets && ex.defaultSets.length > 0 && (
-                  <span className="text-[10px] font-bold text-textMuted uppercase">{ex.defaultSets.length} Sets</span>
-                )}
+                <span className="text-[10px] font-bold text-textMuted uppercase">{(ex.defaultSets && ex.defaultSets.length > 0) ? ex.defaultSets.length : 1} Sets</span>
               </div>
             </div>
           </div>
@@ -43,7 +41,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
         
         {/* Expanded View */}
         <AnimatePresence>
-          {isExpanded && ex.defaultSets && ex.defaultSets.length > 0 && (
+          {isExpanded && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -53,11 +51,11 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
                <div className="pt-3 border-t border-border mt-1">
                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-2">Default Sets</h5>
                  <div className="flex flex-col gap-1.5">
-                   {ex.defaultSets.map((s, i) => (
+                   {(ex.defaultSets && ex.defaultSets.length > 0 ? ex.defaultSets : [{ reps: 10, weight: 0, type: 'Working' }]).map((s, i) => (
                      <div key={i} className="flex justify-between items-center text-sm font-mono bg-surface-light px-3 py-1.5 rounded-lg border border-border/50">
                        <span className="text-textMuted font-bold">Set {i+1}</span>
                        <span className="text-text font-bold">
-                         {convertWeight(s.weight, ex.unitSaved || 'lbs', unit)} <span className="text-xs text-textMuted uppercase">{unit}</span> - {s.reps} Reps
+                         {convertWeight(s.weight || 0, ex.unitSaved || 'lbs', unit)} <span className="text-xs text-textMuted uppercase">{unit}</span> - {s.reps || 10} Reps
                        </span>
                      </div>
                    ))}

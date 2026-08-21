@@ -100,9 +100,10 @@ export function WorkoutProvider({ children }) {
 
   const createCustomExercise = async (name, muscleGroup, defaultSets = []) => {
     try {
+      const setsToSave = defaultSets.length > 0 ? defaultSets : [{ reps: 10, weight: 0, type: 'Working' }];
       // Generate a client-side ID since the backend expects one
       const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
-      const payload = { id: tempId, name, muscleGroup, defaultSets, unitSaved: unit };
+      const payload = { id: tempId, name, muscleGroup, defaultSets: setsToSave, unitSaved: unit };
 
       const res = await apiFetch(`/api/exercises/custom`, {
         method: 'POST',
