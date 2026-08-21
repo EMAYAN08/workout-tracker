@@ -265,7 +265,7 @@ export default function Dashboard({ onMapClick }) {
         <StatCard
           icon={Activity}
           title="Total Workouts"
-          value={workoutHistory.length}
+          value={workoutHistory.filter(w => w.exercises && w.exercises.length > 0).length}
           colorClass={{ bg: 'bg-primary/5', iconBg: 'bg-primary/20', text: 'text-primary' }}
           description="The total number of workout sessions you've logged."
           isActive={activeInfoCard === "Total Workouts"}

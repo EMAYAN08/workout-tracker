@@ -137,7 +137,7 @@ export default function AppContent() {
                   className="bg-primary/10 border border-primary/30 hover:bg-primary/20 hover:border-primary/50 backdrop-blur-md shadow-[0_0_12px_rgba(59,130,246,0.15)] text-primary px-3 sm:px-5 py-1.5 rounded-md font-bold text-xs sm:text-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 sm:gap-2"
                 >
                   {isFinishing ? <span className="animate-spin h-3 w-3 sm:h-4 sm:w-4 border-2 border-primary border-t-transparent rounded-full" /> : null}
-                  {isFinishing ? 'Finishing...' : 'Finish'}
+                  {isFinishing ? 'Finishing...' : (activeWorkout.exercises.length === 0 ? 'Log Rest Day' : 'Finish')}
                 </button>
             </div>
           )}

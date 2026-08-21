@@ -367,13 +367,6 @@ export function WorkoutProvider({ children }) {
   const finishWorkout = async () => { if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
     try {
       await cancelPushNotification();
-      
-      if (activeWorkout.exercises.length === 0) {
-        setActiveWorkout(null);
-        setWorkoutDuration(0);
-        setRestEndTime(null);
-        return;
-      }
 
       const payload = {
         ...activeWorkout,

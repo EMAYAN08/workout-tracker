@@ -117,29 +117,33 @@ export default function CalendarView({ onDayClick, onBack }) {
               const dateKey = format(day, 'yyyy-MM-dd');
               const dayWorkouts = workoutsMap[dateKey] || [];
               const hasWorkout = dayWorkouts.length > 0;
+              const isRestOnly = hasWorkout && dayWorkouts.every(w => w.exercises && w.exercises.length === 0);
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isDayToday = isToday(day);
               const isFuture = isAfter(day, new Date()) && !isDayToday;
 
               return (
                 <div key={i} className="flex justify-center">
-                    <motion.button
-                      whileHover={hasWorkout ? { scale: 1.05 } : {}}
-                      whileTap={hasWorkout ? { scale: 0.95 } : {}}
-                      onClick={() => { if (hasWorkout) onDayClick(dateKey); }}
-                      disabled={!hasWorkout}
-                      className={`
-                        relative w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center rounded-full font-bold transition-all
-                        ${!isCurrentMonth ? 'opacity-0 pointer-events-none' : ''}
-                        ${isDayToday ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-surface text-amber-500' : ''}
-                        ${hasWorkout ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)] cursor-pointer' : 'cursor-default'}
-                        ${!hasWorkout && isDayToday ? 'bg-surface-light' : ''}
-                        ${!hasWorkout && !isFuture && !isDayToday && isCurrentMonth ? 'text-textMuted hover:bg-surface-light' : ''}
-                        ${isFuture ? 'text-textMuted/20' : ''}
-                      `}
-                    >
-                      <span className="text-sm sm:text-base z-10">{format(day, 'd')}</span>
-                    </motion.button>
+                    <div className="relative">
+                      <motion.button
+                        whileHover={hasWorkout ? { scale: 1.05 } : {}}
+                        whileTap={hasWorkout ? { scale: 0.95 } : {}}
+                        onClick={() => { if (hasWorkout) onDayClick(dateKey); }}
+                        disabled={!hasWorkout}
+                        className={`
+                          relative w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center rounded-full font-bold transition-all
+                          ${!isCurrentMonth ? 'opacity-0 pointer-events-none' : ''}
+                          ${isDayToday ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-surface text-amber-500' : ''}
+                          ${hasWorkout && !isRestOnly ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)] cursor-pointer' : ''}
+                          ${hasWorkout && isRestOnly ? 'bg-primary/15 text-primary border border-primary/30 backdrop-blur-md shadow-[0_0_12px_rgba(59,130,246,0.15)] cursor-pointer' : ''}
+                          ${!hasWorkout && isDayToday ? 'bg-surface-light' : ''}
+                          ${!hasWorkout && !isFuture && !isDayToday && isCurrentMonth ? 'text-textMuted hover:bg-surface-light' : ''}
+                          ${isFuture ? 'text-textMuted/20' : ''}
+                        `}
+                      >
+                        <span className="text-sm sm:text-base z-10">{format(day, 'd')}</span>
+                      </motion.button>
+                    </div>
                   </div>
               );
             })}

@@ -139,7 +139,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   const handleSave = async () => {
     if (!name.trim()) return alert("Please enter a routine name.");
-    if (exercises.length === 0) return alert("Please add at least one exercise.");
+    // Allowed empty for rest days
 
     const routineData = { name, exercises };
     
@@ -186,6 +186,13 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
       </div>
 
       <div className="flex flex-col gap-3">
+        {exercises.length === 0 && (
+          <div className="panel p-4 bg-emerald-500/10 border-emerald-500/20 text-center">
+            <p className="text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
+              <span className="text-lg">🛋️</span> Saving with 0 exercises will create a Rest Day routine
+            </p>
+          </div>
+        )}
         {exercises.map((ex, exIdx) => {
           const isExpanded = expandedExerciseIndex === exIdx;
           return (

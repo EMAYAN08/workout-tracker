@@ -95,6 +95,19 @@ export default function ActiveWorkout() {
         <span className="font-mono text-primary font-bold">{formatTime(workoutDuration)}</span>
       </div>
 
+      {activeWorkout.exercises.length === 0 && (
+        <div className="mx-2 panel p-4 bg-emerald-500/10 border-emerald-500/20 text-center flex flex-col items-center justify-center gap-2 rounded-2xl shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/20 rounded-full blur-[40px] pointer-events-none" />
+          <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mb-1 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            <span className="text-2xl">🛋️</span>
+          </div>
+          <h3 className="text-emerald-400 font-black text-lg tracking-tight">Rest Day Logging</h3>
+          <p className="text-emerald-500/80 font-bold text-sm leading-snug max-w-[200px]">
+            Tap "Log Rest Day" above to record a recovery day.
+          </p>
+        </div>
+      )}
+
       {/* Exercises */}
       {activeWorkout.exercises.map((ex, idx) => {
         const prevPerformance = getPreviousPerformance(ex.id, workoutHistory, unit);

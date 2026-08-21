@@ -21,11 +21,12 @@ const generateMonthGrid = (date, countsMap) => {
     const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
     const timestamp = startOfDay(day).getTime();
-    const count = countsMap.get(timestamp) || 0;
+    const data = countsMap.get(timestamp) || { count: 0, hasRestDay: false, hasRealWorkout: false };
 
     currentWeek[adjustedDay] = {
       date: day,
-      hasWorkout: count > 0,
+      hasWorkout: data.count > 0,
+      isRestOnly: data.hasRestDay && !data.hasRealWorkout,
       isFuture: isAfter(day, today)
     };
 
@@ -52,7 +53,12 @@ export default function ConsistencyMap({ onMapClick }) {
     const map = new Map();
     workoutHistory.forEach(w => {
       const d = startOfDay(parseISO(w.timestamp)).getTime();
-      map.set(d, (map.get(d) || 0) + 1);
+      const existing = map.get(d) || { count: 0, hasRestDay: false, hasRealWorkout: false };
+      const isRest = w.exercises && w.exercises.length === 0;
+      if (isRest) existing.hasRestDay = true;
+      else existing.hasRealWorkout = true;
+      existing.count += 1;
+      map.set(d, existing);
     });
     return map;
   }, [workoutHistory]);
@@ -211,6 +217,7 @@ export default function ConsistencyMap({ onMapClick }) {
                         className={`w-4 h-4 rounded-[4px] transition-all duration-300 ${
                           !day ? 'bg-transparent' : 
                           day.isFuture ? 'bg-surface-light/30' :
+                          day.isRestOnly ? 'bg-emerald-500/80 shadow-sm shadow-emerald-500/20' :
                           day.hasWorkout ? 'bg-primary shadow-sm shadow-primary/40' : 'bg-surface-light hover:bg-surface-light/80'
                         }`}
                       />

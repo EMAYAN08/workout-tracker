@@ -103,7 +103,7 @@ export default function WorkoutDetailView({ date, onBack }) {
           >
             <div className="bg-surface-light p-4 border-b border-border flex justify-between items-center">
               <h3 className="font-bold text-text">
-                {workout.routineName || `Workout ${wIdx + 1}`}
+                {workout.exercises.length === 0 ? 'Rest Day' : (workout.routineName || `Workout ${wIdx + 1}`)}
               </h3>
               <span className="text-xs font-bold text-textMuted uppercase tracking-wider">
                 {workout.startTime ? format(new Date(workout.startTime), 'h:mm a') : 'Completed'}
@@ -111,7 +111,16 @@ export default function WorkoutDetailView({ date, onBack }) {
             </div>
             
             <div className="p-4 flex flex-col gap-6">
-              {workout.exercises.map((exercise, eIdx) => (
+              {workout.exercises.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 px-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 text-center gap-3">
+                  <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-1">
+                    <span className="text-3xl">🛋️</span>
+                  </div>
+                  <h4 className="text-emerald-400 font-bold text-lg">Active Recovery Logged</h4>
+                  <p className="text-sm text-textMuted max-w-[250px]">You took a well-deserved rest day to let your muscles recover and grow.</p>
+                </div>
+              ) : (
+                workout.exercises.map((exercise, eIdx) => (
                 <div key={exercise.id || eIdx} className="flex flex-col gap-3">
                   <div className="flex items-center gap-3">
                     <ExerciseImage src={exercise.gifUrl} alt={exercise.name} />
@@ -149,7 +158,7 @@ export default function WorkoutDetailView({ date, onBack }) {
                     </table>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </motion.div>
         ))}
