@@ -36,8 +36,6 @@ export default function AppContent() {
     const currentScrollY = e.target.scrollTop;
     if (currentScrollY > lastScrollY.current + 15) {
       setIsNavVisible(false);
-    } else if (currentScrollY < lastScrollY.current - 15) {
-      setIsNavVisible(true);
     }
     if (currentScrollY < 20) setIsNavVisible(true);
     lastScrollY.current = currentScrollY;
@@ -240,11 +238,13 @@ export default function AppContent() {
           animate={{ 
             width: isNavVisible ? '92%' : '56px',
             height: isNavVisible ? '72px' : '56px',
+            left: isNavVisible ? '50%' : '100%',
+            x: isNavVisible ? '-50%' : 'calc(-100% - 16px)',
             y: 0,
             opacity: 1
           }}
           transition={{ duration: 0.4, type: "spring", bounce: 0.25 }}
-          className="fixed left-1/2 -translate-x-1/2 z-50 max-w-sm rounded-full backdrop-blur-2xl backdrop-saturate-150 bg-surface/50 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex items-center justify-center origin-center"
+          className="fixed z-50 max-w-sm rounded-full backdrop-blur-2xl backdrop-saturate-150 bg-surface/50 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex items-center justify-center origin-center"
           style={{ 
              bottom: 'max(16px, env(safe-area-inset-bottom))'
           }}
