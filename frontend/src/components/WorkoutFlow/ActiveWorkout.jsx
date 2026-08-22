@@ -272,9 +272,9 @@ export default function ActiveWorkout() {
                         </button>
                         <button 
                           onClick={() => {
-                            if (set.weight && set.reps) completeSet(idx, sIdx);
+                            if (set.reps) completeSet(idx, sIdx);
                           }}
-                          className={`w-8 h-8 rounded flex items-center justify-center transition-colors shadow-sm ${set.weight && set.reps ? 'bg-surface hover:bg-primary hover:text-white text-textMuted' : 'bg-surface text-textMuted/30 cursor-not-allowed'}`}
+                          className={`w-8 h-8 rounded flex items-center justify-center transition-colors shadow-sm ${set.reps ? 'bg-surface hover:bg-primary hover:text-white text-textMuted' : 'bg-surface text-textMuted/30 cursor-not-allowed'}`}
                         >
                           <Check size={18} strokeWidth={3} />
                         </button>

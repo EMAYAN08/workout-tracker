@@ -244,9 +244,11 @@ export function WorkoutProvider({ children }) {
   // Timers
   useEffect(() => {
     let interval;
-    if (activeWorkout) {
+    if (activeWorkout && activeWorkout.startTime) {
+      // Initialize it immediately in case of refresh
+      setWorkoutDuration(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
       interval = setInterval(() => {
-        setWorkoutDuration(prev => prev + 1);
+        setWorkoutDuration(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
       }, 1000);
     }
     return () => clearInterval(interval);
@@ -378,28 +380,31 @@ export function WorkoutProvider({ children }) {
         duration: workoutDuration,
         unitSaved: unit
       };
-            await apiFetch(`/api/workouts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        // Sync newly created custom exercises' default sets with what was actually performed
-        for (const ex of activeWorkout.exercises) {
-          if (newlyCreatedCustomExIds.current.includes(ex.id)) {
-            // Map the active workout 'sets' to 'defaultSets' for the custom exercise template
-            const mappedSets = ex.sets.map(s => ({ reps: s.reps, weight: s.weight, type: s.type || 'Working' }));
-            if (mappedSets.length > 0) {
-              await updateCustomExercise(ex.id, { defaultSets: mappedSets });
-            }
+      
+      const res = await apiFetch(`/api/workouts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const savedWorkout = await res.json();
+      
+      // Sync newly created custom exercises' default sets with what was actually performed
+      for (const ex of activeWorkout.exercises) {
+        if (newlyCreatedCustomExIds.current.includes(ex.id)) {
+          // Map the active workout 'sets' to 'defaultSets' for the custom exercise template
+          const mappedSets = ex.sets.map(s => ({ reps: s.reps, weight: s.weight, type: s.type || 'Working' }));
+          if (mappedSets.length > 0) {
+            await updateCustomExercise(ex.id, { defaultSets: mappedSets });
           }
         }
-        
-        await fetchHistory();
-        setCompletedWorkout(payload);
-      } catch (e) {
-        console.error("Failed to save workout", e);
       }
+      
+      await fetchHistory();
+      setCompletedWorkout(savedWorkout.workout || payload);
+    } catch (e) {
+      console.error("Failed to save workout", e);
+    }
       
       setActiveWorkout(null);
       setWorkoutDuration(0);
@@ -473,6 +478,12 @@ export function WorkoutProvider({ children }) {
     if (navigator.vibrate) navigator.vibrate(40);
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
+    
+    // Default weight to 0 if not entered (e.g. for bodyweight exercises)
+    if (!newExercises[exerciseIndex].sets[setIndex].weight) {
+      newExercises[exerciseIndex].sets[setIndex].weight = 0;
+    }
+    
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
     
