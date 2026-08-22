@@ -26,9 +26,12 @@ const StatCard = ({ icon: Icon, title, value, unit, colorClass, description, isA
       </div>
       
       <div className="z-10 mt-2">
-        <p className="text-2xl font-black text-text font-mono leading-none">
-          <AnimatedNumber value={value} /> {unit && <span className="text-sm text-textMuted font-sans font-semibold">{unit}</span>}
-        </p>
+        <div className="flex items-baseline gap-1 whitespace-nowrap overflow-hidden">
+          <span className="text-[clamp(14px,4vw,24px)] font-black text-text font-mono leading-none tracking-tighter truncate">
+            <AnimatedNumber value={value} />
+          </span>
+          {unit && <span className="text-[10px] sm:text-xs text-textMuted font-sans font-semibold shrink-0">{unit}</span>}
+        </div>
       </div>
 
       <AnimatePresence>
