@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, Weight, Flame, X, Share2, Dumbbell } from 'lucide-react';
+import { CheckCircle, Clock, Weight, Flame, X, Share2, Dumbbell, BatteryCharging, Coffee, Moon } from 'lucide-react';
 import { convertWeight } from '../../utils/calculations';
 import { toPng } from 'html-to-image';
 
@@ -99,12 +99,12 @@ export default function WorkoutSummary({ data, onClose, unit }) {
         >
           {/* Decorative background */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20" />
+          <div className={`absolute bottom-0 left-0 w-64 h-64 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20 ${isRest ? 'bg-indigo-500/10' : 'bg-emerald-500/10'}`} />
 
           {/* Header */}
           <div className="z-10 flex flex-col items-center gap-3 text-center mt-2">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-emerald-600/20 text-emerald-500 flex items-center justify-center mb-1 shadow-[0_0_30px_rgba(16,185,129,0.2)] border border-emerald-500/20 backdrop-blur-md transform rotate-3">
-              {isRest ? <span className="text-3xl transform -rotate-3">???</span> : <CheckCircle size={32} strokeWidth={2.5} className="transform -rotate-3" />}
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-1 border backdrop-blur-md transform rotate-3 ${isRest ? 'from-blue-400/20 to-indigo-600/20 text-blue-400 shadow-[0_0_30px_rgba(96,165,250,0.2)] border-blue-500/20' : 'from-emerald-400/20 to-emerald-600/20 text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.2)] border-emerald-500/20'}`}>
+              {isRest ? <BatteryCharging size={32} strokeWidth={2.5} className="transform -rotate-3" /> : <CheckCircle size={32} strokeWidth={2.5} className="transform -rotate-3" />}
             </div>
             <div>
               <h1 className="text-2xl font-black text-text tracking-tight uppercase">
@@ -135,9 +135,11 @@ export default function WorkoutSummary({ data, onClose, unit }) {
                 </div>
               </>
             ) : (
-               <div className="col-span-2 flex flex-col items-center justify-center bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 backdrop-blur-sm text-emerald-500">
-                  <span className="font-black text-sm uppercase tracking-wider">Active Recovery</span>
-               </div>
+               <div className="col-span-2 flex flex-row items-center justify-center gap-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 backdrop-blur-sm text-blue-400">
+      <Coffee size={18} className="animate-bounce" style={{ animationDuration: '3s' }} />
+      <span className="font-black text-sm uppercase tracking-wider">Rest & Recover</span>
+      <Moon size={18} className="animate-pulse" />
+   </div>
             )}
           </div>
 
