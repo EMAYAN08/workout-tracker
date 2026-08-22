@@ -141,25 +141,22 @@ export default function WorkoutSummary({ data, onClose, unit }) {
             )}
           </div>
 
-          {/* Exercises List */}
-          {!isRest && (
-            <div className="z-10 w-full flex flex-col gap-2 mt-2">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-textMuted font-bold text-left mb-1 px-1">Exercises Performed</h3>
-              {exercises.map(ex => {
-                let exSets = ex.sets ? ex.sets.filter(s => s.completedAt && s.type !== 'Warmup').length : 0;
-                if (forgotToCheck) {
-                   exSets = ex.sets ? ex.sets.filter(s => s.type !== 'Warmup').length : 0;
-                }
-                if (exSets === 0) return null;
-                return (
-                  <div key={ex.id} className="flex justify-between items-center bg-surface-light/20 px-4 py-3 rounded-2xl text-sm border border-border/5">
-                    <span className="font-bold text-text/90 truncate max-w-[75%] capitalize">{ex.name}</span>
-                    <span className="text-primary/90 font-black text-xs bg-primary/10 px-2 py-1 rounded-md">{exSets} Sets</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* Targeted Muscles */}
+            {!isRest && (
+              <div className="z-10 w-full flex flex-col gap-2 mt-2">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-textMuted font-bold text-left mb-1 px-1">Targeted Muscles</h3>
+                <div className="flex flex-wrap gap-2 px-1">
+                  {[...new Set(exercises.map(ex => ex.muscleGroup).filter(Boolean))].map(muscle => (
+                    <span key={muscle} className="px-3 py-1.5 rounded-xl bg-surface-light/60 border border-border/30 text-xs font-bold text-text/90 capitalize backdrop-blur-sm shadow-sm">
+                      {muscle}
+                    </span>
+                  ))}
+                  {[...new Set(exercises.map(ex => ex.muscleGroup).filter(Boolean))].length === 0 && (
+                    <span className="text-sm text-textMuted italic">No muscles targeted</span>
+                  )}
+                </div>
+              </div>
+            )}
 
           {/* Footer watermark */}
           <div className="z-10 w-full pt-4 mt-2 border-t border-border/20 flex justify-between items-center">
