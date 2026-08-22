@@ -447,6 +447,32 @@ export default function ActiveWorkout() {
           </motion.div>
         )}
       </AnimatePresence>
+      <CustomNumpad 
+        activeInput={activeInput ? {
+          field: activeInput.field,
+          onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
+          onNext: () => {
+            const ex = activeWorkout.exercises[activeInput.eIdx];
+            if (activeInput.field === 'weight') {
+              setActiveInput(prev => ({ ...prev, field: 'reps' }));
+            } else if (activeInput.sIdx < ex.sets.length - 1) {
+              setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
+            } else if (activeInput.eIdx < activeWorkout.exercises.length - 1) {
+              setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
+              setExpandedExerciseIndex(activeInput.eIdx + 1);
+            } else {
+              setActiveInput(null);
+            }
+          }
+        } : null}
+        value={activeInput ? activeWorkout.exercises[activeInput.eIdx].sets[activeInput.sIdx][activeInput.field] : ''}
+        onUpdate={(val) => {
+          if (activeInput) {
+            updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
+          }
+        }}
+        onClose={() => setActiveInput(null)}
+      />
     </div>
   );
 }
