@@ -331,22 +331,53 @@ export function WorkoutProvider({ children }) {
   };
 
   const startWorkoutFromRoutine = (routine) => {
+    const populatedExercises = routine.exercises.map(ex => {
+      const pastWorkout = workoutHistory.find(wk => wk.exercises?.some(e => e.id === ex.id && e.sets?.length > 0));
+      const prevPerformance = pastWorkout ? pastWorkout.exercises.find(e => e.id === ex.id) : null;
+      
+      const defaultSetsCount = (ex.defaultSets || []).length || 3;
+      let initialSets = [];
+      
+      if (prevPerformance) {
+        const pastUnit = pastWorkout.unitSaved || 'lbs';
+        for (let i = 0; i < defaultSetsCount; i++) {
+          const pastSet = prevPerformance.sets[i] || prevPerformance.sets[prevPerformance.sets.length - 1];
+          initialSets.push({
+            type: pastSet.type || 'Working',
+            weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
+            reps: pastSet.reps ? String(pastSet.reps) : '',
+            completedAt: null
+          });
+        }
+      } else {
+        const setsToUse = ex.defaultSets || [];
+        if (setsToUse.length > 0) {
+          initialSets = setsToUse.map(ds => ({
+            type: ds.type || 'Working',
+            weight: ds.weight ? String(convertWeight(ds.weight, ex.unitSaved || 'lbs', unit)) : '',
+            reps: ds.reps ? String(ds.reps) : '',
+            completedAt: null
+          }));
+        } else {
+          initialSets = Array(defaultSetsCount).fill(null).map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
+        }
+      }
+
+      return {
+        id: ex.id,
+        name: ex.name,
+        muscleGroup: ex.muscleGroup,
+        gifUrl: ex.gifUrl,
+        sets: initialSets
+      };
+    });
+
     setActiveWorkout({
       id: `wk_${Date.now()}`,
       startTime: Date.now(),
       routineId: routine.id,
       routineName: routine.name,
-      // Map routine exercises and pre-fill their sets based on routine configuration
-      exercises: routine.exercises.map(ex => ({
-        id: ex.id,
-        name: ex.name,
-        muscleGroup: ex.muscleGroup,
-        gifUrl: ex.gifUrl,
-        sets: (ex.defaultSets || []).map(ds => ({
-          ...ds,
-          completedAt: null
-        }))
-      }))
+      exercises: populatedExercises
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
@@ -416,24 +447,34 @@ export function WorkoutProvider({ children }) {
   const addExercise = (exercise) => {
     if (!activeWorkout) return;
     
-    const prevPerformance = workoutHistory
-      .flatMap(wk => wk.exercises || [])
-      .find(ex => ex.id === exercise.id && ex.sets?.length > 0);
-      
-    let defaultWeight = '';
+    const pastWorkout = workoutHistory.find(wk => wk.exercises?.some(e => e.id === exercise.id && e.sets?.length > 0));
+    const prevPerformance = pastWorkout ? pastWorkout.exercises.find(e => e.id === exercise.id) : null;
+    
+    let initialSets = [];
+    const defaultSetsCount = (exercise.defaultSets || []).length || 1;
+    
     if (prevPerformance) {
-      const highestSet = prevPerformance.sets.reduce((max, s) => s.weight > max.weight ? s : max, prevPerformance.sets[0]);
-      defaultWeight = highestSet.weight.toString();
-    }
-
-    let initialSets = [{ reps: '', weight: defaultWeight, type: 'Working', completedAt: null }];
-    if (exercise.defaultSets && exercise.defaultSets.length > 0) {
-      initialSets = exercise.defaultSets.map(s => ({
-        reps: s.reps ? String(s.reps) : '',
-        weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : defaultWeight,
-        type: 'Working',
-        completedAt: null
-      }));
+      const pastUnit = pastWorkout.unitSaved || 'lbs';
+      for (let i = 0; i < defaultSetsCount; i++) {
+        const pastSet = prevPerformance.sets[i] || prevPerformance.sets[prevPerformance.sets.length - 1];
+        initialSets.push({
+          type: pastSet.type || 'Working',
+          weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
+          reps: pastSet.reps ? String(pastSet.reps) : '',
+          completedAt: null
+        });
+      }
+    } else {
+      if (exercise.defaultSets && exercise.defaultSets.length > 0) {
+        initialSets = exercise.defaultSets.map(s => ({
+          reps: s.reps ? String(s.reps) : '',
+          weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : '',
+          type: s.type || 'Working',
+          completedAt: null
+        }));
+      } else {
+        initialSets = [{ reps: '', weight: '', type: 'Working', completedAt: null }];
+      }
     }
 
     setActiveWorkout(prev => ({
@@ -449,6 +490,16 @@ export function WorkoutProvider({ children }) {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex][field] = value;
+    
+    // Auto-cascade edits from the first set to subsequent uncompleted sets
+    if (setIndex === 0) {
+      for (let i = 1; i < newExercises[exerciseIndex].sets.length; i++) {
+        if (!newExercises[exerciseIndex].sets[i].completedAt) {
+          newExercises[exerciseIndex].sets[i][field] = value;
+        }
+      }
+    }
+    
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
   };
 
