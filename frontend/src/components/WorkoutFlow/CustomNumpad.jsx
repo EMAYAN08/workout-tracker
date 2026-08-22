@@ -37,12 +37,24 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   return (
     <AnimatePresence>
       <motion.div
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(e, info) => {
+          if (info.offset.y > 50 || info.velocity.y > 200) {
+            onClose();
+          }
+        }}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed bottom-0 left-0 right-0 z-[100] bg-[#1c1c1e] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-[calc(1rem+env(safe-area-inset-bottom))] pt-2"
+        className="fixed bottom-0 left-0 right-0 z-[100] bg-[#1c1c1e] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-[calc(1rem+env(safe-area-inset-bottom))] pt-2 touch-none"
       >
+        {/* Drag Handle */}
+        <div className="w-full flex justify-center pb-2 cursor-grab active:cursor-grabbing">
+          <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+        </div>
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 mb-2 relative">
           <div className="flex-1 flex justify-center gap-8">
             {tabs.map(tab => (
