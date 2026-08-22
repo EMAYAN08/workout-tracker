@@ -30,8 +30,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   };
 
   const tabs = [
-    { id: 'reps', label: 'Reps' },
-    { id: 'weight', label: 'Weight' }
+    { id: 'weight', label: 'Weight' },
+    { id: 'reps', label: 'Reps' }
   ];
 
   return (
