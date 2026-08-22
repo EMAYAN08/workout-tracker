@@ -3,6 +3,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { Plus, Minus, Timer, History, Trash2, Check, Dumbbell, Search, X, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPreviousPerformance } from '../../utils/calculations';
+import CustomNumpad from './CustomNumpad';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -35,6 +36,7 @@ export default function ActiveWorkout() {
   } = useWorkout();
 
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
+  const [activeInput, setActiveInput] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -87,12 +89,12 @@ export default function ActiveWorkout() {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full relative pt-2">
+    <div className="flex flex-col gap-4 w-full relative">
       
       {/* Global Timer Ribbon */}
-      <div className="flex justify-between items-center px-2 mb-2 text-textMuted text-sm font-semibold">
+      <div className="sticky top-0 z-40 -mx-4 px-6 py-3 mb-2 bg-background/95 backdrop-blur-md border-b border-white/5 flex justify-between items-center text-textMuted text-sm font-semibold shadow-sm">
         <span className="flex items-center gap-1.5"><Timer size={16} className="text-primary" /> Workout Time</span>
-        <span className="font-mono text-primary font-bold">{formatTime(workoutDuration)}</span>
+        <span className="font-mono text-primary font-bold text-base">{formatTime(workoutDuration)}</span>
       </div>
 
       {activeWorkout.exercises.length === 0 && (
@@ -247,20 +249,20 @@ export default function ActiveWorkout() {
                     <div key={sIdx} className="flex items-center px-4 py-2 mt-1 bg-surface-light/30 rounded-lg">
                       <div className="w-12 text-center font-bold text-sm text-textMuted">{sIdx + 1}</div>
                       <div className="flex-1 px-1">
-                        <StepperInput 
-                          value={set.weight} 
-                          onChange={(val) => updateSet(idx, sIdx, 'weight', val)}
-                          step={2.5}
-                          placeholder="-"
-                        />
+                        <div 
+    onClick={() => setActiveInput({ eIdx: idx, sIdx: sIdx, field: 'weight' })}
+    className={`flex items-center justify-center w-full bg-surface-light rounded-lg border transition-colors h-10 cursor-pointer ${activeInput?.eIdx === idx && activeInput?.sIdx === sIdx && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border text-text'}`}
+  >
+    <span className="font-mono font-bold text-base">{set.weight || <span className="text-textMuted/50">-</span>}</span>
+  </div>
                       </div>
                       <div className="flex-1 px-1">
-                        <StepperInput 
-                          value={set.reps} 
-                          onChange={(val) => updateSet(idx, sIdx, 'reps', val)}
-                          step={1}
-                          placeholder="-"
-                        />
+                        <div 
+    onClick={() => setActiveInput({ eIdx: idx, sIdx: sIdx, field: 'reps' })}
+    className={`flex items-center justify-center w-full bg-surface-light rounded-lg border transition-colors h-10 cursor-pointer ${activeInput?.eIdx === idx && activeInput?.sIdx === sIdx && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border text-text'}`}
+  >
+    <span className="font-mono font-bold text-base">{set.reps || <span className="text-textMuted/50">-</span>}</span>
+  </div>
                       </div>
                       <div className="w-16 flex justify-center items-center gap-1">
                         <button 
