@@ -89,7 +89,7 @@ export default function ActiveWorkout() {
   };
 
   return (
-    <div className={`px-4 flex flex-col gap-4 w-full relative transition-all duration-300 ${activeInput ? 'pb-[400px]' : 'pb-0'}`}>
+    <div className={`px-4 flex flex-col gap-4 w-full relative transition-all duration-300 ${activeInput ? 'pb-[300px]' : 'pb-0'}`}>
       
       {/* Global Timer Ribbon */}
       <div className="sticky top-0 z-40 -mx-4 px-6 py-3 mb-2 bg-background/95 backdrop-blur-md border-b border-white/5 flex justify-between items-center text-textMuted text-sm font-semibold shadow-sm">

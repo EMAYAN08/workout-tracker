@@ -55,12 +55,12 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         <div className="w-full flex justify-center pb-2 cursor-grab active:cursor-grabbing">
           <div className="w-12 h-1.5 bg-white/20 rounded-full" />
         </div>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 mb-2 relative">
-          <div className="flex-1 flex justify-center gap-8">
+        <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/5 mb-2 relative">
+          <div className="flex-1 flex justify-center gap-4">
             {tabs.map(tab => (
               <div 
                 key={tab.id}
-                className={`text-lg font-bold px-4 py-1 rounded-full cursor-pointer transition-colors flex items-center gap-2 ${activeInput.field === tab.id ? 'text-white' : 'text-gray-500'}`}
+                className={`text-base font-bold px-4 py-1 rounded-full cursor-pointer transition-colors flex items-center gap-2 ${activeInput.field === tab.id ? 'text-white' : 'text-gray-500'}`}
                 onClick={() => activeInput.onChangeField(tab.id)}
               >
                 {tab.label} {activeInput.field === tab.id ? <div className="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center text-xs">✓</div> : <div className="w-5 h-5 rounded-full border border-gray-500" />}
@@ -69,32 +69,32 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           </div>
         </div>
 
-        <div className="p-3 grid grid-cols-4 gap-2 bg-[#1c1c1e]">
+        <div className="p-3 grid grid-cols-4 gap-1.5 bg-[#1c1c1e]">
           {/* Row 1 */}
-          <button onClick={() => handleKeyPress('1')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">1</button>
-          <button onClick={() => handleKeyPress('2')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">2</button>
-          <button onClick={() => handleKeyPress('3')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">3</button>
-          <button onClick={onClose} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14"><ChevronDown size={28} /></button>
+          <button onClick={() => handleKeyPress('1')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">1</button>
+          <button onClick={() => handleKeyPress('2')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">2</button>
+          <button onClick={() => handleKeyPress('3')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">3</button>
+          <button onClick={onClose} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12"><ChevronDown size={24} /></button>
 
           {/* Row 2 */}
-          <button onClick={() => handleKeyPress('4')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">4</button>
-          <button onClick={() => handleKeyPress('5')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">5</button>
-          <button onClick={() => handleKeyPress('6')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">6</button>
-          <div className="flex rounded-xl overflow-hidden shadow-sm h-14">
-            <button onClick={() => handleKeyPress('-')} className="flex-1 flex items-center justify-center font-mono text-2xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white border-r border-[#1c1c1e]">-</button>
-            <button onClick={() => handleKeyPress('+')} className="flex-1 flex items-center justify-center font-mono text-2xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white">+</button>
+          <button onClick={() => handleKeyPress('4')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">4</button>
+          <button onClick={() => handleKeyPress('5')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">5</button>
+          <button onClick={() => handleKeyPress('6')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">6</button>
+          <div className="flex rounded-xl overflow-hidden shadow-sm h-11 sm:h-12">
+            <button onClick={() => handleKeyPress('-')} className="flex-1 flex items-center justify-center font-mono text-xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white border-r border-[#1c1c1e]">-</button>
+            <button onClick={() => handleKeyPress('+')} className="flex-1 flex items-center justify-center font-mono text-xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white">+</button>
           </div>
 
           {/* Row 3 */}
-          <button onClick={() => handleKeyPress('7')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">7</button>
-          <button onClick={() => handleKeyPress('8')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">8</button>
-          <button onClick={() => handleKeyPress('9')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">9</button>
-          <button onClick={() => activeInput.onNext()} className="row-span-2 h-full flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-white hover:bg-gray-200 text-black"><ArrowRight size={28} strokeWidth={3} /></button>
+          <button onClick={() => handleKeyPress('7')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">7</button>
+          <button onClick={() => handleKeyPress('8')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">8</button>
+          <button onClick={() => handleKeyPress('9')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">9</button>
+          <button onClick={() => activeInput.onNext()} className="row-span-2 h-full flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-white hover:bg-gray-200 text-black"><ArrowRight size={24} strokeWidth={3} /></button>
 
           {/* Row 4 */}
-          <button onClick={() => handleKeyPress('.')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">.</button>
-          <button onClick={() => handleKeyPress('0')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14">0</button>
-          <button onClick={() => handleKeyPress('delete')} className="flex items-center justify-center rounded-xl font-mono text-3xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-14"><Delete size={24} /></button>
+          <button onClick={() => handleKeyPress('.')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">.</button>
+          <button onClick={() => handleKeyPress('0')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">0</button>
+          <button onClick={() => handleKeyPress('delete')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12"><Delete size={24} /></button>
         </div>
       </motion.div>
     </AnimatePresence>
