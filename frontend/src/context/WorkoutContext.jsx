@@ -33,7 +33,7 @@ export function WorkoutProvider({ children }) {
     return fetch(url.toString(), options);
   };
 
-  const pushTaskIdRef = useRef(null);
+  
 
   // Global preferences
   const [unit, setUnit] = useState(() => {
@@ -54,8 +54,8 @@ export function WorkoutProvider({ children }) {
   });
 
   // Rest Timer
-  const [restEndTime, setRestEndTime] = useState(() => {
-    const saved = localStorage.getItem('workout_rest_end_time');
+  const [lastSetCompletedAt, setLastSetCompletedAt] = useState(() => {
+    const saved = localStorage.getItem('workout_last_set_time');
     return saved ? parseInt(saved, 10) : null;
   });
   const [restTimer, setRestTimer] = useState(0);
@@ -234,12 +234,12 @@ export function WorkoutProvider({ children }) {
   }, [workoutDuration]);
 
   useEffect(() => {
-    if (restEndTime) {
-      localStorage.setItem('workout_rest_end_time', restEndTime.toString());
+    if (lastSetCompletedAt) {
+      localStorage.setItem('workout_last_set_time', lastSetCompletedAt.toString());
     } else {
-      localStorage.removeItem('workout_rest_end_time');
+      localStorage.removeItem('workout_last_set_time');
     }
-  }, [restEndTime]);
+  }, [lastSetCompletedAt]);
 
   // Timers
   useEffect(() => {
@@ -256,13 +256,10 @@ export function WorkoutProvider({ children }) {
 
   useEffect(() => {
     let interval;
-    if (restEndTime) {
+    if (lastSetCompletedAt) {
       const updateTimer = () => {
-        const remaining = Math.max(0, Math.ceil((restEndTime - Date.now()) / 1000));
-        setRestTimer(remaining);
-        if (remaining <= 0) {
-          setRestEndTime(null);
-        }
+        const elapsed = Math.max(0, Math.floor((Date.now() - lastSetCompletedAt) / 1000));
+        setRestTimer(elapsed);
       };
       updateTimer();
       interval = setInterval(updateTimer, 1000);
@@ -270,7 +267,7 @@ export function WorkoutProvider({ children }) {
       setRestTimer(0);
     }
     return () => clearInterval(interval);
-  }, [restEndTime]);
+  }, [lastSetCompletedAt]);
 
   const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -330,7 +327,7 @@ export function WorkoutProvider({ children }) {
       exercises: []
     });
     setWorkoutDuration(0);
-    setRestEndTime(null);
+    setLastSetCompletedAt(null);
   };
 
   const startWorkoutFromRoutine = (routine) => {
@@ -352,7 +349,7 @@ export function WorkoutProvider({ children }) {
       }))
     });
     setWorkoutDuration(0);
-    setRestEndTime(null);
+    setLastSetCompletedAt(null);
   };
 
   const cancelPushNotification = async () => {
@@ -372,8 +369,6 @@ export function WorkoutProvider({ children }) {
 
   const finishWorkout = async () => { if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
     try {
-      await cancelPushNotification();
-
       const payload = {
         ...activeWorkout,
         endTime: Date.now(),
@@ -408,15 +403,14 @@ export function WorkoutProvider({ children }) {
       
       setActiveWorkout(null);
       setWorkoutDuration(0);
-      setRestEndTime(null);
+      setLastSetCompletedAt(null);
       localStorage.removeItem('workout_active');
   };
 
   const cancelWorkout = async () => {
-    await cancelPushNotification();
     setActiveWorkout(null);
     setWorkoutDuration(0);
-    setRestEndTime(null);
+    setLastSetCompletedAt(null);
   };
 
   const addExercise = (exercise) => {
@@ -472,9 +466,6 @@ export function WorkoutProvider({ children }) {
   };
 
   const completeSet = async (exerciseIndex, setIndex) => {
-    if ("Notification" in window && Notification.permission === "default") {
-      await Notification.requestPermission();
-    }
     if (navigator.vibrate) navigator.vibrate(40);
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
@@ -483,31 +474,16 @@ export function WorkoutProvider({ children }) {
     if (!newExercises[exerciseIndex].sets[setIndex].weight) {
       newExercises[exerciseIndex].sets[setIndex].weight = 0;
     }
+
+    // Track rest time taken before this set
+    const restTimeTaken = lastSetCompletedAt ? Math.floor((Date.now() - lastSetCompletedAt) / 1000) : 0;
+    newExercises[exerciseIndex].sets[setIndex].restTimeTaken = restTimeTaken;
     
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
     
-    const delaySeconds = 60;
-    setRestEndTime(Date.now() + delaySeconds * 1000);
-
-    if ("Notification" in window && Notification.permission === "granted") {
-      const subscription = await subscribeToPush();
-      if (subscription) {
-        try {
-          const pushRes = await apiFetch(`/api/push/schedule`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subscription, delaySeconds })
-          });
-          const pushData = await pushRes.json();
-          if (pushData.taskId) {
-            pushTaskIdRef.current = pushData.taskId;
-          }
-        } catch (err) {
-          console.error('Failed to schedule push', err);
-        }
-      }
-    }
+    // Start tracking rest for the *next* set
+    setLastSetCompletedAt(Date.now());
   };
 
   const uncompleteSet = (exerciseIndex, setIndex) => {
@@ -585,13 +561,17 @@ export function WorkoutProvider({ children }) {
     return { current: currentStreak, best: bestStreak };
   };
 
+  const stopRestTimer = () => {
+    setLastSetCompletedAt(null);
+  };
+
   return (
     <WorkoutContext.Provider value={{
       username, login, logout, unit, toggleUnit,
       activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
       addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
       workoutDuration,
-      restTimer, setRestTimer,
+      restTimer, stopRestTimer,
       workoutHistory,
       customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise,
       routines, createRoutine, updateRoutine, deleteRoutine,
@@ -604,3 +584,5 @@ export function WorkoutProvider({ children }) {
 }
 
 export const useWorkout = () => useContext(WorkoutContext);
+
+

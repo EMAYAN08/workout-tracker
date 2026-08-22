@@ -30,7 +30,7 @@ export default function ActiveWorkout() {
   const { 
     activeWorkout, workoutDuration, 
     addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet, 
-    restTimer, setRestTimer, unit, workoutHistory,
+    restTimer, stopRestTimer, unit, workoutHistory,
     createCustomExercise
   } = useWorkout();
 
@@ -433,16 +433,11 @@ export default function ActiveWorkout() {
             <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
             
             <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200/80 mr-1">Resting</span>
               <button 
-                onClick={() => setRestTimer(prev => prev + 30)} 
-                className="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full hover:bg-white/30 transition-colors"
-              >
-                +30s
-              </button>
-              <button 
-                onClick={() => setRestTimer(0)} 
+                onClick={() => stopRestTimer()} 
                 className="p-1.5 rounded-full hover:bg-black/20 text-white/80 hover:text-white transition-colors"
-                title="Skip Rest"
+                title="Hide Timer"
               >
                 <X size={18} strokeWidth={2.5} />
               </button>
@@ -453,3 +448,4 @@ export default function ActiveWorkout() {
     </div>
   );
 }
+
