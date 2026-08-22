@@ -80,11 +80,11 @@ export default function WorkoutSummary({ data, onClose, unit }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md overflow-y-auto overflow-x-hidden flex flex-col items-center p-4 py-16">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-sm flex flex-col gap-4 relative"
+        className="w-full max-w-sm flex flex-col gap-4 relative my-auto shrink-0"
       >
         <button 
           onClick={onClose}
