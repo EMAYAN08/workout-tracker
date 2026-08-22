@@ -91,10 +91,31 @@ export default function ActiveWorkout() {
   return (
     <div className={`px-4 flex flex-col gap-4 w-full relative transition-all duration-300 ${activeInput ? 'pb-[300px]' : 'pb-0'}`}>
       
-      {/* Global Timer Ribbon */}
-      <div className="sticky top-0 z-40 -mx-4 px-6 py-3 mb-2 bg-background/95 backdrop-blur-md border-b border-white/5 flex justify-between items-center text-textMuted text-sm font-semibold shadow-sm">
-        <span className="flex items-center gap-1.5"><Timer size={16} className="text-primary" /> Workout Time</span>
-        <span className="font-mono text-primary font-bold text-base">{formatTime(workoutDuration)}</span>
+            {/* Global Timer Ribbon */}
+      <div className="sticky top-0 z-40 -mx-4 px-6 py-2 mb-2 bg-background/95 backdrop-blur-md border-b border-white/5 flex justify-between items-center shadow-sm">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Workout</span>
+          <div className="flex items-center gap-1.5 text-primary">
+            <Timer size={14} />
+            <span className="font-mono font-bold text-base leading-none">{formatTime(workoutDuration)}</span>
+          </div>
+        </div>
+        
+        {restTimer > 0 && (
+          <div className="flex flex-col items-end animate-in fade-in zoom-in duration-300">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400/80 mb-0.5">Resting</span>
+            <div className="flex items-center gap-2 text-blue-400">
+              <Timer size={14} />
+              <span className="font-mono font-bold text-base leading-none">{formatTime(restTimer)}</span>
+              <button 
+                onClick={() => stopRestTimer()} 
+                className="p-1 rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors ml-1"
+              >
+                <X size={12} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {activeWorkout.exercises.length === 0 && (
@@ -418,35 +439,7 @@ export default function ActiveWorkout() {
         </motion.div>
       )}
 
-      {/* Floating Rest Timer Pill */}
-      <AnimatePresence>
-        {restTimer > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 bg-blue-500/20 backdrop-blur-xl text-white p-1.5 pl-4 rounded-full shadow-[0_8px_32px_rgba(59,130,246,0.3)] flex items-center gap-3 z-50 border border-blue-400/30"
-          >
-            <div className="flex items-center gap-2">
-              <Timer size={18} className="text-white/80" />
-              <span className="font-mono text-lg font-black tracking-tight">{formatTime(restTimer)}</span>
-            </div>
-            
-            <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
-            
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200/80 mr-1">Resting</span>
-              <button 
-                onClick={() => stopRestTimer()} 
-                className="p-1.5 rounded-full hover:bg-black/20 text-white/80 hover:text-white transition-colors"
-                title="Hide Timer"
-              >
-                <X size={18} strokeWidth={2.5} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
       <CustomNumpad 
         activeInput={activeInput ? {
           field: activeInput.field,
