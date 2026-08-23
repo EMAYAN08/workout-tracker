@@ -126,53 +126,48 @@ export default function CustomExercises({ onNavigate }) {
   return (
     <div className="flex flex-col w-full pb-8 relative pt-2">
       {/* Header section mimicking reference */}
-      <div className="flex items-center justify-between mb-1 px-1">
-        <h1 className="text-[32px] font-black text-white tracking-tight">Exercises</h1>
-        <button 
-          onClick={() => {
-            setEditingId(null);
-            setNewName('');
-            setDefaultSets([{ reps: 0, weight: 0 }]);
-            setIsCreating(true);
-          }}
-          className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center transition-all active:scale-95"
-        >
-          <Plus size={24} strokeWidth={3} />
-        </button>
-      </div>
-      <p className="text-sm text-textMuted px-1 mb-6">{customExercises.length} exercises � {activeMuscleGroupsCount} muscle groups</p>
-
-      {/* Search Bar */}
-      <div className="relative mb-5 px-1">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-        <input 
-          type="text" 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search exercises or muscle groups"
-          className="w-full bg-[#1c1c1e] border-none rounded-2xl pl-12 pr-4 py-3.5 text-text font-semibold focus:outline-none focus:ring-1 focus:ring-border/50 placeholder:text-textMuted/70"
-        />
-      </div>
-
-      {/* Muscle Group Filters */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 px-1 pb-2 -mx-4 sm:mx-0 pl-4 sm:pl-1 pr-4 sm:pr-0">
-        {filterGroups.map(group => (
-          <button
-            key={group}
-            onClick={() => setSelectedMuscleGroup(group)}
-            className={`shrink-0 px-5 py-2 rounded-full text-sm font-bold capitalize transition-colors ${selectedMuscleGroup === group ? 'bg-[#fca966] text-black' : 'bg-[#1c1c1e] text-textMuted hover:text-white'}`}
+      <div className="sticky top-0 z-20 bg-background pt-2 pb-2">
+        {/* Header section mimicking reference */}
+        <div className="flex items-center justify-between mb-1 px-1">
+          <h1 className="text-[32px] font-black text-white tracking-tight">Custom Exercises</h1>
+          <button 
+            onClick={() => {
+              setEditingId(null);
+              setNewName('');
+              setDefaultSets([{ reps: 0, weight: 0 }]);
+              setIsCreating(true);
+            }}
+            className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95"
           >
-            {group}
+            <Plus size={24} strokeWidth={3} />
           </button>
-        ))}
-      </div>
-      
-      {/* Equipment Filters (Cosmetic) */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6 px-1 pb-2 -mx-4 sm:mx-0 pl-4 sm:pl-1 pr-4 sm:pr-0">
-        <button className="shrink-0 px-5 py-2 rounded-full text-sm font-bold bg-[#69f0ae] text-black">All Equipment</button>
-        <button className="shrink-0 px-5 py-2 rounded-full text-sm font-bold bg-[#1c1c1e] text-textMuted hover:text-white">Dumbbell</button>
-        <button className="shrink-0 px-5 py-2 rounded-full text-sm font-bold bg-[#1c1c1e] text-textMuted hover:text-white">Barbell</button>
-        <button className="shrink-0 px-5 py-2 rounded-full text-sm font-bold bg-[#1c1c1e] text-textMuted hover:text-white">Machine</button>
+        </div>
+        <p className="text-sm text-textMuted px-1 mb-6">Create your own exercise</p>
+
+        {/* Search Bar */}
+        <div className="relative mb-5 px-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search exercises or muscle groups"
+            className="w-full bg-[#1c1c1e] border-none rounded-2xl pl-12 pr-4 py-3.5 text-text font-semibold focus:outline-none focus:ring-1 focus:ring-border/50 placeholder:text-textMuted/70"
+          />
+        </div>
+
+        {/* Muscle Group Filters */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 -mx-4 sm:mx-0 pl-4 sm:pl-1 pr-4 sm:pr-0">
+          {filterGroups.map(group => (
+            <button
+              key={group}
+              onClick={() => setSelectedMuscleGroup(group)}
+              className={`shrink-0 px-5 py-2 rounded-full text-sm font-bold capitalize transition-colors ${selectedMuscleGroup === group ? 'bg-[#fca966] text-black' : 'bg-[#1c1c1e] text-textMuted hover:text-white'}`}
+            >
+              {group}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Results Header */}
