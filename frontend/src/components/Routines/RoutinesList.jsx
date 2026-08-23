@@ -17,9 +17,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
 
   const handleDelete = (e, id) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this routine?")) {
-      deleteRoutine(id);
-    }
+    deleteRoutine(id);
   };
 
     const getRoutineCategories = (exercises) => {
