@@ -10,8 +10,8 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
       <div className="relative z-10 bg-surface-light/40 shadow-sm rounded-3xl border border-border/10 flex flex-col w-full overflow-hidden transition-colors hover:border-primary/20">
         <div className="p-3 flex items-center justify-between gap-4 cursor-pointer" onClick={onToggle}>
           <div className="flex items-center gap-4 min-w-0 flex-1">
-            <div className="w-14 h-14 rounded-2xl bg-[#3b2d21] flex items-center justify-center shrink-0">
-              <Settings size={22} className="text-[#fca966] opacity-90" />
+            <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Settings size={22} className="text-primary opacity-90" />
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="font-bold text-text capitalize text-base leading-snug truncate">{ex.name}</h4>
@@ -23,7 +23,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
           </div>
           
           <div className="flex items-center gap-3 shrink-0">
-            <span className="px-2 py-1 rounded-lg bg-[#3b2d21] text-[#fca966] text-[10px] font-bold capitalize">{ex.muscleGroup}</span>
+            <span className="px-2 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-bold capitalize">{ex.muscleGroup}</span>
             <ChevronDown size={18} className={`text-textMuted transition-transform duration-300 ${isExpanded ? 'rotate-180' : '-rotate-90'}`} />
           </div>
         </div>
@@ -124,9 +124,9 @@ export default function CustomExercises({ onNavigate }) {
   const removeSet = (index) => setDefaultSets(defaultSets.filter((_, i) => i !== index));
 
   return (
-    <div className="flex flex-col w-full pb-8 relative pt-2">
+    <div className="flex flex-col w-full pb-8 relative pt-0 mt-[-8px]">
       {/* Header section mimicking reference */}
-      <div className="sticky top-0 z-20 bg-background pt-2 pb-2">
+      <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
         {/* Header section mimicking reference */}
         <div className="flex items-center justify-between mb-1 px-1">
           <h1 className="text-[32px] font-black text-white tracking-tight">Custom Exercises</h1>
@@ -162,7 +162,7 @@ export default function CustomExercises({ onNavigate }) {
             <button
               key={group}
               onClick={() => setSelectedMuscleGroup(group)}
-              className={`shrink-0 px-5 py-2 rounded-full text-sm font-bold capitalize transition-colors ${selectedMuscleGroup === group ? 'bg-[#fca966] text-black' : 'bg-[#1c1c1e] text-textMuted hover:text-white'}`}
+              className={`shrink-0 px-5 py-2 rounded-full text-sm font-bold capitalize transition-colors ${selectedMuscleGroup === group ? 'bg-primary text-white' : 'bg-[#1c1c1e] text-textMuted hover:text-white'}`}
             >
               {group}
             </button>
@@ -172,7 +172,7 @@ export default function CustomExercises({ onNavigate }) {
 
       {/* Results Header */}
       {searchQuery || selectedMuscleGroup !== 'All' ? (
-        <p className="text-xs font-bold text-text mb-3 px-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#fca966]"></span> {filteredExercises.length} Results</p>
+        <p className="text-xs font-bold text-text mb-3 px-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-primary"></span> {filteredExercises.length} Results</p>
       ) : null}
 
       <div className="flex flex-col px-1">
