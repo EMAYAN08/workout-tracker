@@ -86,12 +86,22 @@ export default function WorkoutSummary({ data, onClose, unit }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="w-full max-w-sm flex flex-col gap-4 relative my-auto shrink-0"
       >
-        <button 
-          onClick={onClose}
-          className="absolute -top-12 right-0 p-2 text-textMuted hover:text-white bg-surface-light/50 backdrop-blur-md rounded-full z-10 transition-colors"
-        >
-          <X size={20} />
-        </button>
+        
+          {/* Corner overlay actions (Not captured in share) */}
+          <button 
+            onClick={onClose}
+            className="absolute top-4 left-4 z-20 p-2 text-textMuted hover:text-white bg-surface-light/80 backdrop-blur-md rounded-full transition-colors shadow-lg shadow-black/20"
+            title="Close"
+          >
+            <X size={18} />
+          </button>
+          <button 
+            onClick={handleShare}
+            className="absolute top-4 right-4 z-20 p-2 text-primary hover:text-primary-light bg-primary/20 backdrop-blur-md rounded-full transition-colors shadow-lg shadow-black/20"
+            title="Share"
+          >
+            <Share2 size={18} />
+          </button>
 
         <div 
           ref={cardRef} 
@@ -168,22 +178,6 @@ export default function WorkoutSummary({ data, onClose, unit }) {
             </div>
             <span className="text-[10px] text-textMuted font-bold uppercase tracking-wider">{new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
-        </div>
-
-        {/* Action Buttons (Not shared in the image) */}
-        <div className="flex gap-3 w-full mt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-surface hover:bg-surface-light border border-border/50 text-text font-bold py-3.5 rounded-2xl transition-colors active:scale-95 text-sm"
-          >
-            Close
-          </button>
-          <button
-            onClick={handleShare}
-            className="flex-[2] bg-primary hover:bg-primary-light text-white font-black py-3.5 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95 text-sm flex items-center justify-center gap-2 uppercase tracking-wide"
-          >
-            <Share2 size={16} /> Share Card
-          </button>
         </div>
       </motion.div>
     </div>
