@@ -272,7 +272,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                           <div className="col-span-5">
                             <div 
   onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' })}
-  className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base flex items-center justify-center cursor-text"
+  className={`w-full rounded-lg px-3 py-2 text-center font-mono font-bold flex items-center justify-center cursor-pointer transition-colors border ${activeInput?.exerciseIndex === exIdx && activeInput?.setIndex === sIdx && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'bg-surface-light border-border/50 text-text'}`}
 >
   {set.weight ? set.weight : <span className="text-textMuted/50">Weight</span>}
 </div>
@@ -280,7 +280,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                           <div className="col-span-5">
                             <div 
   onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' })}
-  className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base flex items-center justify-center cursor-text"
+  className={`w-full rounded-lg px-3 py-2 text-center font-mono font-bold flex items-center justify-center cursor-pointer transition-colors border ${activeInput?.exerciseIndex === exIdx && activeInput?.setIndex === sIdx && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'bg-surface-light border-border/50 text-text'}`}
 >
   {set.reps ? set.reps : <span className="text-textMuted/50">Reps</span>}
 </div>
