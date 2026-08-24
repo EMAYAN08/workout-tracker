@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
+import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
 import { Search, Plus, Save, X, Dumbbell, Trash2, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,6 +41,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeInput, setActiveInput] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
@@ -162,7 +164,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className={`flex flex-col gap-4 w-full transition-all duration-300 ${activeInput ? 'pb-[300px]' : ''}`}>
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl font-black text-text tracking-tight">
           {initialRoutine ? 'Edit Routine' : 'New Routine'}
@@ -268,26 +270,20 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                         <div key={sIdx} className="grid grid-cols-12 gap-2 items-center">
                           <div className="col-span-1 text-center font-mono font-bold text-textMuted">{sIdx + 1}</div>
                           <div className="col-span-5">
-                            <input 
-                              type="number"
-                              inputMode="decimal"
-                              pattern="[0-9]*"
-                              value={set.weight || ''}
-                              onChange={e => updateSet(exIdx, sIdx, 'weight', Number(e.target.value))}
-                              placeholder="Weight"
-                              className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
-                            />
+                            <div 
+  onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' })}
+  className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base flex items-center justify-center cursor-text"
+>
+  {set.weight ? set.weight : <span className="text-textMuted/50">Weight</span>}
+</div>
                           </div>
                           <div className="col-span-5">
-                            <input 
-                              type="number"
-                              inputMode="decimal"
-                              pattern="[0-9]*"
-                              value={set.reps || ''}
-                              onChange={e => updateSet(exIdx, sIdx, 'reps', Number(e.target.value))}
-                              placeholder="Reps"
-                              className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base"
-                            />
+                            <div 
+  onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' })}
+  className="w-full bg-surface-light rounded-lg px-3 py-2 text-center font-mono font-bold text-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-textMuted/50 hide-arrows text-base flex items-center justify-center cursor-text"
+>
+  {set.reps ? set.reps : <span className="text-textMuted/50">Reps</span>}
+</div>
                           </div>
                           <div className="col-span-1 flex justify-center">
                             <button 
@@ -424,6 +420,22 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           </div>
         </motion.div>
       )}
+    
+      {/* Custom Numpad */}
+      <CustomNumpad 
+        activeInput={activeInput}
+        onClose={() => setActiveInput(null)}
+        value={
+          activeInput
+            ? exercises[activeInput.exerciseIndex]?.defaultSets[activeInput.setIndex]?.[activeInput.field]
+            : ''
+        }
+        onUpdate={(val) => {
+          if (activeInput) {
+            updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
+          }
+        }}
+      />
     </div>
   );
 }
