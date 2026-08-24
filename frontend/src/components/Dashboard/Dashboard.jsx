@@ -124,7 +124,7 @@ const CustomDropdown = ({ options, value, onChange, searchable = false }) => {
                       placeholder="Search exercise..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-surface-light pl-8 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary text-text placeholder-textMuted"
+                      className="w-full bg-surface-light pl-8 pr-3 py-2 rounded-lg text-[16px] focus:outline-none focus:ring-1 focus:ring-primary text-text placeholder-textMuted"
                     />
                   </div>
                 </div>
