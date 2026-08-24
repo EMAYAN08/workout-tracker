@@ -129,7 +129,7 @@ export default function CustomExercises({ onNavigate }) {
       <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
         {/* Header section mimicking reference */}
         <div className="flex items-center justify-between mb-1 px-1">
-          <h1 className="text-[32px] font-black text-white tracking-tight">Custom Exercises</h1>
+          <h1 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight">Custom Exercises</h1>
           <button 
             onClick={() => {
               setEditingId(null);

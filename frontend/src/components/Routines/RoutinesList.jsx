@@ -30,24 +30,23 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
     };
 
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col w-full relative pt-0 mt-[-8px]">
+      <div className="sticky top-0 z-20 bg-background pt-1 pb-4">
+        <div className="flex items-center justify-between mb-1 px-1">
           <div>
-            <h2 className="text-2xl font-black text-text tracking-tight flex items-center gap-2">
-              <ClipboardList className="text-primary" /> My Routines
+            <h2 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight flex items-center gap-2">
+              <ClipboardList className="text-primary w-6 h-6 sm:w-7 sm:h-7" /> My Routines
             </h2>
-            <p className="text-textMuted text-sm font-semibold">Build templates for faster logging</p>
           </div>
+          <button 
+            onClick={onCreateNew}
+            className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95 shrink-0"
+          >
+            <Plus size={24} strokeWidth={3} />
+          </button>
         </div>
-  
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onCreateNew}
-          className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 backdrop-blur-md rounded-xl p-4 flex items-center justify-center gap-2 font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-        >
-          <Plus size={20} /> Create New Routine
-        </motion.button>
+        <p className="text-sm text-textMuted font-semibold px-1">Build templates for faster logging</p>
+      </div>
   
         <div className="flex flex-col gap-3 mt-2">
           {routines.length === 0 ? (
