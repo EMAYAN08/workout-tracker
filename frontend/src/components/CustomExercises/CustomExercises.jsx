@@ -168,7 +168,7 @@ export default function CustomExercises({ onNavigate }) {
               className="w-full bg-[#1c1c1e] text-text border-none rounded-2xl py-3.5 pl-4 pr-10 font-bold focus:outline-none focus:ring-1 focus:ring-border/50 appearance-none capitalize h-full truncate"
             >
               {filterGroups.map(group => (
-                <option key={group} value={group}>{group === 'All' ? 'All Groups' : group}</option>
+                <option key={group} value={group}>{group}</option>
               ))}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" size={18} />
