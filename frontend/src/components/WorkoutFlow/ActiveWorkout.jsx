@@ -30,7 +30,7 @@ const StepperInput = ({ value, onChange, step = 1, placeholder }) => (
 export default function ActiveWorkout() {
   const { 
     activeWorkout, workoutDuration, 
-    addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet, 
+    addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet, removeActiveExercise, 
     restTimer, stopRestTimer, unit, workoutHistory,
     createCustomExercise
   } = useWorkout();
@@ -173,9 +173,16 @@ export default function ActiveWorkout() {
                     <ArrowDown size={16} />
                   </button>
                 )}
-                <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
-                  <ChevronDown size={18} />
-                </button>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); removeActiveExercise(idx); }}
+                    className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
+                    title="Remove Exercise"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
+                    <ChevronDown size={18} />
+                  </button>
               </div>
             </motion.div>
           );
@@ -228,9 +235,16 @@ export default function ActiveWorkout() {
                       <ArrowDown size={16} />
                     </button>
                   )}
-                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
-                    <ChevronUp size={18} />
-                  </button>
+                  <button 
+                      onClick={(e) => { e.stopPropagation(); removeActiveExercise(idx); }}
+                      className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
+                      title="Remove Exercise"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
+                      <ChevronUp size={18} />
+                    </button>
                 </div>
               </div>
             

@@ -560,6 +560,13 @@ export function WorkoutProvider({ children }) {
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
   };
 
+  const removeActiveExercise = (exerciseIndex) => {
+    if (!activeWorkout) return;
+    const newExercises = [...activeWorkout.exercises];
+    newExercises.splice(exerciseIndex, 1);
+    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+  };
+
   const removeSet = (exerciseIndex, setIndex) => {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
@@ -621,6 +628,7 @@ export function WorkoutProvider({ children }) {
       username, login, logout, unit, toggleUnit,
       activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
       addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
+    removeActiveExercise,
       workoutDuration,
       restTimer, stopRestTimer,
       workoutHistory,
