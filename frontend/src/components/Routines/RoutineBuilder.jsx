@@ -423,19 +423,34 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     
       {/* Custom Numpad */}
       <CustomNumpad 
-        activeInput={activeInput}
-        onClose={() => setActiveInput(null)}
-        value={
-          activeInput
-            ? exercises[activeInput.exerciseIndex]?.defaultSets[activeInput.setIndex]?.[activeInput.field]
-            : ''
-        }
-        onUpdate={(val) => {
-          if (activeInput) {
-            updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
+          activeInput={activeInput ? {
+            field: activeInput.field,
+            onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
+            onNext: () => {
+              const ex = exercises[activeInput.exerciseIndex];
+              if (activeInput.field === 'weight') {
+                setActiveInput(prev => ({ ...prev, field: 'reps' }));
+              } else if (activeInput.setIndex < ex.defaultSets.length - 1) {
+                setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: activeInput.setIndex + 1, field: 'weight' });
+              } else if (activeInput.exerciseIndex < exercises.length - 1) {
+                setActiveInput({ exerciseIndex: activeInput.exerciseIndex + 1, setIndex: 0, field: 'weight' });
+              } else {
+                setActiveInput(null);
+              }
+            }
+          } : null}
+          onClose={() => setActiveInput(null)}
+          value={
+            activeInput
+              ? exercises[activeInput.exerciseIndex]?.defaultSets[activeInput.setIndex]?.[activeInput.field]
+              : ''
           }
-        }}
-      />
+          onUpdate={(val) => {
+            if (activeInput) {
+              updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
+            }
+          }}
+        />
     </div>
   );
 }
