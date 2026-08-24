@@ -32,11 +32,12 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
     return (
       <div className="flex flex-col w-full relative pt-0 mt-[-8px]">
       <div className="sticky top-0 z-20 bg-background pt-1 pb-4">
-        <div className="flex items-center justify-between mb-1 px-1">
+        <div className="flex items-center justify-between mb-2 px-1">
           <div>
             <h2 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight flex items-center gap-2">
               <ClipboardList className="text-primary w-6 h-6 sm:w-7 sm:h-7" /> My Routines
             </h2>
+            <p className="text-sm text-textMuted font-semibold px-1 mt-1">Build templates for faster logging</p>
           </div>
           <button 
             onClick={onCreateNew}
@@ -45,7 +46,6 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
             <Plus size={24} strokeWidth={3} />
           </button>
         </div>
-        <p className="text-sm text-textMuted font-semibold px-1">Build templates for faster logging</p>
       </div>
   
         <div className="flex flex-col gap-3 mt-2">

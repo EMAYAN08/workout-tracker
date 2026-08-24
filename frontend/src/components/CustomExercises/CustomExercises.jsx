@@ -128,8 +128,13 @@ export default function CustomExercises({ onNavigate }) {
       {/* Header section mimicking reference */}
       <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
         {/* Header section mimicking reference */}
-        <div className="flex items-center justify-between mb-1 px-1">
-          <h1 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight">Custom Exercises</h1>
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div>
+            <h1 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight flex items-center gap-2">
+              <Dumbbell className="text-primary w-6 h-6 sm:w-7 sm:h-7" /> Custom Exercises
+            </h1>
+            <p className="text-sm text-textMuted px-1 mt-1">Create your own exercise</p>
+          </div>
           <button 
             onClick={() => {
               setEditingId(null);
@@ -137,12 +142,11 @@ export default function CustomExercises({ onNavigate }) {
               setDefaultSets([{ reps: 0, weight: 0 }]);
               setIsCreating(true);
             }}
-            className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95"
+            className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95 shrink-0"
           >
             <Plus size={24} strokeWidth={3} />
           </button>
         </div>
-        <p className="text-sm text-textMuted px-1 mb-6">Create your own exercise</p>
 
         {/* Search Bar */}
         <div className="relative mb-5 px-1">
@@ -157,7 +161,7 @@ export default function CustomExercises({ onNavigate }) {
         </div>
 
         {/* Muscle Group Filters */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 -mx-4 sm:mx-0 pl-4 sm:pl-1 pr-4 sm:pr-0">
+        <div className="flex flex-wrap gap-2 px-1 mb-2">
           {filterGroups.map(group => (
             <button
               key={group}
