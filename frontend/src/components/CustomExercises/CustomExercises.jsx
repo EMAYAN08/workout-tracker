@@ -148,29 +148,31 @@ export default function CustomExercises({ onNavigate }) {
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-5 px-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search exercises or muscle groups"
-            className="w-full bg-[#1c1c1e] border-none rounded-2xl pl-12 pr-4 py-3.5 text-text font-semibold focus:outline-none focus:ring-1 focus:ring-border/50 placeholder:text-textMuted/70"
-          />
-        </div>
-
-        {/* Muscle Group Filters */}
-        <div className="flex flex-wrap gap-2 px-1 mb-2">
-          {filterGroups.map(group => (
-            <button
-              key={group}
-              onClick={() => setSelectedMuscleGroup(group)}
-              className={`shrink-0 px-5 py-2 rounded-full text-sm font-bold capitalize transition-colors ${selectedMuscleGroup === group ? 'bg-primary text-white' : 'bg-[#1c1c1e] text-textMuted hover:text-white'}`}
+        {/* Search & Filter Dropdown */}
+        <div className="flex gap-2 mb-4 px-1">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search exercises..."
+              className="w-full bg-[#1c1c1e] border-none rounded-2xl pl-11 pr-4 py-3.5 text-text font-semibold focus:outline-none focus:ring-1 focus:ring-border/50 placeholder:text-textMuted/70"
+            />
+          </div>
+          
+          <div className="relative shrink-0 w-32 sm:w-40">
+            <select 
+              value={selectedMuscleGroup}
+              onChange={e => setSelectedMuscleGroup(e.target.value)}
+              className="w-full bg-[#1c1c1e] text-text border-none rounded-2xl py-3.5 pl-4 pr-10 font-bold focus:outline-none focus:ring-1 focus:ring-border/50 appearance-none capitalize h-full truncate"
             >
-              {group}
-            </button>
-          ))}
+              {filterGroups.map(group => (
+                <option key={group} value={group}>{group === 'All' ? 'All Groups' : group}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" size={18} />
+          </div>
         </div>
       </div>
 
