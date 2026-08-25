@@ -270,7 +270,7 @@ export default function ConsistencyMap({ onMapClick }) {
       </div>
 
       {/* Calendars Container */}
-      <div className="flex pb-2 pt-2 w-full gap-4 sm:gap-6 overflow-x-auto scrollbar-none">
+      <div className="flex pb-2 pt-2 w-full justify-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none">
         
         {/* Y-axis labels */}
         <div className="flex flex-col gap-[6px] pt-[26px] sticky left-0 bg-surface z-10 pr-2">
