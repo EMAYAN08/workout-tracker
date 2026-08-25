@@ -7,11 +7,11 @@ export default function FontPreviewer() {
 
   const fonts = [
     { name: 'Outfit', family: "'Outfit', sans-serif", desc: 'Current: Geometric, modern, sporty' },
-    { name: 'Inter', family: "'Inter', sans-serif", desc: 'Ultra-clean, highly readable for data' },
-    { name: 'Poppins', family: "'Poppins', sans-serif", desc: 'Round, friendly, trendy UI' },
-    { name: 'Montserrat', family: "'Montserrat', sans-serif", desc: 'Wide, punchy, great for uppercase' },
-    { name: 'Rubik', family: "'Rubik', sans-serif", desc: 'Slightly rounded, solid, great for fitness' },
-    { name: 'Manrope', family: "'Manrope', sans-serif", desc: 'Geometric but accessible and balanced' }
+    { name: 'Sora', family: "'Sora', sans-serif", desc: 'Crisp, high legibility, boxy and data-friendly' },
+    { name: 'DM Sans', family: "'DM Sans', sans-serif", desc: 'Geometric, high quality, very readable' },
+    { name: 'Work Sans', family: "'Work Sans', sans-serif", desc: 'Grotesque, modern, utilitarian' },
+    { name: 'Oswald', family: "'Oswald', sans-serif", desc: 'Tall, condensed, impactful (great for headers)' },
+    { name: 'Nunito', family: "'Nunito', sans-serif", desc: 'Very rounded, soft, approachable' }
   ];
 
   useEffect(() => {
