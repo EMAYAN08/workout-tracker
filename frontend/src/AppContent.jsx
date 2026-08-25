@@ -8,6 +8,7 @@ const CustomExercises = React.lazy(() => import('./components/CustomExercises/Cu
 const RoutinesMain = React.lazy(() => import('./components/Routines/RoutinesMain'));
 import { Play, Activity, LayoutDashboard, Settings2, Dumbbell, Square, Sun, Moon, Database, ClipboardList, CalendarDays, RefreshCw, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSwipeable } from 'react-swipeable';
 const CalendarView = React.lazy(() => import('./components/Calendar/CalendarView'));
 const WorkoutDetailView = React.lazy(() => import('./components/Calendar/WorkoutDetailView'));
 
@@ -25,7 +26,7 @@ export default function AppContent() {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const lastScrollY = useRef(0);
 
-  const tabOrder = ['home', 'routines', 'custom_exercises', 'dashboard'];
+    const tabOrder = ['home', 'routines', 'custom_exercises', 'dashboard'];
   
   const navigateTab = (newTab) => {
     const currentIdx = tabOrder.indexOf(currentTab);
@@ -37,6 +38,22 @@ export default function AppContent() {
     }
     setCurrentTab(newTab);
   };
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (activeWorkout) return;
+      const currentIdx = tabOrder.indexOf(currentTab);
+      if (currentIdx < tabOrder.length - 1) navigateTab(tabOrder[currentIdx + 1]);
+    },
+    onSwipedRight: () => {
+      if (activeWorkout) return;
+      const currentIdx = tabOrder.indexOf(currentTab);
+      if (currentIdx > 0) navigateTab(tabOrder[currentIdx - 1]);
+    },
+    preventScrollOnSwipe: false,
+    trackMouse: false,
+    delta: 50 // Need a decent horizontal swipe to trigger, prevents accidental swipes when scrolling vertically
+  });
 
   const handleScroll = (e) => {
     const currentScrollY = e.target.scrollTop;
@@ -154,6 +171,7 @@ export default function AppContent() {
 
       {/* Main Content Area */}
       <main 
+        {...handlers}
         className="flex-1 overflow-y-auto w-full max-w-lg mx-auto bg-background overflow-x-hidden pb-[calc(6rem+env(safe-area-inset-bottom))] relative"
         onScroll={handleScroll}
       >
