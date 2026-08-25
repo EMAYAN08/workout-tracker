@@ -206,17 +206,23 @@ export default function CustomExercises({ onNavigate }) {
 
       <AnimatePresence>
         {isCreating && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface border border-border/50 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-2xl overflow-y-auto max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-black text-text text-xl">{editingId ? 'Edit Exercise' : 'New Exercise'}</h3>
-                <button onClick={() => setIsCreating(false)} className="text-textMuted hover:text-text bg-surface-light p-2 rounded-full transition-colors"><X size={20} /></button>
-              </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col pb-safe"
+          >
+            <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex justify-between items-center">
+              <h3 className="font-black text-text text-xl">{editingId ? 'Edit Custom Exercise' : 'New Custom Exercise'}</h3>
+              <button 
+                onClick={() => setIsCreating(false)} 
+                className="p-3.5 text-textMuted hover:text-text rounded-2xl bg-surface-light border border-border/50 min-w-touch min-h-touch flex items-center justify-center shrink-0 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className={`flex-1 overflow-y-auto p-4 flex flex-col gap-6 relative ${activeInput ? 'pb-[320px]' : 'pb-24'}`}>
               
               <div className="flex flex-col gap-4">
                 <div>
@@ -283,8 +289,31 @@ export default function CustomExercises({ onNavigate }) {
               >
                 {isSubmitting ? 'Saving...' : (editingId ? 'Save Changes' : 'Create Exercise')}
               </button>
-            </motion.div>
-          </div>
+              </div>
+            {/* Custom Numpad */}
+            <CustomNumpad 
+              activeInput={activeInput ? {
+                field: activeInput.field,
+                onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
+                onNext: () => {
+                  if (activeInput.field === 'weight') {
+                    setActiveInput(prev => ({ ...prev, field: 'reps' }));
+                  } else if (activeInput.index < defaultSets.length - 1) {
+                    setActiveInput({ index: activeInput.index + 1, field: 'weight' });
+                  } else {
+                    setActiveInput(null);
+                  }
+                }
+              } : null}
+              onClose={() => setActiveInput(null)}
+              value={activeInput ? defaultSets[activeInput.index]?.[activeInput.field] : ''}
+              onUpdate={(val) => {
+                if (activeInput) {
+                  updateSet(activeInput.index, activeInput.field, val);
+                }
+              }}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
