@@ -102,21 +102,29 @@ export default function ActiveWorkout() {
           </div>
         </div>
         
-        {restTimer > 0 && (
-          <div className="flex flex-col items-end animate-in fade-in zoom-in duration-300">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400/80 mb-0.5">Resting</span>
-            <div className="flex items-center gap-2 text-blue-400">
-              <Timer size={14} />
-              <span className="font-mono font-bold text-base leading-none">{formatTime(restTimer)}</span>
-              <button 
-                onClick={() => stopRestTimer()} 
-                className="p-1 rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors ml-1"
-              >
-                <X size={12} strokeWidth={3} />
-              </button>
+        {playingSet ? (
+            <div className="flex flex-col items-end animate-in fade-in zoom-in duration-300">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/80 mb-0.5">Set Time</span>
+              <div className="flex items-center gap-2 text-emerald-400">
+                <Timer size={14} />
+                <span className="font-mono font-bold text-base leading-none">{formatTime(setTimer)}</span>
+              </div>
             </div>
-          </div>
-        )}
+          ) : restTimer > 0 ? (
+            <div className="flex flex-col items-end animate-in fade-in zoom-in duration-300">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400/80 mb-0.5">Resting</span>
+              <div className="flex items-center gap-2 text-blue-400">
+                <Timer size={14} />
+                <span className="font-mono font-bold text-base leading-none">{formatTime(restTimer)}</span>
+                <button 
+                  onClick={() => stopRestTimer()} 
+                  className="p-1 rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors ml-1"
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+              </div>
+            </div>
+          ) : null}
       </div>
 
       {activeWorkout.exercises.length === 0 && (
