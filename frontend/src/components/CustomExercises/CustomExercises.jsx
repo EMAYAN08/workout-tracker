@@ -256,19 +256,19 @@ export default function CustomExercises({ onNavigate }) {
                     {defaultSets.map((s, i) => (
                       <div key={i} className="flex gap-2 items-center">
                         <div 
-                            onClick={() => setActiveInput({ index: i, field: 'reps' })}
-                            className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
-                          >
-                            <span className="text-xs font-bold text-textMuted">Reps</span>
-                            <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.reps || 0}</div>
-                          </div>
-                          <div 
-                            onClick={() => setActiveInput({ index: i, field: 'weight' })}
-                            className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
-                          >
-                            <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
-                            <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.weight || 0}</div>
-                          </div>
+                              onClick={() => setActiveInput({ index: i, field: 'weight' })}
+                              className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
+                            >
+                              <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
+                              <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.weight || 0}</div>
+                            </div>
+                            <div 
+                              onClick={() => setActiveInput({ index: i, field: 'reps' })}
+                              className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
+                            >
+                              <span className="text-xs font-bold text-textMuted">Reps</span>
+                              <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.reps || 0}</div>
+                            </div>
                         <button onClick={() => removeSet(i)} disabled={defaultSets.length === 1} className="p-2 text-textMuted hover:text-red-400 disabled:opacity-30">
                           <Trash2 size={16} />
                         </button>
