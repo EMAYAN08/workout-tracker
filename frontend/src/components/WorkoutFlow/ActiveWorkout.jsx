@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
-import { Plus, Minus, Timer, History, Trash2, Check, Dumbbell, Search, X, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, Plus, Minus, Timer, History, Trash2, Check, Dumbbell, Search, X, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPreviousPerformance } from '../../utils/calculations';
 import CustomNumpad from './CustomNumpad';
@@ -32,6 +32,7 @@ export default function ActiveWorkout() {
     activeWorkout, workoutDuration, 
     addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet, removeActiveExercise, 
     restTimer, stopRestTimer, unit, workoutHistory,
+    playingSet, setTimer, startSet, cancelSet,
     createCustomExercise
   } = useWorkout();
 
@@ -300,22 +301,42 @@ export default function ActiveWorkout() {
   </div>
                       </div>
                       <div className="w-16 flex justify-center items-center gap-1">
-                        <button 
-                          onClick={() => removeSet(idx, sIdx)}
-                          className="w-6 h-6 rounded flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                          title="Remove Set"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            if (set.reps) completeSet(idx, sIdx);
-                          }}
-                          className={`w-8 h-8 rounded flex items-center justify-center transition-colors shadow-sm ${set.reps ? 'bg-surface hover:bg-primary hover:text-white text-textMuted' : 'bg-surface text-textMuted/30 cursor-not-allowed'}`}
-                        >
-                          <Check size={18} strokeWidth={3} />
-                        </button>
-                      </div>
+                          {playingSet && playingSet.exerciseIndex === idx && playingSet.setIndex === sIdx ? (
+                            <>
+                              <button 
+                                onClick={() => removeSet(idx, sIdx)}
+                                className="w-6 h-6 rounded flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                title="Remove Set"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                              <button 
+                                onClick={() => { if (set.reps) completeSet(idx, sIdx); }}
+                                className={`w-8 h-8 rounded flex items-center justify-center transition-colors shadow-sm ${set.reps ? 'bg-emerald-500/20 hover:bg-emerald-500 hover:text-white text-emerald-500' : 'bg-surface text-textMuted/30 cursor-not-allowed'}`}
+                                title="Finish Set"
+                              >
+                                <Check size={18} strokeWidth={3} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => removeSet(idx, sIdx)}
+                                className="w-6 h-6 rounded flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                title="Remove Set"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                              <button 
+                                onClick={() => startSet(idx, sIdx)}
+                                className="w-8 h-8 rounded bg-primary/20 hover:bg-primary hover:text-white flex items-center justify-center text-primary transition-colors"
+                                title="Start Set"
+                              >
+                                <Play size={16} strokeWidth={3} className="ml-0.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                     </div>
                   );
                 }

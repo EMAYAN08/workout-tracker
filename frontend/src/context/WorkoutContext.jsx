@@ -60,6 +60,35 @@ export function WorkoutProvider({ children }) {
   });
   const [restTimer, setRestTimer] = useState(0);
 
+  // Set Timer
+  const [playingSet, setPlayingSet] = useState(() => {
+    const saved = localStorage.getItem('workout_playing_set');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [setTimer, setSetTimer] = useState(0);
+  
+  useEffect(() => {
+    if (playingSet) {
+      localStorage.setItem('workout_playing_set', JSON.stringify(playingSet));
+    } else {
+      localStorage.removeItem('workout_playing_set');
+    }
+  }, [playingSet]);
+
+  useEffect(() => {
+    let interval;
+    if (playingSet) {
+      const updateSetTimer = () => {
+        setSetTimer(Math.max(0, Math.floor((Date.now() - playingSet.startTime) / 1000)));
+      };
+      updateSetTimer();
+      interval = setInterval(updateSetTimer, 1000);
+    } else {
+      setSetTimer(0);
+    }
+    return () => clearInterval(interval);
+  }, [playingSet]);
+
   // Workout History
   const [workoutHistory, setWorkoutHistory] = useState([]);
   
@@ -516,7 +545,19 @@ export function WorkoutProvider({ children }) {
     });
   };
 
+
+  const startSet = (exerciseIndex, setIndex) => {
+    if (navigator.vibrate) navigator.vibrate(40);
+    setLastSetCompletedAt(null); // stop rest timer
+    setPlayingSet({ exerciseIndex, setIndex, startTime: Date.now() });
+  };
+  
+  const cancelSet = () => {
+    setPlayingSet(null);
+  };
+
   const completeSet = async (exerciseIndex, setIndex) => {
+
     if (navigator.vibrate) navigator.vibrate(40);
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
@@ -533,6 +574,7 @@ export function WorkoutProvider({ children }) {
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
     setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
     
+    setPlayingSet(null);
     // Start tracking rest for the *next* set
     setLastSetCompletedAt(Date.now());
   };
@@ -631,6 +673,7 @@ export function WorkoutProvider({ children }) {
     removeActiveExercise,
       workoutDuration,
       restTimer, stopRestTimer,
+      playingSet, setTimer, startSet, cancelSet,
       workoutHistory,
       customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise,
       routines, createRoutine, updateRoutine, deleteRoutine,
