@@ -212,13 +212,23 @@ export default function CustomExercises({ onNavigate }) {
             exit={{ opacity: 0, y: 20 }}
             className="fixed inset-0 z-50 bg-background flex flex-col pb-safe"
           >
-            <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex justify-between items-center">
-              <h3 className="font-black text-text text-xl">{editingId ? 'Edit Custom Exercise' : 'New Custom Exercise'}</h3>
+            <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex justify-between items-center z-10 sticky top-0">
               <button 
-                onClick={() => setIsCreating(false)} 
-                className="p-3.5 text-textMuted hover:text-text rounded-2xl bg-surface-light border border-border/50 min-w-touch min-h-touch flex items-center justify-center shrink-0 transition-colors"
+                onClick={() => setIsCreating(false)}
+                className="px-4 py-2 rounded-lg text-textMuted font-bold hover:bg-surface-light transition-colors"
               >
-                <X size={20} />
+                Cancel
+              </button>
+              <h2 className="text-xl font-black text-text tracking-tight">
+                {editingId ? 'Edit Exercise' : 'New Exercise'}
+              </h2>
+              <button 
+                onClick={handleCreateSubmit}
+                disabled={isSubmitting || !newName.trim()}
+                className="bg-primary hover:bg-primary-light text-white px-5 py-2 rounded-lg font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmitting && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
+                Save
               </button>
             </div>
             
@@ -282,13 +292,7 @@ export default function CustomExercises({ onNavigate }) {
                 </div>
               </div>
   
-              <button 
-                onClick={handleCreateSubmit}
-                disabled={isSubmitting || !newName.trim()}
-                className="w-full mt-4 bg-primary hover:bg-primary-light text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all active:scale-95 disabled:opacity-50 text-base"
-              >
-                {isSubmitting ? 'Saving...' : (editingId ? 'Save Changes' : 'Create Exercise')}
-              </button>
+              
               </div>
             {/* Custom Numpad */}
             <CustomNumpad 
