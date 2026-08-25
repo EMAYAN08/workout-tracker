@@ -6,7 +6,7 @@ import { Search, Plus, Save, X, Dumbbell, Trash2, ChevronDown, ChevronUp, ArrowU
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
-  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, unit } = useWorkout();
+  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit } = useWorkout();
 
   const [name, setName] = useState(initialRoutine?.name || '');
   const [newCustomExIds, setNewCustomExIds] = useState([]);
@@ -53,14 +53,25 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length > 2) {
         try {
+          const query = searchQuery.toLowerCase();
+          const localMatches = (customExercises || []).filter(ex => ex.name.toLowerCase().includes(query) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query)));
+          
           const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
           const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
-          if (!res.ok) throw new Error('Network response was not ok');
-          const data = await res.json();
-          setSearchResults(data);
+          let data = [];
+          if (res.ok) {
+            data = await res.json();
+          }
+          
+          const localIds = new Set(localMatches.map(l => l.id));
+          const apiMatches = data.filter(apiEx => !localIds.has(apiEx.id));
+          
+          setSearchResults([...localMatches, ...apiMatches]);
         } catch (err) {
           console.error("Search failed", err);
-          setSearchResults([]);
+          const query = searchQuery.toLowerCase();
+          const localMatches = (customExercises || []).filter(ex => ex.name.toLowerCase().includes(query) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query)));
+          setSearchResults(localMatches);
         }
       } else {
         setSearchResults([]);
@@ -68,7 +79,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, customExercises]);
 
   const handleAddExercise = (exercise) => {
     let initialSets = [{ reps: 10, weight: 0, type: 'Working' }];

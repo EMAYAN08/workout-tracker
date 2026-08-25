@@ -3,6 +3,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
 import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, Edit2, Search, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 
 const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
   return (
@@ -68,6 +69,7 @@ export default function CustomExercises({ onNavigate }) {
   const { customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise, unit } = useWorkout();
   
   const [isCreating, setIsCreating] = useState(false);
+  const [activeInput, setActiveInput] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [activeExerciseId, setActiveExerciseId] = useState(null);
   
@@ -181,7 +183,7 @@ export default function CustomExercises({ onNavigate }) {
         <p className="text-xs font-bold text-text mb-3 px-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-primary"></span> {filteredExercises.length} Results</p>
       ) : null}
 
-      <div className="flex flex-col px-1">
+      <div className={`flex flex-col px-1 ${activeInput ? 'pb-[300px]' : ''}`}>
         {filteredExercises.length === 0 ? (
            <div className="flex flex-col items-center justify-center py-12 opacity-50">
              <Dumbbell size={48} className="text-textMuted mb-4" />
@@ -247,22 +249,20 @@ export default function CustomExercises({ onNavigate }) {
                   <div className="flex flex-col gap-2">
                     {defaultSets.map((s, i) => (
                       <div key={i} className="flex gap-2 items-center">
-                        <div className="flex-1 bg-surface-light border border-border/50 rounded-xl px-3 py-2 flex items-center justify-between">
-                          <span className="text-xs font-bold text-textMuted">Reps</span>
-                          <input 
-                            type="number" min="0" value={s.reps} 
-                            onChange={e => updateSet(i, 'reps', parseInt(e.target.value)||0)}
-                            className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex-1 bg-surface-light border border-border/50 rounded-xl px-3 py-2 flex items-center justify-between">
-                          <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
-                          <input 
-                            type="number" min="0" value={s.weight} 
-                            onChange={e => updateSet(i, 'weight', parseFloat(e.target.value)||0)}
-                            className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none"
-                          />
-                        </div>
+                        <div 
+                            onClick={() => setActiveInput({ index: i, field: 'reps' })}
+                            className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
+                          >
+                            <span className="text-xs font-bold text-textMuted">Reps</span>
+                            <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.reps || 0}</div>
+                          </div>
+                          <div 
+                            onClick={() => setActiveInput({ index: i, field: 'weight' })}
+                            className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
+                          >
+                            <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
+                            <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.weight || 0}</div>
+                          </div>
                         <button onClick={() => removeSet(i)} disabled={defaultSets.length === 1} className="p-2 text-textMuted hover:text-red-400 disabled:opacity-30">
                           <Trash2 size={16} />
                         </button>
