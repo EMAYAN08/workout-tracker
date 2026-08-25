@@ -6,12 +6,12 @@ export default function FontPreviewer() {
   const [activeFont, setActiveFont] = useState('Outfit');
 
   const fonts = [
-    { name: 'Outfit', family: "'Outfit', sans-serif", desc: 'Current: Geometric, modern, sporty' },
-    { name: 'Sora', family: "'Sora', sans-serif", desc: 'Crisp, high legibility, boxy and data-friendly' },
-    { name: 'DM Sans', family: "'DM Sans', sans-serif", desc: 'Geometric, high quality, very readable' },
-    { name: 'Work Sans', family: "'Work Sans', sans-serif", desc: 'Grotesque, modern, utilitarian' },
-    { name: 'Oswald', family: "'Oswald', sans-serif", desc: 'Tall, condensed, impactful (great for headers)' },
-    { name: 'Nunito', family: "'Nunito', sans-serif", desc: 'Very rounded, soft, approachable' }
+    { name: 'Outfit', family: "'Outfit', sans-serif", desc: 'Current Default: Geometric, modern, sporty.' },
+    { name: 'System Default', family: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", desc: 'Used by Fitbod. Ultra-native, high performance, flawless legibility.' },
+    { name: 'Jost', family: "'Jost', sans-serif", desc: 'Inspired by Futura (used by Peloton). Sharp, energetic, elegant.' },
+    { name: 'Barlow', family: "'Barlow', sans-serif", desc: 'Technical and slightly condensed. Used heavily in sports/stats apps.' },
+    { name: 'Teko', family: "'Teko', sans-serif", desc: 'Aggressive, tall display font. Gives off a heavy lifting/CrossFit vibe.' },
+    { name: 'Kanit', family: "'Kanit', sans-serif", desc: 'Very trendy, dynamic, and thick. Great for high-intensity apps.' }
   ];
 
   useEffect(() => {
