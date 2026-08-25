@@ -125,6 +125,116 @@ export default function CustomExercises({ onNavigate }) {
   };
   const removeSet = (index) => setDefaultSets(defaultSets.filter((_, i) => i !== index));
 
+  if (isCreating) {
+    return (
+      <div className={`flex flex-col gap-4 w-full transition-all duration-300 ${activeInput ? 'pb-[300px]' : ''}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-black text-text tracking-tight">
+            {editingId ? 'Edit Exercise' : 'New Exercise'}
+          </h2>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsCreating(false)}
+              className="px-4 py-2 rounded-lg text-textMuted font-bold hover:bg-surface-light transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleCreateSubmit}
+              disabled={isSubmitting || !newName.trim()}
+              className="bg-primary hover:bg-primary-light text-white px-5 py-2 rounded-lg font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSubmitting && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
+              Save
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-textMuted mb-1.5 block">Exercise Name</label>
+            <input 
+              type="text" 
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="e.g. Hex Bar Deadlift"
+              className="w-full bg-surface-light border border-border/50 rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-textMuted mb-1.5 block">Muscle Group</label>
+            <select 
+              value={newMuscleGroup} 
+              onChange={e => setNewMuscleGroup(e.target.value)}
+              className="w-full bg-surface-light border border-border/50 rounded-xl px-4 py-3 text-text font-bold capitalize focus:outline-none focus:border-primary transition-colors appearance-none"
+            >
+              {muscleGroups.map(mg => <option key={mg} value={mg}>{mg}</option>)}
+            </select>
+          </div>
+
+          <div className="mt-2">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-textMuted">Default Sets</label>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              {defaultSets.map((s, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <div 
+                    onClick={() => setActiveInput({ index: i, field: 'weight' })}
+                    className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
+                  >
+                    <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
+                    <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.weight || 0}</div>
+                  </div>
+                  <div 
+                    onClick={() => setActiveInput({ index: i, field: 'reps' })}
+                    className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
+                  >
+                    <span className="text-xs font-bold text-textMuted">Reps</span>
+                    <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.reps || 0}</div>
+                  </div>
+                  <button onClick={() => removeSet(i)} disabled={defaultSets.length === 1} className="p-2 text-textMuted hover:text-red-400 disabled:opacity-30">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              
+              <button onClick={addSet} className="w-full py-2.5 mt-1 border-2 border-dashed border-border/50 rounded-xl text-xs font-bold text-textMuted hover:text-primary hover:border-primary/50 transition-colors flex items-center justify-center gap-1">
+                <Plus size={14} /> Add Default Set
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Numpad */}
+        <CustomNumpad 
+          activeInput={activeInput ? {
+            field: activeInput.field,
+            onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
+            onNext: () => {
+              if (activeInput.field === 'weight') {
+                setActiveInput(prev => ({ ...prev, field: 'reps' }));
+              } else if (activeInput.index < defaultSets.length - 1) {
+                setActiveInput({ index: activeInput.index + 1, field: 'weight' });
+              } else {
+                setActiveInput(null);
+              }
+            }
+          } : null}
+          onClose={() => setActiveInput(null)}
+          value={activeInput ? defaultSets[activeInput.index]?.[activeInput.field] : ''}
+          onUpdate={(val) => {
+            if (activeInput) {
+              updateSet(activeInput.index, activeInput.field, val);
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col w-full pb-8 relative pt-0 mt-[-8px]">
       {/* Header section mimicking reference */}
@@ -203,123 +313,6 @@ export default function CustomExercises({ onNavigate }) {
           ))
         )}
       </div>
-
-      <AnimatePresence>
-        {isCreating && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 z-50 bg-background flex flex-col pb-safe"
-          >
-            <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex justify-between items-center z-10 sticky top-0">
-              <button 
-                onClick={() => setIsCreating(false)}
-                className="px-4 py-2 rounded-lg text-textMuted font-bold hover:bg-surface-light transition-colors"
-              >
-                Cancel
-              </button>
-              <h2 className="text-xl font-black text-text tracking-tight">
-                {editingId ? 'Edit Exercise' : 'New Exercise'}
-              </h2>
-              <button 
-                onClick={handleCreateSubmit}
-                disabled={isSubmitting || !newName.trim()}
-                className="bg-primary hover:bg-primary-light text-white px-5 py-2 rounded-lg font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-              >
-                {isSubmitting && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
-                Save
-              </button>
-            </div>
-            
-            <div className={`flex-1 overflow-y-auto p-4 flex flex-col gap-6 relative ${activeInput ? 'pb-[320px]' : 'pb-24'}`}>
-              
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-textMuted mb-1.5 block">Exercise Name</label>
-                  <input 
-                    type="text" 
-                    value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    placeholder="e.g. Hex Bar Deadlift"
-                    className="w-full bg-surface-light border border-border/50 rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-textMuted mb-1.5 block">Muscle Group</label>
-                  <select 
-                    value={newMuscleGroup} 
-                    onChange={e => setNewMuscleGroup(e.target.value)}
-                    className="w-full bg-surface-light border border-border/50 rounded-xl px-4 py-3 text-text font-bold capitalize focus:outline-none focus:border-primary transition-colors appearance-none"
-                  >
-                    {muscleGroups.map(mg => <option key={mg} value={mg}>{mg}</option>)}
-                  </select>
-                </div>
-  
-                <div className="mt-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-textMuted">Default Sets</label>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    {defaultSets.map((s, i) => (
-                      <div key={i} className="flex gap-2 items-center">
-                        <div 
-                              onClick={() => setActiveInput({ index: i, field: 'weight' })}
-                              className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
-                            >
-                              <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
-                              <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.weight || 0}</div>
-                            </div>
-                            <div 
-                              onClick={() => setActiveInput({ index: i, field: 'reps' })}
-                              className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
-                            >
-                              <span className="text-xs font-bold text-textMuted">Reps</span>
-                              <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.reps || 0}</div>
-                            </div>
-                        <button onClick={() => removeSet(i)} disabled={defaultSets.length === 1} className="p-2 text-textMuted hover:text-red-400 disabled:opacity-30">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                    
-                    <button onClick={addSet} className="w-full py-2.5 mt-1 border-2 border-dashed border-border/50 rounded-xl text-xs font-bold text-textMuted hover:text-primary hover:border-primary/50 transition-colors flex items-center justify-center gap-1">
-                      <Plus size={14} /> Add Default Set
-                    </button>
-                  </div>
-                </div>
-              </div>
-  
-              
-              </div>
-            {/* Custom Numpad */}
-            <CustomNumpad 
-              activeInput={activeInput ? {
-                field: activeInput.field,
-                onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
-                onNext: () => {
-                  if (activeInput.field === 'weight') {
-                    setActiveInput(prev => ({ ...prev, field: 'reps' }));
-                  } else if (activeInput.index < defaultSets.length - 1) {
-                    setActiveInput({ index: activeInput.index + 1, field: 'weight' });
-                  } else {
-                    setActiveInput(null);
-                  }
-                }
-              } : null}
-              onClose={() => setActiveInput(null)}
-              value={activeInput ? defaultSets[activeInput.index]?.[activeInput.field] : ''}
-              onUpdate={(val) => {
-                if (activeInput) {
-                  updateSet(activeInput.index, activeInput.field, val);
-                }
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
