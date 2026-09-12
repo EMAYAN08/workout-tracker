@@ -58,8 +58,6 @@ export default function Dashboard({ onMapClick }) {
     getStreaks,
     exportData,
     importData,
-    restTargetSec,
-    setRestTargetSec,
   } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -260,26 +258,6 @@ export default function Dashboard({ onMapClick }) {
       </View>
 
       <WorkoutDurationChart />
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Rest timer</Text>
-      </View>
-      <View style={styles.panel}>
-        <Text style={styles.label}>Default rest</Text>
-        <Select
-          value={String(restTargetSec)}
-          onChange={(v) => setRestTargetSec(Number(v))}
-          options={[
-            { value: '60', label: '60 seconds' },
-            { value: '90', label: '90 seconds' },
-            { value: '120', label: '2 minutes' },
-            { value: '180', label: '3 minutes' },
-          ]}
-        />
-        <Text style={styles.hint}>
-          Completing a set starts a rest countdown. Lock-screen notification shows the next exercise and lets you pause, resume, or start the next set.
-        </Text>
-      </View>
 
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>Backup</Text>

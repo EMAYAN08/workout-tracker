@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
-  const { routines, deleteRoutine, startWorkoutFromRoutine, activeWorkout } = useWorkout();
+  const { routines, deleteRoutine, startWorkoutFromRoutine, startWorkout, activeWorkout } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -47,6 +47,26 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
           <Plus size={24} color={colors.text} strokeWidth={3} />
         </Pressable>
       </View>
+
+      <Pressable
+        onPress={() => {
+          if (activeWorkout) {
+            confirmAction(
+              'Active workout',
+              'You already have an active workout. Do you want to overwrite it?',
+              () => startWorkout(),
+              { confirmLabel: 'Overwrite' }
+            );
+            return;
+          }
+          startWorkout();
+        }}
+        style={styles.emptyStart}
+        accessibilityLabel="Start empty workout"
+      >
+        <Play size={16} color={colors.accentFg} fill={colors.accentFg} />
+        <Text style={styles.emptyStartText}>Start empty workout</Text>
+      </Pressable>
 
       {routines.length === 0 ? (
         <View style={styles.empty}>
@@ -111,6 +131,17 @@ function makeStyles(colors) {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyStart: {
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  emptyStartText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 16 },
   empty: {
     backgroundColor: colors.surface,
     borderRadius: radius.sm,

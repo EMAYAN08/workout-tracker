@@ -131,21 +131,38 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   const removeExercise = (index) => setExercises((prev) => prev.filter((_, i) => i !== index));
   const updateSet = (exerciseIndex, setIndex, field, value) => {
-    const next = [...exercises];
-    next[exerciseIndex].defaultSets[setIndex][field] = value;
-    setExercises(next);
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== exerciseIndex
+          ? ex
+          : {
+              ...ex,
+              defaultSets: (ex.defaultSets || []).map((s, j) =>
+                j !== setIndex ? s : { ...s, [field]: value }
+              ),
+            }
+      )
+    );
   };
   const addSet = (exerciseIndex) => {
-    const next = [...exercises];
-    const prevSets = next[exerciseIndex].defaultSets;
-    const lastSet = prevSets.length > 0 ? prevSets[prevSets.length - 1] : { reps: 10, weight: 0, type: 'Working' };
-    next[exerciseIndex].defaultSets.push({ ...lastSet });
-    setExercises(next);
+    setExercises((prev) =>
+      prev.map((ex, i) => {
+        if (i !== exerciseIndex) return ex;
+        const prevSets = ex.defaultSets || [];
+        const lastSet = prevSets.length > 0 ? prevSets[prevSets.length - 1] : { reps: 10, weight: 0, type: 'Working' };
+        return { ...ex, defaultSets: [...prevSets, { ...lastSet }] };
+      })
+    );
   };
   const removeSet = (exerciseIndex, setIndex) => {
-    const next = [...exercises];
-    next[exerciseIndex].defaultSets.splice(setIndex, 1);
-    setExercises(next);
+    setExercises((prev) =>
+      prev.map((ex, i) => {
+        if (i !== exerciseIndex) return ex;
+        const sets = ex.defaultSets || [];
+        if (sets.length <= 1) return ex;
+        return { ...ex, defaultSets: sets.filter((_, j) => j !== setIndex) };
+      })
+    );
   };
 
   const handleSave = async () => {
@@ -153,7 +170,8 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
       alertMessage('Routine name', 'Please enter a routine name.');
       return;
     }
-    const routineData = { name, exercises };
+    setActiveInput(null);
+    const routineData = { name: name.trim(), exercises };
     if (initialRoutine) await updateRoutine(initialRoutine.id, routineData);
     else await createRoutine(routineData);
     for (const ex of exercises) {

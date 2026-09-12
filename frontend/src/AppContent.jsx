@@ -11,12 +11,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
-  Activity,
   LayoutDashboard,
   Database,
   ClipboardList,
-  Sun,
-  Moon,
+  Settings as SettingsIcon,
 } from 'lucide-react-native';
 import { useWorkout } from './context/WorkoutContext';
 import { useTheme } from './context/ThemeContext';
@@ -27,31 +25,29 @@ import CustomExercises from './components/CustomExercises/CustomExercises';
 import RoutinesMain from './components/Routines/RoutinesMain';
 import CalendarView from './components/Calendar/CalendarView';
 import WorkoutDetailView from './components/Calendar/WorkoutDetailView';
+import Settings from './components/Settings/Settings';
 import { fonts, radius, HIT } from './theme';
 import { LOGO } from './config';
 import { haptic } from './haptics';
 
-const TAB_ORDER = ['home', 'routines', 'custom_exercises', 'dashboard'];
+const TAB_ORDER = ['routines', 'custom_exercises', 'dashboard', 'settings'];
 
 export default function AppContent() {
   const {
     hydrated,
     activeWorkout,
-    startWorkout,
     finishWorkout,
     cancelWorkout,
     unit,
-    toggleUnit,
     completedWorkout,
     setCompletedWorkout,
-    workoutHistory,
   } = useWorkout();
-  const { colors, isDark, toggleTheme, tabBarHidden } = useTheme();
+  const { colors, tabBarHidden } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = makeStyles(colors);
   const fade = useRef(new Animated.Value(1)).current;
 
-  const [currentTab, setCurrentTab] = useState('home');
+  const [currentTab, setCurrentTab] = useState('routines');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);
 
@@ -96,41 +92,11 @@ export default function AppContent() {
       }
     });
 
-  const lastSession = workoutHistory.find((w) => w.exercises?.length > 0);
-
   const renderBody = () => {
     if (activeWorkout) return <ActiveWorkout />;
-    if (currentTab === 'home') {
-      return (
-        <View style={styles.home}>
-          <Text style={styles.kicker}>Session</Text>
-          <Text style={styles.homeTitle}>Ready{'\n'}to lift.</Text>
-          <Text style={styles.homeSub}>
-            {lastSession
-              ? `${lastSession.exercises.length} movements last time. Keep the chain.`
-              : 'Every set lives on this phone. No cloud. No login.'}
-          </Text>
-          <Pressable
-            onPress={() => {
-              haptic('medium');
-              startWorkout();
-            }}
-            style={({ pressed }) => [styles.startBtn, pressed && { opacity: 0.82 }]}
-          >
-            <Text style={styles.startBtnText}>Start Empty Workout</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => navigateTab('routines')}
-            hitSlop={8}
-            style={{ marginTop: 16, minHeight: HIT, justifyContent: 'center' }}
-          >
-            <Text style={styles.link}>Or start from a routine</Text>
-          </Pressable>
-        </View>
-      );
-    }
     if (currentTab === 'custom_exercises') return <CustomExercises />;
     if (currentTab === 'routines') return <RoutinesMain />;
+    if (currentTab === 'settings') return <Settings />;
     if (currentTab === 'dashboard') return <Dashboard onMapClick={() => navigateTab('calendar')} />;
     if (currentTab === 'calendar') {
       return (
@@ -146,14 +112,14 @@ export default function AppContent() {
     if (currentTab === 'workout-detail') {
       return <WorkoutDetailView date={selectedDate} onBack={() => navigateTab('calendar')} />;
     }
-    return <Dashboard onMapClick={() => navigateTab('calendar')} />;
+    return <RoutinesMain />;
   };
 
   const tabs = [
-    { id: 'home', label: 'Workout', Icon: Activity },
     { id: 'routines', label: 'Routines', Icon: ClipboardList },
     { id: 'custom_exercises', label: 'Exercises', Icon: Database },
     { id: 'dashboard', label: 'You', Icon: LayoutDashboard },
+    { id: 'settings', label: 'Settings', Icon: SettingsIcon },
   ];
 
   if (completedWorkout) {
@@ -171,41 +137,10 @@ export default function AppContent() {
   return (
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable onPress={() => navigateTab('home')} style={styles.brand} hitSlop={8}>
+        <Pressable onPress={() => navigateTab('routines')} style={styles.brand} hitSlop={8}>
           <Image source={LOGO} style={styles.logo} />
           <Text style={styles.brandText}>TrackIt</Text>
         </Pressable>
-
-        <View style={styles.headerRight}>
-          <Pressable
-            onPress={() => {
-              haptic('selection');
-              toggleTheme();
-            }}
-            style={({ pressed }) => [styles.iconCircle, pressed && { opacity: 0.55 }]}
-          >
-            {isDark ? (
-              <Sun size={18} color={colors.text} strokeWidth={2} />
-            ) : (
-              <Moon size={18} color={colors.text} strokeWidth={2} />
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              haptic('selection');
-              toggleUnit();
-            }}
-            style={styles.unitToggle}
-          >
-            <View style={[styles.unitSeg, unit === 'lbs' && styles.unitSegOn]}>
-              <Text style={[styles.unitLabel, unit === 'lbs' && styles.unitLabelOn]}>LB</Text>
-            </View>
-            <View style={[styles.unitSeg, unit === 'kgs' && styles.unitSegOn]}>
-              <Text style={[styles.unitLabel, unit === 'kgs' && styles.unitLabelOn]}>KG</Text>
-            </View>
-          </Pressable>
-        </View>
       </View>
 
       {activeWorkout && (
@@ -219,27 +154,23 @@ export default function AppContent() {
           >
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          <Pressable
-            disabled={isFinishing}
-            onPress={async () => {
-              haptic('success');
-              setIsFinishing(true);
-              await finishWorkout();
-              setIsFinishing(false);
-            }}
-            style={({ pressed }) => [styles.finishBtn, isFinishing && { opacity: 0.5 }, pressed && { opacity: 0.88 }]}
-          >
-            {isFinishing && (
-              <ActivityIndicator size={14} color={colors.accentFg} style={{ marginRight: 6 }} />
-            )}
-            <Text style={styles.finishText}>
-              {isFinishing
-                ? 'Finishing...'
-                : activeWorkout.exercises.length === 0
-                  ? 'Log Rest Day'
-                  : 'Finish'}
-            </Text>
-          </Pressable>
+          {activeWorkout.exercises.length > 0 && (
+            <Pressable
+              disabled={isFinishing}
+              onPress={async () => {
+                haptic('success');
+                setIsFinishing(true);
+                await finishWorkout();
+                setIsFinishing(false);
+              }}
+              style={({ pressed }) => [styles.finishBtn, isFinishing && { opacity: 0.5 }, pressed && { opacity: 0.88 }]}
+            >
+              {isFinishing && (
+                <ActivityIndicator size={14} color={colors.accentFg} style={{ marginRight: 6 }} />
+              )}
+              <Text style={styles.finishText}>{isFinishing ? 'Finishing...' : 'Finish'}</Text>
+            </Pressable>
+          )}
         </View>
       )}
 
@@ -305,42 +236,6 @@ function makeStyles(colors) {
       fontSize: 20,
       letterSpacing: -0.6,
     },
-    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    iconCircle: {
-      width: HIT,
-      height: HIT,
-      borderRadius: radius.sm,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: colors.borderStrong,
-    },
-    unitToggle: {
-      width: 96,
-      height: HIT,
-      borderRadius: radius.sm,
-      backgroundColor: colors.surface2,
-      overflow: 'hidden',
-      flexDirection: 'row',
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    unitSeg: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    unitSegOn: {
-      backgroundColor: colors.text,
-    },
-    unitLabel: {
-      fontSize: 12,
-      fontFamily: fonts.semibold,
-      letterSpacing: 0.4,
-      color: colors.textMuted,
-    },
-    unitLabelOn: { color: colors.background },
     workoutBar: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -372,52 +267,6 @@ function makeStyles(colors) {
     },
     finishText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
     main: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center', overflow: 'visible' },
-    home: {
-      flex: 1,
-      justifyContent: 'flex-end',
-      paddingHorizontal: 16,
-      paddingBottom: 120,
-    },
-    kicker: {
-      color: colors.textSubtle,
-      fontFamily: fonts.semibold,
-      fontSize: 11,
-      letterSpacing: 2,
-      textTransform: 'uppercase',
-      marginBottom: 10,
-    },
-    homeTitle: {
-      color: colors.text,
-      fontFamily: fonts.bold,
-      fontSize: 52,
-      lineHeight: 54,
-      letterSpacing: -1.6,
-      marginBottom: 12,
-    },
-    homeSub: {
-      color: colors.textMuted,
-      fontSize: 17,
-      lineHeight: 24,
-      fontFamily: fonts.regular,
-      marginBottom: 32,
-      maxWidth: 300,
-    },
-    startBtn: {
-      width: '100%',
-      maxWidth: 360,
-      borderRadius: radius.sm,
-      minHeight: HIT,
-      backgroundColor: colors.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 24,
-    },
-    startBtnText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17, letterSpacing: -0.4 },
-    link: {
-      color: colors.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 16,
-    },
     navWrap: {
       position: 'absolute',
       left: 0,

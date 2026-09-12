@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
@@ -17,6 +17,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   const originY = useRef(0);
   const tracking = useRef(false);
 
+  const nativeDriver = Platform.OS !== 'web';
+
   const close = useCallback(() => {
     haptic('selection');
     translateY.setValue(0);
@@ -26,18 +28,18 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   const settle = useCallback(
     (dy, vy = 0) => {
       tracking.current = false;
-      if (dy > 48 || vy > 700) {
+      if (dy > 36 || vy > 650) {
         close();
         return;
       }
       Animated.spring(translateY, {
         toValue: 0,
-        useNativeDriver: false,
-        speed: 24,
+        useNativeDriver: nativeDriver,
+        speed: 28,
         bounciness: 0,
       }).start();
     },
-    [close, translateY]
+    [close, translateY, nativeDriver]
   );
 
   const settleRef = useRef(settle);
@@ -91,8 +93,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     () =>
       Gesture.Pan()
         .runOnJS(true)
-        .activeOffsetY(10)
-        .failOffsetX([-32, 32])
+        .activeOffsetY(6)
+        .failOffsetX([-28, 28])
         .onUpdate((e) => {
           translateY.setValue(Math.max(0, e.translationY));
         })
@@ -166,15 +168,16 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   ];
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View
-        nativeID="keypad-sheet"
-        collapsable={false}
-        style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
-      >
+    <Animated.View
+      nativeID="keypad-sheet"
+      collapsable={false}
+      style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
+    >
+      <GestureDetector gesture={pan}>
         <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>
+      </GestureDetector>
         <View style={styles.tabs}>
           {tabs.map((tab) => {
             const active = activeInput.field === tab.id;
@@ -235,8 +238,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           </View>
         </View>
         <View style={{ height: Math.max(insets.bottom, 16) }} />
-      </Animated.View>
-    </GestureDetector>
+    </Animated.View>
   );
 }
 

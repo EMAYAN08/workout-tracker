@@ -15,7 +15,7 @@ export default function AreaChart({
   averageLine,
 }) {
   const { colors } = useTheme();
-  const stroke = color || colors.text;
+  const stroke = color || colors.chartAccent || colors.text;
   const styles = makeStyles(colors);
   const [boxW, setBoxW] = useState(0);
   const [activeIdx, setActiveIdx] = useState(null);
@@ -136,7 +136,7 @@ export default function AreaChart({
                 cx={chart.points[activeIdx].x}
                 cy={chart.points[activeIdx].y}
                 r={5}
-                fill={colors.accent}
+                fill={stroke}
                 stroke={colors.chartDotStroke}
                 strokeWidth={3}
               />

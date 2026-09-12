@@ -9,59 +9,78 @@ import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
 
+const MUSCLE_GROUPS = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
+const FILTER_GROUPS = ['All', ...MUSCLE_GROUPS];
+
+const blankSet = () => ({ reps: 0, weight: 0, type: 'Working' });
+
+const cloneSets = (sets) =>
+  (Array.isArray(sets) && sets.length > 0 ? sets : [blankSet()]).map((s) => ({
+    type: s.type || 'Working',
+    reps: s.reps ?? 0,
+    weight: s.weight ?? 0,
+  }));
+
+const numericSets = (sets) =>
+  cloneSets(sets).map((s) => ({
+    ...s,
+    reps: Number(s.reps) || 0,
+    weight: Number(s.weight) || 0,
+  }));
+
 const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  const sets = ex.defaultSets?.length > 0 ? ex.defaultSets : [blankSet()];
   return (
-  <View style={styles.card}>
-    <Pressable onPress={onToggle} style={styles.cardHead}>
-      <View style={styles.cardIcon}>
-        <Settings size={22} color={colors.textMuted} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.cardName} numberOfLines={1}>
-          {ex.name}
-        </Text>
-        <Text style={styles.cardMeta}>Custom</Text>
-      </View>
-      <View style={styles.mgBadge}>
-        <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
-      </View>
-      <ChevronDown
-        size={18}
-        color={colors.textMuted}
-        style={{ transform: [{ rotate: isExpanded ? '180deg' : '-90deg' }] }}
-      />
-    </Pressable>
-    {isExpanded && (
-      <View style={styles.cardBody}>
-        <View style={styles.actionRow}>
-          <Text style={styles.tinyLbl}>Actions & Sets</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable onPress={() => onEdit(ex)} style={styles.editBtn}>
-              <Text style={styles.editText}>Edit</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => confirmAction('Delete exercise', 'Delete this exercise?', () => onDelete(ex.id))}
-              style={styles.delBtn}
-            >
-              <Text style={styles.delText}>Delete</Text>
-            </Pressable>
-          </View>
+    <View style={styles.card}>
+      <Pressable onPress={onToggle} style={styles.cardHead} accessibilityLabel={`Toggle ${ex.name}`}>
+        <View style={styles.cardIcon}>
+          <Settings size={22} color={colors.textMuted} />
         </View>
-        {(ex.defaultSets?.length > 0 ? ex.defaultSets : [{ reps: 10, weight: 0, type: 'Working' }]).map(
-          (s, i) => (
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.cardName} numberOfLines={1}>
+            {ex.name}
+          </Text>
+          <Text style={styles.cardMeta}>Custom</Text>
+        </View>
+        <View style={styles.mgBadge}>
+          <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
+        </View>
+        <ChevronDown
+          size={18}
+          color={colors.textMuted}
+          style={{ transform: [{ rotate: isExpanded ? '180deg' : '-90deg' }] }}
+        />
+      </Pressable>
+      {isExpanded && (
+        <View style={styles.cardBody}>
+          <View style={styles.actionRow}>
+            <Text style={styles.tinyLbl}>Actions & Sets</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexShrink: 0 }}>
+              <Pressable onPress={() => onEdit(ex)} style={styles.editBtn} accessibilityLabel="Edit exercise">
+                <Text style={styles.editText}>Edit</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => confirmAction('Delete exercise', 'Delete this exercise?', () => onDelete(ex.id))}
+                style={styles.delBtn}
+                accessibilityLabel="Delete exercise"
+              >
+                <Text style={styles.delText}>Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+          {sets.map((s, i) => (
             <View key={i} style={styles.setLine}>
               <Text style={styles.setLbl}>Set {i + 1}</Text>
               <Text style={styles.setVal}>
-                {convertWeight(s.weight || 0, ex.unitSaved || 'lbs', unit)} {unit} - {s.reps || 10} Reps
+                {convertWeight(s.weight ?? 0, ex.unitSaved || 'lbs', unit)} {unit} - {s.reps ?? 0} Reps
               </Text>
             </View>
-          )
-        )}
-      </View>
-    )}
-  </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 };
 
@@ -78,71 +97,120 @@ export default function CustomExercises() {
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [newName, setNewName] = useState('');
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
-  const [defaultSets, setDefaultSets] = useState([{ reps: 0, weight: 0 }]);
+  const [defaultSets, setDefaultSets] = useState([blankSet()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
-  const filterGroups = ['All', ...muscleGroups];
+  const filteredExercises = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return customExercises
+      .filter((ex) => {
+        const name = (ex.name || '').toLowerCase();
+        const group = (ex.muscleGroup || '').toLowerCase();
+        const matchesSearch = !q || name.includes(q) || group.includes(q);
+        const matchesGroup =
+          selectedMuscleGroup === 'All' || group === String(selectedMuscleGroup || '').toLowerCase();
+        return matchesSearch && matchesGroup;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [customExercises, searchQuery, selectedMuscleGroup]);
 
-  const filteredExercises = useMemo(
-    () =>
-      customExercises
-        .filter((ex) => {
-          const matchesSearch =
-            ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(searchQuery.toLowerCase()));
-          const matchesGroup = selectedMuscleGroup === 'All' || ex.muscleGroup === selectedMuscleGroup;
-          return matchesSearch && matchesGroup;
-        })
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [customExercises, searchQuery, selectedMuscleGroup]
-  );
+  const applyBlankForm = () => {
+    setEditingId(null);
+    setNewName('');
+    setNewMuscleGroup('chest');
+    setDefaultSets([blankSet()]);
+    setActiveInput(null);
+  };
+
+  const resetForm = () => {
+    setIsCreating(false);
+    applyBlankForm();
+  };
+
+  const startCreate = () => {
+    applyBlankForm();
+    setIsCreating(true);
+  };
 
   const handleEditInit = (ex) => {
     setEditingId(ex.id);
-    setNewName(ex.name);
-    setNewMuscleGroup(ex.muscleGroup);
-    setDefaultSets(ex.defaultSets?.length > 0 ? [...ex.defaultSets] : [{ reps: 0, weight: 0 }]);
+    setNewName(ex.name || '');
+    setNewMuscleGroup(ex.muscleGroup || 'chest');
+    setDefaultSets(cloneSets(ex.defaultSets));
+    setActiveInput(null);
     setIsCreating(true);
   };
 
   const handleCreateSubmit = async () => {
-    if (!newName.trim()) return;
+    const name = newName.trim();
+    if (!name) return;
+    const setsToSave = numericSets(defaultSets);
     setIsSubmitting(true);
-    if (editingId) {
-      await updateCustomExercise(editingId, { name: newName, muscleGroup: newMuscleGroup, defaultSets });
-    } else {
-      await createCustomExercise(newName, newMuscleGroup, defaultSets);
+    setActiveInput(null);
+    try {
+      if (editingId) {
+        await updateCustomExercise(editingId, {
+          name,
+          muscleGroup: newMuscleGroup,
+          defaultSets: setsToSave,
+          unitSaved: unit,
+        });
+      } else {
+        await createCustomExercise(name, newMuscleGroup, setsToSave);
+      }
+      resetForm();
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
-    setIsCreating(false);
-    setEditingId(null);
-    setNewName('');
-    setDefaultSets([{ reps: 0, weight: 0 }]);
   };
 
-  const addSet = () => setDefaultSets([...defaultSets, { reps: 0, weight: 0 }]);
+  const addSet = () => setDefaultSets((prev) => [...prev, blankSet()]);
+
   const updateSet = (index, field, value) => {
-    const newSets = [...defaultSets];
-    newSets[index][field] = value;
-    setDefaultSets(newSets);
+    setDefaultSets((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      return prev.map((s, i) => (i === index ? { ...s, [field]: value } : s));
+    });
   };
-  const removeSet = (index) => setDefaultSets(defaultSets.filter((_, i) => i !== index));
+
+  const removeSet = (index) => {
+    setDefaultSets((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+    setActiveInput((prev) => {
+      if (!prev) return null;
+      if (prev.index === index) return null;
+      if (prev.index > index) return { ...prev, index: prev.index - 1 };
+      return prev;
+    });
+  };
+
+  const activeSet = activeInput ? defaultSets[activeInput.index] : undefined;
+  const keypadOpen = !!(activeInput && activeSet);
 
   if (isCreating) {
+    const canSave = !!newName.trim() && !isSubmitting;
     return (
       <View style={{ flex: 1, position: 'relative' }}>
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 120 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 16, paddingBottom: keypadOpen ? 340 : 120 }}
+        >
           <View style={styles.formHead}>
-            <Text style={styles.pageTitle}>{editingId ? 'Edit Exercise' : 'New Exercise'}</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Pressable onPress={() => setIsCreating(false)} style={styles.cancel}>
+            <Text style={styles.pageTitle} numberOfLines={1}>
+              {editingId ? 'Edit Exercise' : 'New Exercise'}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexShrink: 0 }}>
+              <Pressable onPress={resetForm} style={styles.cancel} accessibilityLabel="Cancel">
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={handleCreateSubmit}
-                disabled={isSubmitting || !newName.trim()}
-                style={[styles.save, (isSubmitting || !newName.trim()) && { opacity: 0.5 }]}
+                disabled={!canSave}
+                accessibilityLabel="Save"
+                style={[styles.save, !canSave && { opacity: 0.5 }]}
               >
                 {isSubmitting && <ActivityIndicator color={colors.accentFg} size={14} />}
                 <Text style={styles.saveText}>Save</Text>
@@ -161,16 +229,17 @@ export default function CustomExercises() {
           <Select
             value={newMuscleGroup}
             onChange={setNewMuscleGroup}
-            options={muscleGroups.map((mg) => ({ value: mg, label: mg }))}
+            options={MUSCLE_GROUPS.map((mg) => ({ value: mg, label: mg }))}
           />
           <Text style={[styles.label, { marginTop: 16 }]}>Default Sets</Text>
           {defaultSets.map((s, i) => (
             <View key={i} style={styles.setEdit}>
               <Pressable
                 onPress={() => setActiveInput({ index: i, field: 'weight' })}
+                accessibilityLabel={`Set ${i + 1} weight`}
                 style={[
                   styles.setCell,
-                  activeInput?.index === i && activeInput?.field === 'weight' && styles.setCellOn,
+                  keypadOpen && activeInput.index === i && activeInput.field === 'weight' && styles.setCellOn,
                 ]}
               >
                 <Text style={styles.tinyLbl}>{unit}</Text>
@@ -178,9 +247,10 @@ export default function CustomExercises() {
               </Pressable>
               <Pressable
                 onPress={() => setActiveInput({ index: i, field: 'reps' })}
+                accessibilityLabel={`Set ${i + 1} reps`}
                 style={[
                   styles.setCell,
-                  activeInput?.index === i && activeInput?.field === 'reps' && styles.setCellOn,
+                  keypadOpen && activeInput.index === i && activeInput.field === 'reps' && styles.setCellOn,
                 ]}
               >
                 <Text style={styles.tinyLbl}>Reps</Text>
@@ -189,26 +259,35 @@ export default function CustomExercises() {
               <Pressable
                 onPress={() => removeSet(i)}
                 disabled={defaultSets.length === 1}
-                style={{ padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center', opacity: defaultSets.length === 1 ? 0.3 : 1 }}
+                accessibilityLabel="Remove set"
+                style={{
+                  padding: 10,
+                  minWidth: HIT,
+                  minHeight: HIT,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: defaultSets.length === 1 ? 0.3 : 1,
+                }}
               >
                 <Trash2 size={16} color={colors.textMuted} />
               </Pressable>
             </View>
           ))}
-          <Pressable onPress={addSet} style={styles.addSet}>
+          <Pressable onPress={addSet} style={styles.addSet} accessibilityLabel="Add default set">
             <Plus size={14} color={colors.textMuted} />
             <Text style={styles.addSetText}>Add Default Set</Text>
           </Pressable>
         </ScrollView>
         <CustomNumpad
           activeInput={
-            activeInput
+            keypadOpen
               ? {
                   field: activeInput.field,
-                  onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
+                  onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
                   onNext: () => {
+                    if (!activeInput) return;
                     if (activeInput.field === 'weight') {
-                      setActiveInput((prev) => ({ ...prev, field: 'reps' }));
+                      setActiveInput((prev) => (prev ? { ...prev, field: 'reps' } : prev));
                     } else if (activeInput.index < defaultSets.length - 1) {
                       setActiveInput({ index: activeInput.index + 1, field: 'weight' });
                     } else setActiveInput(null);
@@ -217,30 +296,30 @@ export default function CustomExercises() {
               : null
           }
           onClose={() => setActiveInput(null)}
-          value={activeInput ? defaultSets[activeInput.index]?.[activeInput.field] : ''}
-          onUpdate={(val) => activeInput && updateSet(activeInput.index, activeInput.field, val)}
+          value={keypadOpen ? activeSet[activeInput.field] : ''}
+          onUpdate={(val) => {
+            if (!activeInput || activeInput.index == null || activeInput.index >= defaultSets.length) return;
+            updateSet(activeInput.index, activeInput.field, val);
+          }}
         />
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} stickyHeaderIndices={[0]}>
+    <ScrollView
+      style={{ flex: 1 }}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ padding: 16, paddingBottom: 120, flexGrow: 1 }}
+      stickyHeaderIndices={[0]}
+    >
       <View style={styles.sticky}>
         <View style={styles.formHead}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
             <Text style={styles.pageTitle}>Custom Exercises</Text>
             <Text style={styles.sub}>Create your own exercise</Text>
           </View>
-          <Pressable
-            onPress={() => {
-              setEditingId(null);
-              setNewName('');
-              setDefaultSets([{ reps: 0, weight: 0 }]);
-              setIsCreating(true);
-            }}
-            style={styles.plusBtn}
-          >
+          <Pressable onPress={startCreate} style={styles.plusBtn} accessibilityLabel="Create exercise">
             <Plus size={24} color={colors.text} strokeWidth={3} />
           </Pressable>
         </View>
@@ -255,16 +334,16 @@ export default function CustomExercises() {
               style={styles.searchInput}
             />
           </View>
-          <View style={{ width: 120 }}>
+          <View style={styles.filterWrap}>
             <Select
               value={selectedMuscleGroup}
               onChange={setSelectedMuscleGroup}
-              options={filterGroups.map((g) => ({ value: g, label: g }))}
+              options={FILTER_GROUPS.map((g) => ({ value: g, label: g }))}
             />
           </View>
         </View>
       </View>
-      {(searchQuery || selectedMuscleGroup !== 'All') && (
+      {(searchQuery.trim() || selectedMuscleGroup !== 'All') && (
         <Text style={styles.results}>●  {filteredExercises.length} Results</Text>
       )}
       {filteredExercises.length === 0 ? (
@@ -291,175 +370,180 @@ export default function CustomExercises() {
 
 function makeStyles(colors) {
   return StyleSheet.create({
-  sticky: { backgroundColor: colors.background, paddingBottom: 8 },
-  formHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
-  sub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
-  plusBtn: {
-    width: HIT,
-    height: HIT,
-    borderRadius: radius.sm,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchRow: { flexDirection: 'row', gap: 8 },
-  searchWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.surface2,
-    borderRadius: radius.sm,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchInput: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 15, paddingVertical: 12 },
-  results: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, marginBottom: 8 },
-  card: {
-    backgroundColor: colors.surface2,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
-  cardIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
-  cardMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontFamily: fonts.semibold },
-  mgBadge: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  mgBadgeText: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'capitalize' },
-  cardBody: {
-    padding: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-    gap: 6,
-  },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  tinyLbl: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
-  editBtn: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: HIT,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    justifyContent: 'center',
-  },
-  editText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
-  delBtn: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: HIT,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    justifyContent: 'center',
-  },
-  delText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 13 },
-  setLine: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surfaceLight,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  setLbl: { color: colors.textMuted, fontFamily: fonts.bold },
-  setVal: { color: colors.text, fontFamily: fonts.bold },
-  empty: { alignItems: 'center', paddingVertical: 48, opacity: 0.5 },
-  emptyText: { color: colors.text, fontFamily: fonts.bold, marginTop: 12 },
-  label: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: fonts.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: HIT,
-    color: colors.text,
-    fontFamily: fonts.bold,
-    fontSize: 16,
-  },
-  cancel: {
-    paddingHorizontal: 14,
-    minHeight: HIT,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.sm,
-  },
-  cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
-  save: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: 16,
-    minHeight: HIT,
-    borderRadius: radius.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  saveText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
-  setEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  setCell: {
-    flex: 1,
-    backgroundColor: colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: HIT,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  setCellOn: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
-  cellVal: { color: colors.text, fontFamily: fonts.bold },
-  addSet: {
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: colors.borderStrong,
-    borderRadius: radius.sm,
-    paddingVertical: 10,
-    minHeight: HIT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  addSetText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 12 },
-});
+    sticky: { backgroundColor: colors.background, paddingBottom: 8 },
+    formHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24, flexShrink: 1 },
+    sub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
+    plusBtn: {
+      width: HIT,
+      height: HIT,
+      borderRadius: radius.sm,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    searchRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    searchWrap: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.sm,
+      paddingHorizontal: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filterWrap: { width: 128, flexShrink: 0 },
+    searchInput: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 15, paddingVertical: 12 },
+    results: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, marginBottom: 8 },
+    card: {
+      backgroundColor: colors.surface2,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 8,
+      overflow: 'hidden',
+    },
+    cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
+    cardIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    cardName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
+    cardMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontFamily: fonts.semibold },
+    mgBadge: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: radius.xs,
+      borderWidth: 1,
+      borderColor: colors.border,
+      flexShrink: 0,
+    },
+    mgBadgeText: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'capitalize' },
+    cardBody: {
+      padding: 14,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+      gap: 6,
+    },
+    actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    tinyLbl: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
+    editBtn: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      justifyContent: 'center',
+    },
+    editText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
+    delBtn: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      justifyContent: 'center',
+    },
+    delText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 13 },
+    setLine: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      backgroundColor: colors.surfaceLight,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    setLbl: { color: colors.textMuted, fontFamily: fonts.bold },
+    setVal: { color: colors.text, fontFamily: fonts.bold },
+    empty: { alignItems: 'center', paddingVertical: 48, opacity: 0.5 },
+    emptyText: { color: colors.text, fontFamily: fonts.bold, marginTop: 12 },
+    label: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontFamily: fonts.bold,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 6,
+    },
+    input: {
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      minHeight: HIT,
+      color: colors.text,
+      fontFamily: fonts.bold,
+      fontSize: 16,
+    },
+    cancel: {
+      paddingHorizontal: 14,
+      minHeight: HIT,
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: radius.sm,
+    },
+    cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    save: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: 16,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    saveText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
+    setEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    setCell: {
+      flex: 1,
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      minHeight: HIT,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    setCellOn: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
+    cellVal: { color: colors.text, fontFamily: fonts.bold },
+    addSet: {
+      borderWidth: 1,
+      borderStyle: 'solid',
+      borderColor: colors.borderStrong,
+      borderRadius: radius.sm,
+      paddingVertical: 10,
+      minHeight: HIT,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      marginTop: 4,
+    },
+    addSetText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 12 },
+  });
 }

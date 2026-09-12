@@ -149,8 +149,8 @@ export default function ActiveWorkout() {
         {activeWorkout.exercises.length === 0 && (
           <View style={styles.restCard}>
             <Moon size={28} color={colors.textMuted} style={{ marginBottom: 6 }} />
-            <Text style={styles.restTitle}>Rest Day Logging</Text>
-            <Text style={styles.restSub}>Tap "Log Rest Day" above to record a recovery day.</Text>
+            <Text style={styles.restTitle}>Empty session</Text>
+            <Text style={styles.restSub}>Add an exercise to start logging sets.</Text>
           </View>
         )}
 
