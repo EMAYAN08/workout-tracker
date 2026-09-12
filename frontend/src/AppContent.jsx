@@ -294,9 +294,9 @@ function makeStyles(colors) {
     logo: { width: 28, height: 28, borderRadius: 7 },
     brandText: {
       color: colors.text,
-      fontFamily: fonts.bold,
+      fontFamily: fonts.extrabold,
       fontSize: 20,
-      letterSpacing: -0.5,
+      letterSpacing: -0.6,
     },
     headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     iconCircle: {
@@ -378,10 +378,10 @@ function makeStyles(colors) {
     },
     homeTitle: {
       color: colors.text,
-      fontFamily: fonts.bold,
+      fontFamily: fonts.extrabold,
       fontSize: 48,
-      lineHeight: 50,
-      letterSpacing: 0.35,
+      lineHeight: 52,
+      letterSpacing: -1.4,
       marginBottom: 10,
     },
     homeSub: {

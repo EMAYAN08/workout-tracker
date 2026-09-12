@@ -108,6 +108,7 @@ export default function AreaChart({
                   y={t.y + 4}
                   fill={colors.chartAxis}
                   fontSize="11"
+                  fontFamily={fonts.medium}
                   textAnchor="end"
                 >
                   {t.value}
@@ -137,7 +138,7 @@ export default function AreaChart({
             <Path d={chart.area} fill={`url(#${gradId})`} />
             <Path d={chart.line} fill="none" stroke={stroke} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
             {chart.xTicks.map((p, i) => (
-              <SvgText key={i} x={p.x} y={height - 8} fill={colors.chartAxis} fontSize="11" textAnchor="middle">
+              <SvgText key={i} x={p.x} y={height - 8} fill={colors.chartAxis} fontSize="11" fontFamily={fonts.medium} textAnchor="middle">
                 {p.date}
               </SvgText>
             ))}

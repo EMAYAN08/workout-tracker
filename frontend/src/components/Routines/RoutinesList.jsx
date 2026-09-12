@@ -103,7 +103,7 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 8, paddingBottom: 120 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { color: colors.text, fontFamily: fonts.bold, fontSize: 28, letterSpacing: 0.36 },
+  title: { color: colors.text, fontFamily: fonts.extrabold, fontSize: 28, letterSpacing: -0.6 },
   sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
   plus: {
     width: 40,

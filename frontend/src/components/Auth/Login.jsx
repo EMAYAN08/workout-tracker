@@ -164,9 +164,9 @@ function makeStyles(colors) {
     },
     title: {
       color: colors.text,
-      fontFamily: fonts.bold,
+      fontFamily: fonts.extrabold,
       fontSize: 40,
-      letterSpacing: -1.2,
+      letterSpacing: -1.4,
       marginBottom: 8,
     },
     subtitle: {

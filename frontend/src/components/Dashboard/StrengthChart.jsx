@@ -209,10 +209,11 @@ export default function StrengthChart() {
                     fill={cat.level > 0 ? colors.accent : colors.textMuted}
                     fontSize="12"
                     fontWeight="600"
+                    fontFamily={fonts.semibold}
                   >
                     {cat.displayStr}
                   </TSpan>
-                  <TSpan x={adjustedTx} dy="1.35em" fill={colors.text} fontSize="12" fontWeight="500">
+                  <TSpan x={adjustedTx} dy="1.35em" fill={colors.text} fontSize="12" fontWeight="500" fontFamily={fonts.medium}>
                     {cat.label}
                   </TSpan>
                 </SvgText>
