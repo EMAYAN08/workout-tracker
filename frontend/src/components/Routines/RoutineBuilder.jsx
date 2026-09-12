@@ -1,100 +1,125 @@
 import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  Alert,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Search,
+  Plus,
+  Save,
+  X,
+  Dumbbell,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
-import { Search, Plus, Save, X, Dumbbell, Trash2, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../../config';
+import { Select } from '../ui/primitives';
+import { colors, fonts } from '../../theme';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
-  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit } = useWorkout();
+  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit } =
+    useWorkout();
+  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState(initialRoutine?.name || '');
   const [newCustomExIds, setNewCustomExIds] = useState([]);
   const [exercises, setExercises] = useState(() => {
     if (!initialRoutine?.exercises) return [];
-    return initialRoutine.exercises.map(ex => ({
+    return initialRoutine.exercises.map((ex) => ({
       ...ex,
       unitSaved: unit,
-      defaultSets: ex.defaultSets.map(s => ({
+      defaultSets: (ex.defaultSets || []).map((s) => ({
         ...s,
-        weight: convertWeight(s.weight, ex.unitSaved || 'lbs', unit)
-      }))
+        weight: convertWeight(s.weight, ex.unitSaved || 'lbs', unit),
+      })),
     }));
   });
   const prevUnit = React.useRef(unit);
-
-  useEffect(() => {
-    if (prevUnit.current !== unit) {
-      setExercises(prevExercises => prevExercises.map(ex => ({
-        ...ex,
-        unitSaved: unit,
-        defaultSets: ex.defaultSets.map(s => ({
-          ...s,
-          weight: convertWeight(s.weight, prevUnit.current, unit)
-        }))
-      })));
-      prevUnit.current = unit;
-    }
-  }, [unit]);
-
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
-  
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeInput, setActiveInput] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
-  
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
-
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
+    if (prevUnit.current !== unit) {
+      setExercises((prevExercises) =>
+        prevExercises.map((ex) => ({
+          ...ex,
+          unitSaved: unit,
+          defaultSets: ex.defaultSets.map((s) => ({
+            ...s,
+            weight: convertWeight(s.weight, prevUnit.current, unit),
+          })),
+        }))
+      );
+      prevUnit.current = unit;
+    }
+  }, [unit]);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
       if (searchQuery.length > 2) {
         try {
           const query = searchQuery.toLowerCase();
-          const localMatches = (customExercises || []).filter(ex => ex.name.toLowerCase().includes(query) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query)));
-          
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const localMatches = (customExercises || []).filter(
+            (ex) =>
+              ex.name.toLowerCase().includes(query) ||
+              (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query))
+          );
           const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
           let data = [];
-          if (res.ok) {
-            data = await res.json();
-          }
-          
-          const localIds = new Set(localMatches.map(l => l.id));
-          const apiMatches = data.filter(apiEx => !localIds.has(apiEx.id));
-          
+          if (res.ok) data = await res.json();
+          const localIds = new Set(localMatches.map((l) => l.id));
+          const apiMatches = (Array.isArray(data) ? data : []).filter((apiEx) => !localIds.has(apiEx.id));
           setSearchResults([...localMatches, ...apiMatches]);
         } catch (err) {
-          console.error("Search failed", err);
+          console.error('Search failed', err);
           const query = searchQuery.toLowerCase();
-          const localMatches = (customExercises || []).filter(ex => ex.name.toLowerCase().includes(query) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query)));
-          setSearchResults(localMatches);
+          setSearchResults(
+            (customExercises || []).filter(
+              (ex) =>
+                ex.name.toLowerCase().includes(query) ||
+                (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query))
+            )
+          );
         }
-      } else {
-        setSearchResults([]);
-      }
+      } else setSearchResults([]);
     }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(t);
   }, [searchQuery, customExercises]);
 
   const handleAddExercise = (exercise) => {
     let initialSets = [{ reps: 10, weight: 0, type: 'Working' }];
     if (exercise.defaultSets && exercise.defaultSets.length > 0) {
-      initialSets = exercise.defaultSets.map(s => ({
+      initialSets = exercise.defaultSets.map((s) => ({
         reps: s.reps || 10,
         weight: convertWeight(s.weight || 0, exercise.unitSaved || 'lbs', unit),
-        type: 'Working'
+        type: 'Working',
       }));
     }
-
-    setExercises(prev => {
-      const newExercises = [...prev, { ...exercise, unitSaved: unit, defaultSets: initialSets }];
-      setExpandedExerciseIndex(newExercises.length - 1);
-      return newExercises;
+    setExercises((prev) => {
+      const next = [...prev, { ...exercise, unitSaved: unit, defaultSets: initialSets }];
+      setExpandedExerciseIndex(next.length - 1);
+      return next;
     });
     setIsSearching(false);
     setSearchQuery('');
@@ -102,18 +127,18 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   };
 
   const moveExercise = (index, direction) => {
-    setExercises(prev => {
-      const newExercises = [...prev];
+    setExercises((prev) => {
+      const next = [...prev];
       if (direction === 'up' && index > 0) {
-        [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
+        [next[index - 1], next[index]] = [next[index], next[index - 1]];
         if (expandedExerciseIndex === index) setExpandedExerciseIndex(index - 1);
         else if (expandedExerciseIndex === index - 1) setExpandedExerciseIndex(index);
-      } else if (direction === 'down' && index < newExercises.length - 1) {
-        [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
+      } else if (direction === 'down' && index < next.length - 1) {
+        [next[index + 1], next[index]] = [next[index], next[index + 1]];
         if (expandedExerciseIndex === index) setExpandedExerciseIndex(index + 1);
         else if (expandedExerciseIndex === index + 1) setExpandedExerciseIndex(index);
       }
-      return newExercises;
+      return next;
     });
   };
 
@@ -122,346 +147,526 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     const newEx = await createCustomExercise(searchQuery, newMuscleGroup);
     if (newEx) {
       handleAddExercise(newEx);
-      setNewCustomExIds(prev => [...prev, newEx.id]);
+      setNewCustomExIds((prev) => [...prev, newEx.id]);
     }
     setIsCreatingCustom(false);
   };
 
-  const removeExercise = (index) => {
-    setExercises(prev => prev.filter((_, i) => i !== index));
-  };
-
+  const removeExercise = (index) => setExercises((prev) => prev.filter((_, i) => i !== index));
   const updateSet = (exerciseIndex, setIndex, field, value) => {
-    const newExercises = [...exercises];
-    newExercises[exerciseIndex].defaultSets[setIndex][field] = value;
-    setExercises(newExercises);
+    const next = [...exercises];
+    next[exerciseIndex].defaultSets[setIndex][field] = value;
+    setExercises(next);
   };
-
   const addSet = (exerciseIndex) => {
-    const newExercises = [...exercises];
-    const prevSets = newExercises[exerciseIndex].defaultSets;
+    const next = [...exercises];
+    const prevSets = next[exerciseIndex].defaultSets;
     const lastSet = prevSets.length > 0 ? prevSets[prevSets.length - 1] : { reps: 10, weight: 0, type: 'Working' };
-    
-    newExercises[exerciseIndex].defaultSets.push({ ...lastSet });
-    setExercises(newExercises);
+    next[exerciseIndex].defaultSets.push({ ...lastSet });
+    setExercises(next);
   };
-
   const removeSet = (exerciseIndex, setIndex) => {
-    const newExercises = [...exercises];
-    newExercises[exerciseIndex].defaultSets.splice(setIndex, 1);
-    setExercises(newExercises);
+    const next = [...exercises];
+    next[exerciseIndex].defaultSets.splice(setIndex, 1);
+    setExercises(next);
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return alert("Please enter a routine name.");
-    // Allowed empty for rest days
-
-    const routineData = { name, exercises };
-    
-    if (initialRoutine) {
-      await updateRoutine(initialRoutine.id, routineData);
-    } else {
-      await createRoutine(routineData);
+    if (!name.trim()) {
+      Alert.alert('Routine name', 'Please enter a routine name.');
+      return;
     }
-    
-    // Sync newly created custom exercises' default sets with the defined routine sets
+    const routineData = { name, exercises };
+    if (initialRoutine) await updateRoutine(initialRoutine.id, routineData);
+    else await createRoutine(routineData);
     for (const ex of exercises) {
       if (newCustomExIds.includes(ex.id)) {
         await updateCustomExercise(ex.id, { defaultSets: ex.defaultSets });
       }
     }
-    
     onSaveSuccess();
   };
 
   return (
-    <div className={`flex flex-col gap-4 w-full transition-all duration-300 ${activeInput ? 'pb-[300px]' : ''}`}>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-2xl font-black text-text tracking-tight">
-          {initialRoutine ? 'Edit Routine' : 'New Routine'}
-        </h2>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-textMuted font-bold hover:bg-surface-light transition-colors"
-          >
-            Cancel
-          </button>
-            <button 
-              onClick={handleSave}
-              className="px-5 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 backdrop-blur-md font-black transition-all active:scale-95 flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-            >
-              <Save size={18} /> Save
-            </button>
-        </div>
-      </div>
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: activeInput ? 320 : 120 }}>
+        <View style={styles.head}>
+          <Text style={styles.title}>{initialRoutine ? 'Edit Routine' : 'New Routine'}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable onPress={onCancel} style={styles.cancel}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSave} style={styles.save}>
+              <Save size={16} color={colors.primary} />
+              <Text style={styles.saveText}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
 
-      <div className="panel p-4">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-2 block">Routine Name</label>
-        <input 
-          type="text" 
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="e.g. Push Day, Full Body"
-          className="w-full bg-surface-light border border-border rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors text-base"
-        />
-      </div>
+        <View style={styles.panel}>
+          <Text style={styles.label}>Routine Name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Push Day, Full Body"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+          />
+        </View>
 
-      <div className="flex flex-col gap-3">
         {exercises.length === 0 && (
-          <div className="panel p-4 bg-emerald-500/10 border-emerald-500/20 text-center">
-            <p className="text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
-              <span className="text-lg">🛋️</span> Saving with 0 exercises will create a Rest Day routine
-            </p>
-          </div>
+          <View style={styles.restHint}>
+            <Text style={styles.restHintText}>🛋️  Saving with 0 exercises will create a Rest Day routine</Text>
+          </View>
         )}
+
         {exercises.map((ex, exIdx) => {
           const isExpanded = expandedExerciseIndex === exIdx;
           return (
-            <div key={`${ex.id}-${exIdx}`} className="panel overflow-hidden relative">
-              <div 
-                className="p-4 flex items-center justify-between bg-surface-light/50 border-b border-border cursor-pointer"
-                onClick={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
+            <View key={`${ex.id}-${exIdx}`} style={styles.card}>
+              <Pressable
+                onPress={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
+                style={styles.cardHead}
               >
-                <div className="flex items-center gap-3">
-                  {ex.gifUrl ? (
-                    <img src={ex.gifUrl} alt={ex.name} className="w-10 h-10 rounded-full object-cover bg-white" loading="lazy" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center shrink-0">
-                      <Dumbbell size={16} className="text-textMuted" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-bold text-text capitalize line-clamp-1">{ex.name}</h3>
-                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                {ex.gifUrl ? (
+                  <Image source={{ uri: ex.gifUrl }} style={styles.thumb} contentFit="cover" />
+                ) : (
+                  <View style={styles.thumbFallback}>
+                    <Dumbbell size={16} color={colors.textMuted} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.exName} numberOfLines={1}>
+                    {ex.name}
+                  </Text>
+                  <Text style={styles.exMg}>{ex.muscleGroup}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   {exIdx > 0 && (
-                    <button onClick={() => moveExercise(exIdx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                      <ArrowUp size={16} />
-                    </button>
+                    <Pressable onPress={() => moveExercise(exIdx, 'up')} style={{ padding: 6 }}>
+                      <ArrowUp size={16} color={colors.textMuted} />
+                    </Pressable>
                   )}
                   {exIdx < exercises.length - 1 && (
-                    <button onClick={() => moveExercise(exIdx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                      <ArrowDown size={16} />
-                    </button>
+                    <Pressable onPress={() => moveExercise(exIdx, 'down')} style={{ padding: 6 }}>
+                      <ArrowDown size={16} color={colors.textMuted} />
+                    </Pressable>
                   )}
-                  <button 
-                    onClick={() => removeExercise(exIdx)} 
-                    className="p-1.5 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg ml-1"
-                    title="Delete Exercise"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
-                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-4 flex flex-col gap-2">
-                      <div className="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-textMuted px-2 mb-1">
-                        <div className="col-span-1 text-center">SET</div>
-                        <div className="col-span-5 text-center">LBS/KGS</div>
-                        <div className="col-span-5 text-center">REPS</div>
-                        <div className="col-span-1 text-center"></div>
-                      </div>
-                      
-                      {ex.defaultSets?.map((set, sIdx) => (
-                        <div key={sIdx} className="grid grid-cols-12 gap-2 items-center">
-                          <div className="col-span-1 text-center font-mono font-bold text-textMuted">{sIdx + 1}</div>
-                          <div className="col-span-5">
-                            <div 
-  onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' })}
-  className={`w-full rounded-lg px-3 py-2 text-center font-mono font-bold flex items-center justify-center cursor-pointer transition-colors border ${activeInput?.exerciseIndex === exIdx && activeInput?.setIndex === sIdx && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'bg-surface-light border-border/50 text-text'}`}
->
-  {set.weight ? set.weight : <span className="text-textMuted/50">Weight</span>}
-</div>
-                          </div>
-                          <div className="col-span-5">
-                            <div 
-  onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' })}
-  className={`w-full rounded-lg px-3 py-2 text-center font-mono font-bold flex items-center justify-center cursor-pointer transition-colors border ${activeInput?.exerciseIndex === exIdx && activeInput?.setIndex === sIdx && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'bg-surface-light border-border/50 text-text'}`}
->
-  {set.reps ? set.reps : <span className="text-textMuted/50">Reps</span>}
-</div>
-                          </div>
-                          <div className="col-span-1 flex justify-center">
-                            <button 
-                              onClick={() => removeSet(exIdx, sIdx)}
-                              className="p-1.5 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-md flex items-center justify-center"
-                              title="Delete Set"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      <button 
-                        onClick={() => addSet(exIdx)}
-                        className="mt-2 text-primary font-bold text-sm hover:text-primary-light transition-colors py-1 w-full flex items-center justify-center gap-1 bg-primary/5 rounded-lg border border-primary/10"
-                      >
-                        <Plus size={16} /> Add Set
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  <Pressable onPress={() => removeExercise(exIdx)} style={styles.delEx}>
+                    <Trash2 size={16} color="#f87171" />
+                  </Pressable>
+                  {isExpanded ? (
+                    <ChevronUp size={18} color={colors.textMuted} />
+                  ) : (
+                    <ChevronDown size={18} color={colors.textMuted} />
+                  )}
+                </View>
+              </Pressable>
+              {isExpanded && (
+                <View style={{ padding: 14, gap: 8 }}>
+                  <View style={styles.setHead}>
+                    <Text style={[styles.th, { width: 32 }]}>SET</Text>
+                    <Text style={[styles.th, { flex: 1 }]}>LBS/KGS</Text>
+                    <Text style={[styles.th, { flex: 1 }]}>REPS</Text>
+                    <View style={{ width: 32 }} />
+                  </View>
+                  {ex.defaultSets?.map((set, sIdx) => {
+                    const wOn =
+                      activeInput?.exerciseIndex === exIdx &&
+                      activeInput?.setIndex === sIdx &&
+                      activeInput?.field === 'weight';
+                    const rOn =
+                      activeInput?.exerciseIndex === exIdx &&
+                      activeInput?.setIndex === sIdx &&
+                      activeInput?.field === 'reps';
+                    return (
+                      <View key={sIdx} style={styles.setRow}>
+                        <Text style={styles.setIdx}>{sIdx + 1}</Text>
+                        <Pressable
+                          onPress={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' })}
+                          style={[styles.cell, wOn && styles.cellOn]}
+                        >
+                          <Text style={[styles.cellText, !set.weight && { color: 'rgba(161,161,170,0.5)' }]}>
+                            {set.weight || 'Weight'}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' })}
+                          style={[styles.cell, rOn && styles.cellOn]}
+                        >
+                          <Text style={[styles.cellText, !set.reps && { color: 'rgba(161,161,170,0.5)' }]}>
+                            {set.reps || 'Reps'}
+                          </Text>
+                        </Pressable>
+                        <Pressable onPress={() => removeSet(exIdx, sIdx)} style={styles.delSet}>
+                          <Trash2 size={14} color="#f87171" />
+                        </Pressable>
+                      </View>
+                    );
+                  })}
+                  <Pressable onPress={() => addSet(exIdx)} style={styles.addSet}>
+                    <Plus size={16} color={colors.primary} />
+                    <Text style={styles.addSetText}>Add Set</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           );
         })}
-      </div>
 
-      {/* Add Exercise Trigger */}
-      {!isSearching ? (
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setIsSearching(true)}
-          className="mt-2 w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl p-4 flex items-center justify-center gap-2 font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.1)]"
-        >
-          <Plus size={24} /> Add Exercise
-        </motion.button>
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed inset-0 z-40 bg-background flex flex-col pb-24 sm:pb-6"
-        >
-          <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex gap-3 items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-              <input 
+        <Pressable onPress={() => setIsSearching(true)} style={styles.addEx}>
+          <Plus size={22} color={colors.primary} />
+          <Text style={styles.addExText}>Add Exercise</Text>
+        </Pressable>
+      </ScrollView>
+
+      <Modal visible={isSearching} animationType="slide" onRequestClose={() => setIsSearching(false)}>
+        <View style={[styles.searchRoot, { paddingTop: insets.top }]}>
+          <View style={styles.searchBar}>
+            <View style={styles.searchWrap}>
+              <Search size={20} color={colors.textMuted} />
+              <TextInput
                 autoFocus
-                type="text" 
-                placeholder="Search exercise..." 
+                placeholder="Search exercise..."
+                placeholderTextColor={colors.textMuted}
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-surface-light border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text font-bold focus:outline-none focus:border-primary transition-colors"
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
               />
-            </div>
-            <button 
-              onClick={() => setIsSearching(false)}
-              className="p-3.5 text-textMuted hover:text-text rounded-2xl bg-surface-light border border-border/50 min-w-touch min-h-touch flex items-center justify-center shrink-0"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative">
-            {/* Scrollable Container strictly maxed to ~5 items */}
-            {searchResults.length > 0 && (
-              <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
-                {searchResults.map(ex => (
-                  <button 
-                    key={ex.id}
-                    onClick={() => handleAddExercise(ex)}
-                    className="w-full flex items-center justify-between gap-4 p-4 bg-surface-light/40 hover:bg-surface-light rounded-3xl transition-all text-left min-h-touch group shrink-0 border border-border/10"
-                  >
-                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm overflow-hidden">
-                        {ex.gifUrl ? (
-                          <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover mix-blend-screen opacity-90" loading="lazy" style={{ filter: 'grayscale(100%) contrast(1.2)' }} />
-                        ) : (
-                          <Dumbbell size={24} className="text-primary opacity-80" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-text font-bold text-base leading-snug truncate">{ex.name}</h4>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Dumbbell size={12} className="text-textMuted" />
-                          <span className="text-xs font-semibold text-textMuted truncate">Dumbbell</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="shrink-0 flex items-center gap-3">
-                      <span className="px-2.5 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-black uppercase tracking-widest">{ex.muscleGroup}</span>
-                      <ChevronDown size={16} className="text-textMuted -rotate-90 opacity-50" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
+            </View>
+            <Pressable onPress={() => setIsSearching(false)} style={styles.searchClose}>
+              <X size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16 }}>
+            {searchResults.map((ex) => (
+              <Pressable key={ex.id} onPress={() => handleAddExercise(ex)} style={styles.searchItem}>
+                <View style={styles.searchThumb}>
+                  {ex.gifUrl ? (
+                    <Image source={{ uri: ex.gifUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  ) : (
+                    <Dumbbell size={24} color={colors.primary} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.searchName} numberOfLines={1}>
+                    {ex.name}
+                  </Text>
+                  <Text style={styles.searchMeta}>Dumbbell</Text>
+                </View>
+                <View style={styles.mgBadge}>
+                  <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
+                </View>
+              </Pressable>
+            ))}
             {searchResults.length === 0 && searchQuery.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 opacity-50">
-                <Search size={48} className="text-textMuted mb-4" />
-                <p className="text-text font-bold">Search for an exercise</p>
-                <p className="text-textMuted text-sm mt-1">Type at least 1 character</p>
-              </div>
+              <View style={styles.emptySearch}>
+                <Search size={48} color={colors.textMuted} />
+                <Text style={{ color: colors.text, fontFamily: fonts.bold, marginTop: 12 }}>
+                  Search for an exercise
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>Type at least 1 character</Text>
+              </View>
             )}
-
-            {/* Add Custom Exercise strictly below the list */}
             {searchQuery.length > 0 && (
-              <div className="shrink-0 bg-surface-light p-4 rounded-2xl border border-border/50">
-                <div className="flex items-center gap-3 w-full">
-                  <select
-                    value={newMuscleGroup}
-                    onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-1/3 bg-background border border-border/50 rounded-xl px-3 py-3.5 text-sm text-text font-bold focus:outline-none focus:border-primary capitalize min-h-touch"
-                  >
-                    {muscleGroups.map(mg => (
-                      <option key={mg} value={mg}>{mg}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleCreateCustom}
-                    disabled={isCreatingCustom || searchQuery.trim().length < 1}
-                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-touch shadow-lg shadow-primary/20"
-                  >
-                    {isCreatingCustom ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={18} className="shrink-0" />}
-                    <span className="truncate">Add Custom Exercise</span>
-                  </button>
-                </div>
-              </div>
+              <View style={styles.customBox}>
+                <Select
+                  value={newMuscleGroup}
+                  onChange={setNewMuscleGroup}
+                  options={muscleGroups.map((mg) => ({ value: mg, label: mg }))}
+                  style={{ width: 120 }}
+                />
+                <Pressable
+                  onPress={handleCreateCustom}
+                  disabled={isCreatingCustom || searchQuery.trim().length < 1}
+                  style={[styles.customAdd, (isCreatingCustom || !searchQuery.trim()) && { opacity: 0.5 }]}
+                >
+                  {isCreatingCustom ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Plus size={18} color="#fff" />
+                      <Text style={{ color: '#fff', fontFamily: fonts.bold, fontSize: 13 }}>Add Custom Exercise</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             )}
-          </div>
-        </motion.div>
-      )}
-    
-      {/* Custom Numpad */}
-      <CustomNumpad 
-          activeInput={activeInput ? {
-            field: activeInput.field,
-            onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
-            onNext: () => {
-              const ex = exercises[activeInput.exerciseIndex];
-              if (activeInput.field === 'weight') {
-                setActiveInput(prev => ({ ...prev, field: 'reps' }));
-              } else if (activeInput.setIndex < ex.defaultSets.length - 1) {
-                setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: activeInput.setIndex + 1, field: 'weight' });
-              } else if (activeInput.exerciseIndex < exercises.length - 1) {
-                setActiveInput({ exerciseIndex: activeInput.exerciseIndex + 1, setIndex: 0, field: 'weight' });
-              } else {
-                setActiveInput(null);
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <CustomNumpad
+        activeInput={
+          activeInput
+            ? {
+                field: activeInput.field,
+                onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
+                onNext: () => {
+                  const ex = exercises[activeInput.exerciseIndex];
+                  if (activeInput.field === 'weight') {
+                    setActiveInput((prev) => ({ ...prev, field: 'reps' }));
+                  } else if (activeInput.setIndex < ex.defaultSets.length - 1) {
+                    setActiveInput({
+                      exerciseIndex: activeInput.exerciseIndex,
+                      setIndex: activeInput.setIndex + 1,
+                      field: 'weight',
+                    });
+                  } else if (activeInput.exerciseIndex < exercises.length - 1) {
+                    setActiveInput({
+                      exerciseIndex: activeInput.exerciseIndex + 1,
+                      setIndex: 0,
+                      field: 'weight',
+                    });
+                  } else setActiveInput(null);
+                },
               }
-            }
-          } : null}
-          onClose={() => setActiveInput(null)}
-          value={
-            activeInput
-              ? exercises[activeInput.exerciseIndex]?.defaultSets[activeInput.setIndex]?.[activeInput.field]
-              : ''
-          }
-          onUpdate={(val) => {
-            if (activeInput) {
-              updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
-            }
-          }}
-        />
-    </div>
+            : null
+        }
+        onClose={() => setActiveInput(null)}
+        value={
+          activeInput
+            ? exercises[activeInput.exerciseIndex]?.defaultSets[activeInput.setIndex]?.[activeInput.field]
+            : ''
+        }
+        onUpdate={(val) => {
+          if (activeInput) updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
+        }}
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  title: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
+  cancel: { paddingHorizontal: 12, paddingVertical: 8 },
+  cancelText: { color: colors.textMuted, fontFamily: fonts.bold },
+  save: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  saveText: { color: colors.primary, fontFamily: fonts.black },
+  panel: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    marginBottom: 12,
+  },
+  label: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: colors.text,
+    fontFamily: fonts.bold,
+    fontSize: 16,
+  },
+  restHint: {
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.2)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  restHintText: { color: '#34d399', fontFamily: fonts.bold, fontSize: 13, textAlign: 'center' },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    backgroundColor: 'rgba(38,38,38,0.4)',
+  },
+  thumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff' },
+  thumbFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exName: { color: colors.text, fontFamily: fonts.bold, textTransform: 'capitalize' },
+  exMg: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  delEx: {
+    padding: 6,
+    marginLeft: 4,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+  },
+  setHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  th: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  setIdx: { width: 32, textAlign: 'center', color: colors.textMuted, fontFamily: fonts.bold },
+  cell: {
+    flex: 1,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  cellOn: { borderColor: colors.primary, backgroundColor: 'rgba(59,130,246,0.1)' },
+  cellText: { color: colors.text, fontFamily: fonts.bold },
+  delSet: {
+    width: 32,
+    padding: 6,
+    alignItems: 'center',
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderRadius: 6,
+  },
+  addSet: {
+    marginTop: 6,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(59,130,246,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.1)',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  addSetText: { color: colors.primary, fontFamily: fonts.bold, fontSize: 13 },
+  addEx: {
+    marginTop: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addExText: { color: colors.primary, fontFamily: fonts.bold, fontSize: 16 },
+  searchRoot: { flex: 1, backgroundColor: colors.background },
+  searchBar: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
+  },
+  searchWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+  },
+  searchInput: { flex: 1, color: colors.text, fontFamily: fonts.bold, fontSize: 16, paddingVertical: 12 },
+  searchClose: {
+    padding: 12,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    backgroundColor: 'rgba(38,38,38,0.4)',
+    borderRadius: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchName: { color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
+  searchMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  mgBadge: {
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  mgBadgeText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontFamily: fonts.black,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  emptySearch: { alignItems: 'center', paddingVertical: 48, opacity: 0.6 },
+  customBox: {
+    marginTop: 8,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  customAdd: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+});

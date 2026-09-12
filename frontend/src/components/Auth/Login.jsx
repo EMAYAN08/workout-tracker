@@ -1,52 +1,42 @@
 import React, { useState } from 'react';
-import { Dumbbell, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Pressable,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RefreshCw } from 'lucide-react-native';
+import { API_URL, LOGO } from '../../config';
+import { colors, fonts, radius } from '../../theme';
+import { Input, Button } from '../ui/primitives';
 
 export default function Login({ onLogin }) {
+  const insets = useSafeAreaInsets();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRefresh = (e) => {
-    e.preventDefault();
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-          registration.unregister();
-        }
-      }).finally(() => {
-        window.location.href = window.location.pathname;
-      });
-    } else {
-      window.location.href = window.location.pathname;
-    }
-  };
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!username.trim() || !password.trim()) {
       setError('Please fill in all fields');
       return;
     }
     setError('');
     setLoading(true);
-    
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password })
+        body: JSON.stringify({ username: username.trim(), password }),
       });
-      
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-      
+      if (!res.ok) throw new Error(data.error || 'Login failed');
       onLogin(data.username);
     } catch (err) {
       setError(err.message);
@@ -56,88 +46,153 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      
-      <div 
-        className="absolute right-4 sm:right-6 z-50"
-        style={{ top: 'max(1.5rem, calc(env(safe-area-inset-top, 2rem) + 0.5rem))' }}
-      >
-        <button
-          type="button"
-          onClick={handleRefresh}
-          className="p-2.5 rounded-full bg-primary/10 border border-primary/40 backdrop-blur-md text-primary hover:bg-primary/20 hover:border-primary/60 transition-all active:scale-95 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
-          title="Refresh App"
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={[styles.refreshWrap, { top: insets.top + 12 }]}>
+        <Pressable
+          onPress={() => {
+            setUsername('');
+            setPassword('');
+            setError('');
+          }}
+          style={styles.refreshBtn}
         >
-          <RefreshCw size={20} />
-        </button>
-      </div>
+          <RefreshCw size={20} color={colors.primary} />
+        </Pressable>
+      </View>
 
-      {/* Decorative blurred backgrounds */}
-      <div className="absolute top-1/4 -left-20 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-64 h-64 bg-primary-light/20 rounded-full blur-[100px] pointer-events-none" />
+      <View style={styles.blobLeft} />
+      <View style={styles.blobRight} />
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm z-10"
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
       >
-        <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(59,130,246,0.3)] overflow-hidden">
-            <img src={`${import.meta.env.BASE_URL}trackit-logo.jpg`} alt="TrackIt Logo" className="w-full h-full object-cover" />
-          </div>
-        </div>
+        <View style={styles.logoWrap}>
+          <Image source={LOGO} style={styles.logo} />
+        </View>
+        <Text style={styles.title}>TrackIt</Text>
+        <Text style={styles.subtitle}>Sign in or create an account</Text>
 
-        <h1 className="text-3xl font-black text-text text-center mb-2 tracking-tight">TrackIt</h1>
-        <p className="text-textMuted text-center mb-8 text-sm">Sign in or create an account</p>
+        <Input
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          editable={!loading}
+          autoComplete="username"
+        />
+        <Input
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          editable={!loading}
+          secureTextEntry
+          autoComplete="password"
+          style={{ marginTop: 12 }}
+        />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input 
-              type="text" 
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-surface/50 border border-white/5 rounded-xl px-4 py-3.5 text-text placeholder-textMuted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all backdrop-blur-sm"
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <input 
-              type="password" 
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-surface/50 border border-white/5 rounded-xl px-4 py-3.5 text-text placeholder-textMuted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all backdrop-blur-sm"
-              disabled={loading}
-            />
-          </div>
+        {!!error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
-          {error && (
-            <motion.p 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="text-red-400 text-sm text-center font-medium bg-red-400/10 py-2 rounded-lg border border-red-400/20"
-            >
-              {error}
-            </motion.p>
-          )}
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full mt-6 bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 hover:border-primary/50 transition-all text-base font-bold py-3.5 px-4 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.15)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none backdrop-blur-md"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                Processing...
-              </span>
-            ) : (
-              'Enter'
-            )}
-          </button>
-        </form>
-      </motion.div>
-    </div>
+        <Button
+          onPress={handleSubmit}
+          disabled={loading}
+          loading={loading}
+          style={{ marginTop: 24, paddingVertical: 16 }}
+        >
+          {loading ? 'Processing...' : 'Enter'}
+        </Button>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+    maxWidth: 420,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  refreshWrap: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 50,
+  },
+  refreshBtn: {
+    padding: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.4)',
+  },
+  blobLeft: {
+    position: 'absolute',
+    top: '20%',
+    left: -80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(59,130,246,0.18)',
+  },
+  blobRight: {
+    position: 'absolute',
+    bottom: '18%',
+    right: -80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(96,165,250,0.16)',
+  },
+  logoWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.3)',
+  },
+  logo: { width: '100%', height: '100%' },
+  title: {
+    color: colors.text,
+    fontFamily: fonts.black,
+    fontSize: 32,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  errorBox: {
+    marginTop: 12,
+    backgroundColor: 'rgba(248,113,113,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.2)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  errorText: {
+    color: '#f87171',
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+});

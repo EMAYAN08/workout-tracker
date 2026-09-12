@@ -1,81 +1,78 @@
 import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
+import { Dumbbell, Plus, Trash2, Search, Settings, ChevronDown } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
-import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, Edit2, Search, Settings } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
+import { Select } from '../ui/primitives';
+import { colors, fonts } from '../../theme';
 
-const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
-  return (
-    <div className="relative mb-2">
-      <div className="relative z-10 bg-surface-light/40 shadow-sm rounded-3xl border border-border/10 flex flex-col w-full overflow-hidden transition-colors hover:border-primary/20">
-        <div className="p-3 flex items-center justify-between gap-4 cursor-pointer" onClick={onToggle}>
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
-              <Settings size={22} className="text-primary opacity-90" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-text capitalize text-base leading-snug truncate">{ex.name}</h4>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <Dumbbell size={10} className="text-textMuted" />
-                <span className="text-xs font-semibold text-textMuted truncate capitalize">Custom</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="px-2 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-bold capitalize">{ex.muscleGroup}</span>
-            <ChevronDown size={18} className={`text-textMuted transition-transform duration-300 ${isExpanded ? 'rotate-180' : '-rotate-90'}`} />
-          </div>
-        </div>
-        
-        {/* Expanded View */}
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="px-4 pb-4 overflow-hidden bg-surface rounded-b-xl"
-            >
-               <div className="pt-3 border-t border-border mt-1">
-                 <div className="flex items-center justify-between mb-3">
-                   <h5 className="text-[10px] font-bold uppercase tracking-wider text-textMuted">Actions & Sets</h5>
-                   <div className="flex items-center gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); onEdit(ex); }} className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold">Edit</button>
-                      <button onClick={(e) => { e.stopPropagation(); onDelete(ex.id); }} className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold">Delete</button>
-                   </div>
-                 </div>
-                 <div className="flex flex-col gap-1.5">
-                   {(ex.defaultSets && ex.defaultSets.length > 0 ? ex.defaultSets : [{ reps: 10, weight: 0, type: 'Working' }]).map((s, i) => (
-                     <div key={i} className="flex justify-between items-center text-sm font-mono bg-surface-light px-3 py-1.5 rounded-lg border border-border/50">
-                       <span className="text-textMuted font-bold">Set {i+1}</span>
-                       <span className="text-text font-bold">
-                         {convertWeight(s.weight || 0, ex.unitSaved || 'lbs', unit)} <span className="text-xs text-textMuted uppercase">{unit}</span> - {s.reps || 10} Reps
-                       </span>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-};
+const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => (
+  <View style={styles.card}>
+    <Pressable onPress={onToggle} style={styles.cardHead}>
+      <View style={styles.cardIcon}>
+        <Settings size={22} color={colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.cardName} numberOfLines={1}>
+          {ex.name}
+        </Text>
+        <Text style={styles.cardMeta}>Custom</Text>
+      </View>
+      <View style={styles.mgBadge}>
+        <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
+      </View>
+      <ChevronDown
+        size={18}
+        color={colors.textMuted}
+        style={{ transform: [{ rotate: isExpanded ? '180deg' : '-90deg' }] }}
+      />
+    </Pressable>
+    {isExpanded && (
+      <View style={styles.cardBody}>
+        <View style={styles.actionRow}>
+          <Text style={styles.tinyLbl}>Actions & Sets</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable onPress={() => onEdit(ex)} style={styles.editBtn}>
+              <Text style={styles.editText}>Edit</Text>
+            </Pressable>
+            <Pressable onPress={() => onDelete(ex.id)} style={styles.delBtn}>
+              <Text style={styles.delText}>Delete</Text>
+            </Pressable>
+          </View>
+        </View>
+        {(ex.defaultSets?.length > 0 ? ex.defaultSets : [{ reps: 10, weight: 0, type: 'Working' }]).map(
+          (s, i) => (
+            <View key={i} style={styles.setLine}>
+              <Text style={styles.setLbl}>Set {i + 1}</Text>
+              <Text style={styles.setVal}>
+                {convertWeight(s.weight || 0, ex.unitSaved || 'lbs', unit)} {unit} - {s.reps || 10} Reps
+              </Text>
+            </View>
+          )
+        )}
+      </View>
+    )}
+  </View>
+);
 
-export default function CustomExercises({ onNavigate }) {
-  const { customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise, unit } = useWorkout();
-  
+export default function CustomExercises() {
+  const { customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise, unit } =
+    useWorkout();
   const [isCreating, setIsCreating] = useState(false);
   const [activeInput, setActiveInput] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [activeExerciseId, setActiveExerciseId] = useState(null);
-  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
-  
   const [newName, setNewName] = useState('');
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
   const [defaultSets, setDefaultSets] = useState([{ reps: 0, weight: 0 }]);
@@ -84,15 +81,19 @@ export default function CustomExercises({ onNavigate }) {
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
   const filterGroups = ['All', ...muscleGroups];
 
-  const filteredExercises = useMemo(() => {
-    return customExercises.filter(ex => {
-      const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase()) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesGroup = selectedMuscleGroup === 'All' || ex.muscleGroup === selectedMuscleGroup;
-      return matchesSearch && matchesGroup;
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [customExercises, searchQuery, selectedMuscleGroup]);
-
-  const activeMuscleGroupsCount = new Set(customExercises.map(ex => ex.muscleGroup)).size;
+  const filteredExercises = useMemo(
+    () =>
+      customExercises
+        .filter((ex) => {
+          const matchesSearch =
+            ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(searchQuery.toLowerCase()));
+          const matchesGroup = selectedMuscleGroup === 'All' || ex.muscleGroup === selectedMuscleGroup;
+          return matchesSearch && matchesGroup;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [customExercises, searchQuery, selectedMuscleGroup]
+  );
 
   const handleEditInit = (ex) => {
     setEditingId(ex.id);
@@ -127,192 +128,302 @@ export default function CustomExercises({ onNavigate }) {
 
   if (isCreating) {
     return (
-      <div className={`flex flex-col gap-4 w-full transition-all duration-300 ${activeInput ? 'pb-[300px]' : ''}`}>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-black text-text tracking-tight">
-            {editingId ? 'Edit Exercise' : 'New Exercise'}
-          </h2>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsCreating(false)}
-              className="px-4 py-2 rounded-lg text-textMuted font-bold hover:bg-surface-light transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleCreateSubmit}
-              disabled={isSubmitting || !newName.trim()}
-              className="bg-primary hover:bg-primary-light text-white px-5 py-2 rounded-lg font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-            >
-              {isSubmitting && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
-              Save
-            </button>
-          </div>
-        </div>
-        
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-textMuted mb-1.5 block">Exercise Name</label>
-            <input 
-              type="text" 
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="e.g. Hex Bar Deadlift"
-              className="w-full bg-surface-light border border-border/50 rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors"
-            />
-          </div>
-          
-          <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-textMuted mb-1.5 block">Muscle Group</label>
-            <select 
-              value={newMuscleGroup} 
-              onChange={e => setNewMuscleGroup(e.target.value)}
-              className="w-full bg-surface-light border border-border/50 rounded-xl px-4 py-3 text-text font-bold capitalize focus:outline-none focus:border-primary transition-colors appearance-none"
-            >
-              {muscleGroups.map(mg => <option key={mg} value={mg}>{mg}</option>)}
-            </select>
-          </div>
-
-          <div className="mt-2">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-textMuted">Default Sets</label>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              {defaultSets.map((s, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <div 
-                    onClick={() => setActiveInput({ index: i, field: 'weight' })}
-                    className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
-                  >
-                    <span className="text-xs font-bold text-textMuted uppercase">{unit}</span>
-                    <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.weight || 0}</div>
-                  </div>
-                  <div 
-                    onClick={() => setActiveInput({ index: i, field: 'reps' })}
-                    className={`flex-1 bg-surface-light border rounded-xl px-3 py-2 flex items-center justify-between cursor-text transition-colors ${activeInput?.index === i && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border/50 text-text'}`}
-                  >
-                    <span className="text-xs font-bold text-textMuted">Reps</span>
-                    <div className="w-16 bg-transparent text-right font-mono font-bold text-text focus:outline-none">{s.reps || 0}</div>
-                  </div>
-                  <button onClick={() => removeSet(i)} disabled={defaultSets.length === 1} className="p-2 text-textMuted hover:text-red-400 disabled:opacity-30">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              
-              <button onClick={addSet} className="w-full py-2.5 mt-1 border-2 border-dashed border-border/50 rounded-xl text-xs font-bold text-textMuted hover:text-primary hover:border-primary/50 transition-colors flex items-center justify-center gap-1">
-                <Plus size={14} /> Add Default Set
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Numpad */}
-        <CustomNumpad 
-          activeInput={activeInput ? {
-            field: activeInput.field,
-            onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
-            onNext: () => {
-              if (activeInput.field === 'weight') {
-                setActiveInput(prev => ({ ...prev, field: 'reps' }));
-              } else if (activeInput.index < defaultSets.length - 1) {
-                setActiveInput({ index: activeInput.index + 1, field: 'weight' });
-              } else {
-                setActiveInput(null);
-              }
-            }
-          } : null}
+      <View style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: activeInput ? 320 : 120 }}>
+          <View style={styles.formHead}>
+            <Text style={styles.pageTitle}>{editingId ? 'Edit Exercise' : 'New Exercise'}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable onPress={() => setIsCreating(false)} style={styles.cancel}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleCreateSubmit}
+                disabled={isSubmitting || !newName.trim()}
+                style={[styles.save, (isSubmitting || !newName.trim()) && { opacity: 0.5 }]}
+              >
+                {isSubmitting && <ActivityIndicator color="#fff" size={14} />}
+                <Text style={styles.saveText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+          <Text style={styles.label}>Exercise Name</Text>
+          <TextInput
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="e.g. Hex Bar Deadlift"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+          />
+          <Text style={[styles.label, { marginTop: 14 }]}>Muscle Group</Text>
+          <Select
+            value={newMuscleGroup}
+            onChange={setNewMuscleGroup}
+            options={muscleGroups.map((mg) => ({ value: mg, label: mg }))}
+          />
+          <Text style={[styles.label, { marginTop: 16 }]}>Default Sets</Text>
+          {defaultSets.map((s, i) => (
+            <View key={i} style={styles.setEdit}>
+              <Pressable
+                onPress={() => setActiveInput({ index: i, field: 'weight' })}
+                style={[
+                  styles.setCell,
+                  activeInput?.index === i && activeInput?.field === 'weight' && styles.setCellOn,
+                ]}
+              >
+                <Text style={styles.tinyLbl}>{unit}</Text>
+                <Text style={styles.cellVal}>{s.weight || 0}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setActiveInput({ index: i, field: 'reps' })}
+                style={[
+                  styles.setCell,
+                  activeInput?.index === i && activeInput?.field === 'reps' && styles.setCellOn,
+                ]}
+              >
+                <Text style={styles.tinyLbl}>Reps</Text>
+                <Text style={styles.cellVal}>{s.reps || 0}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => removeSet(i)}
+                disabled={defaultSets.length === 1}
+                style={{ padding: 8, opacity: defaultSets.length === 1 ? 0.3 : 1 }}
+              >
+                <Trash2 size={16} color={colors.textMuted} />
+              </Pressable>
+            </View>
+          ))}
+          <Pressable onPress={addSet} style={styles.addSet}>
+            <Plus size={14} color={colors.textMuted} />
+            <Text style={styles.addSetText}>Add Default Set</Text>
+          </Pressable>
+        </ScrollView>
+        <CustomNumpad
+          activeInput={
+            activeInput
+              ? {
+                  field: activeInput.field,
+                  onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
+                  onNext: () => {
+                    if (activeInput.field === 'weight') {
+                      setActiveInput((prev) => ({ ...prev, field: 'reps' }));
+                    } else if (activeInput.index < defaultSets.length - 1) {
+                      setActiveInput({ index: activeInput.index + 1, field: 'weight' });
+                    } else setActiveInput(null);
+                  },
+                }
+              : null
+          }
           onClose={() => setActiveInput(null)}
           value={activeInput ? defaultSets[activeInput.index]?.[activeInput.field] : ''}
-          onUpdate={(val) => {
-            if (activeInput) {
-              updateSet(activeInput.index, activeInput.field, val);
-            }
-          }}
+          onUpdate={(val) => activeInput && updateSet(activeInput.index, activeInput.field, val)}
         />
-      </div>
+      </View>
     );
   }
 
   return (
-    <div className="flex flex-col w-full pb-8 relative pt-0 mt-[-8px]">
-      {/* Header section mimicking reference */}
-      <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
-        {/* Header section mimicking reference */}
-        <div className="flex items-center justify-between mb-4 px-1">
-          <div>
-            <h1 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight flex items-center gap-2">
-              <Dumbbell className="text-primary w-6 h-6 sm:w-7 sm:h-7" /> Custom Exercises
-            </h1>
-            <p className="text-sm text-textMuted px-1 mt-1">Create your own exercise</p>
-          </div>
-          <button 
-            onClick={() => {
+    <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: 120 }} stickyHeaderIndices={[0]}>
+      <View style={styles.sticky}>
+        <View style={styles.formHead}>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Dumbbell size={24} color={colors.primary} />
+              <Text style={styles.pageTitle}>Custom Exercises</Text>
+            </View>
+            <Text style={styles.sub}>Create your own exercise</Text>
+          </View>
+          <Pressable
+            onPress={() => {
               setEditingId(null);
               setNewName('');
               setDefaultSets([{ reps: 0, weight: 0 }]);
               setIsCreating(true);
             }}
-            className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95 shrink-0"
+            style={styles.plusBtn}
           >
-            <Plus size={24} strokeWidth={3} />
-          </button>
-        </div>
-
-        {/* Search & Filter Dropdown */}
-        <div className="flex gap-2 mb-4 px-1">
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-            <input 
-              type="text" 
+            <Plus size={24} color={colors.primary} strokeWidth={3} />
+          </Pressable>
+        </View>
+        <View style={styles.searchRow}>
+          <View style={styles.searchWrap}>
+            <Search size={18} color={colors.textMuted} />
+            <TextInput
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChangeText={setSearchQuery}
               placeholder="Search exercises..."
-              className="w-full bg-[#1c1c1e] border-none rounded-2xl pl-11 pr-4 py-3.5 text-text font-semibold focus:outline-none focus:ring-1 focus:ring-border/50 placeholder:text-textMuted/70"
+              placeholderTextColor="rgba(161,161,170,0.7)"
+              style={styles.searchInput}
             />
-          </div>
-          
-          <div className="relative shrink-0 w-32 sm:w-40">
-            <select 
+          </View>
+          <View style={{ width: 120 }}>
+            <Select
               value={selectedMuscleGroup}
-              onChange={e => setSelectedMuscleGroup(e.target.value)}
-              className="w-full bg-[#1c1c1e] text-text border-none rounded-2xl py-3.5 pl-4 pr-10 font-bold focus:outline-none focus:ring-1 focus:ring-border/50 appearance-none capitalize h-full truncate"
-            >
-              {filterGroups.map(group => (
-                <option key={group} value={group}>{group}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" size={18} />
-          </div>
-        </div>
-      </div>
-
-      {/* Results Header */}
-      {searchQuery || selectedMuscleGroup !== 'All' ? (
-        <p className="text-xs font-bold text-text mb-3 px-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-primary"></span> {filteredExercises.length} Results</p>
-      ) : null}
-
-      <div className={`flex flex-col px-1 ${activeInput ? 'pb-[300px]' : ''}`}>
-        {filteredExercises.length === 0 ? (
-           <div className="flex flex-col items-center justify-center py-12 opacity-50">
-             <Dumbbell size={48} className="text-textMuted mb-4" />
-             <p className="text-text font-bold">No custom exercises found.</p>
-           </div>
-        ) : (
-          filteredExercises.map(ex => (
-            <CustomExerciseCard 
-              key={ex.id} 
-              ex={ex} 
-              unit={unit}
-              onDelete={deleteCustomExercise}
-              onEdit={handleEditInit}
-              isExpanded={activeExerciseId === ex.id}
-              onToggle={() => setActiveExerciseId(activeExerciseId === ex.id ? null : ex.id)}
+              onChange={setSelectedMuscleGroup}
+              options={filterGroups.map((g) => ({ value: g, label: g }))}
             />
-          ))
-        )}
-      </div>
-    </div>
+          </View>
+        </View>
+      </View>
+      {(searchQuery || selectedMuscleGroup !== 'All') && (
+        <Text style={styles.results}>●  {filteredExercises.length} Results</Text>
+      )}
+      {filteredExercises.length === 0 ? (
+        <View style={styles.empty}>
+          <Dumbbell size={48} color={colors.textMuted} />
+          <Text style={styles.emptyText}>No custom exercises found.</Text>
+        </View>
+      ) : (
+        filteredExercises.map((ex) => (
+          <CustomExerciseCard
+            key={ex.id}
+            ex={ex}
+            unit={unit}
+            onDelete={deleteCustomExercise}
+            onEdit={handleEditInit}
+            isExpanded={activeExerciseId === ex.id}
+            onToggle={() => setActiveExerciseId(activeExerciseId === ex.id ? null : ex.id)}
+          />
+        ))
+      )}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  sticky: { backgroundColor: colors.background, paddingBottom: 8 },
+  formHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
+  sub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
+  plusBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59,130,246,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchRow: { flexDirection: 'row', gap: 8 },
+  searchWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+  },
+  searchInput: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 15, paddingVertical: 12 },
+  results: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, marginBottom: 8 },
+  card: {
+    backgroundColor: 'rgba(38,38,38,0.4)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
+  cardIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
+  cardMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontFamily: fonts.semibold },
+  mgBadge: {
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  mgBadgeText: { color: colors.primary, fontSize: 10, fontFamily: fonts.bold, textTransform: 'capitalize' },
+  cardBody: {
+    padding: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: 6,
+  },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  tinyLbl: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
+  editBtn: { backgroundColor: 'rgba(59,130,246,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  editText: { color: '#60a5fa', fontFamily: fonts.bold, fontSize: 12 },
+  delBtn: { backgroundColor: 'rgba(239,68,68,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  delText: { color: '#f87171', fontFamily: fonts.bold, fontSize: 12 },
+  setLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  setLbl: { color: colors.textMuted, fontFamily: fonts.bold },
+  setVal: { color: colors.text, fontFamily: fonts.bold },
+  empty: { alignItems: 'center', paddingVertical: 48, opacity: 0.5 },
+  emptyText: { color: colors.text, fontFamily: fonts.bold, marginTop: 12 },
+  label: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: colors.text,
+    fontFamily: fonts.bold,
+    fontSize: 16,
+  },
+  cancel: { paddingHorizontal: 14, paddingVertical: 8 },
+  cancelText: { color: colors.textMuted, fontFamily: fonts.bold },
+  save: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  saveText: { color: '#fff', fontFamily: fonts.bold },
+  setEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  setCell: {
+    flex: 1,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  setCellOn: { borderColor: colors.primary, backgroundColor: 'rgba(59,130,246,0.1)' },
+  cellVal: { color: colors.text, fontFamily: fonts.bold },
+  addSet: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.borderStrong,
+    borderRadius: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  addSetText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 12 },
+});

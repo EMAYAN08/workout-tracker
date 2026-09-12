@@ -1,79 +1,97 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
-import { differenceInDays, parseISO, startOfDay, isSameDay } from 'date-fns';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { API_URL } from '../config';
+import { getItem, setItem, removeItem } from '../storage';
 
 const WorkoutContext = createContext();
 
-export function WorkoutProvider({ children }) {
-  const [username, setUsername] = useState(() => localStorage.getItem('workout_username') || null);
+async function vibrate(pattern = 'light') {
+  try {
+    if (pattern === 'success') {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  } catch {
+    // haptics not available (web / simulator)
+  }
+}
 
-  const login = (user) => {
-    localStorage.setItem('workout_username', user);
+export function WorkoutProvider({ children }) {
+  const [hydrated, setHydrated] = useState(false);
+  const [username, setUsername] = useState(null);
+
+  const login = async (user) => {
+    await setItem('workout_username', user);
     setUsername(user);
   };
 
-  const logout = () => {
-    localStorage.removeItem('workout_username');
+  const logout = async () => {
+    await removeItem('workout_username');
     setUsername(null);
   };
 
   const apiFetch = async (endpoint, options = {}) => {
-    const user = username || localStorage.getItem('workout_username');
+    const user = username || (await getItem('workout_username'));
     const url = new URL(API_URL + endpoint);
     if (user) url.searchParams.append('username', user);
-    
+
     if (options.body && typeof options.body === 'string') {
-       const bodyObj = JSON.parse(options.body);
-       if (user) bodyObj.username = user;
-       options.body = JSON.stringify(bodyObj);
+      const bodyObj = JSON.parse(options.body);
+      if (user) bodyObj.username = user;
+      options.body = JSON.stringify(bodyObj);
     }
-    
+
     return fetch(url.toString(), options);
   };
 
-  
-
-  // Global preferences
-  const [unit, setUnit] = useState(() => {
-    return localStorage.getItem('workout_unit') || 'lbs';
-  });
-
-  // Active workout state
-  const [activeWorkout, setActiveWorkout] = useState(() => {
-    const saved = localStorage.getItem('workout_active');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [unit, setUnit] = useState('lbs');
+  const [activeWorkout, setActiveWorkout] = useState(null);
   const [completedWorkout, setCompletedWorkout] = useState(null);
-
-  // Global Timer
-  const [workoutDuration, setWorkoutDuration] = useState(() => {
-    const saved = localStorage.getItem('workout_duration');
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  // Rest Timer
-  const [lastSetCompletedAt, setLastSetCompletedAt] = useState(() => {
-    const saved = localStorage.getItem('workout_last_set_time');
-    return saved ? parseInt(saved, 10) : null;
-  });
+  const [workoutDuration, setWorkoutDuration] = useState(0);
+  const [lastSetCompletedAt, setLastSetCompletedAt] = useState(null);
   const [restTimer, setRestTimer] = useState(0);
-
-  // Set Timer
-  const [playingSet, setPlayingSet] = useState(() => {
-    const saved = localStorage.getItem('workout_playing_set');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [playingSet, setPlayingSet] = useState(null);
   const [setTimer, setSetTimer] = useState(0);
-  
+  const [workoutHistory, setWorkoutHistory] = useState([]);
+  const [customExercises, setCustomExercises] = useState([]);
+  const newlyCreatedCustomExIds = useRef([]);
+  const [routines, setRoutines] = useState([]);
+  const pushTaskIdRef = useRef(null);
+
   useEffect(() => {
-    if (playingSet) {
-      localStorage.setItem('workout_playing_set', JSON.stringify(playingSet));
-    } else {
-      localStorage.removeItem('workout_playing_set');
-    }
-  }, [playingSet]);
+    (async () => {
+      try {
+        const [savedUser, savedUnit, savedActive, savedDuration, savedLastSet, savedPlaying] =
+          await Promise.all([
+            getItem('workout_username'),
+            getItem('workout_unit'),
+            getItem('workout_active'),
+            getItem('workout_duration'),
+            getItem('workout_last_set_time'),
+            getItem('workout_playing_set'),
+          ]);
+        if (savedUser) setUsername(savedUser);
+        if (savedUnit) setUnit(savedUnit);
+        if (savedActive) setActiveWorkout(JSON.parse(savedActive));
+        if (savedDuration) setWorkoutDuration(parseInt(savedDuration, 10));
+        if (savedLastSet) setLastSetCompletedAt(parseInt(savedLastSet, 10));
+        if (savedPlaying) setPlayingSet(JSON.parse(savedPlaying));
+      } catch (err) {
+        console.error('hydrate failed', err);
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (playingSet) setItem('workout_playing_set', JSON.stringify(playingSet));
+    else removeItem('workout_playing_set');
+  }, [playingSet, hydrated]);
 
   useEffect(() => {
     let interval;
@@ -89,23 +107,13 @@ export function WorkoutProvider({ children }) {
     return () => clearInterval(interval);
   }, [playingSet]);
 
-  // Workout History
-  const [workoutHistory, setWorkoutHistory] = useState([]);
-  
-  // Custom Exercises
-  const [customExercises, setCustomExercises] = useState([]);
-  const newlyCreatedCustomExIds = useRef([]);
-
-  // Routines
-  const [routines, setRoutines] = useState([]);
-
   const fetchHistory = async () => {
     try {
       const res = await apiFetch(`/api/workouts`);
       const data = await res.json();
-      setWorkoutHistory(data);
+      setWorkoutHistory(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch history", err);
+      console.error('Failed to fetch history', err);
     }
   };
 
@@ -113,9 +121,9 @@ export function WorkoutProvider({ children }) {
     try {
       const res = await apiFetch(`/api/exercises/custom`);
       const data = await res.json();
-      setCustomExercises(data);
+      setCustomExercises(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch custom exercises", err);
+      console.error('Failed to fetch custom exercises', err);
     }
   };
 
@@ -123,48 +131,44 @@ export function WorkoutProvider({ children }) {
     try {
       const res = await apiFetch(`/api/routines`);
       const data = await res.json();
-      setRoutines(data);
+      setRoutines(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch routines", err);
+      console.error('Failed to fetch routines', err);
     }
   };
 
   const createCustomExercise = async (name, muscleGroup, defaultSets = []) => {
     try {
       const setsToSave = defaultSets.length > 0 ? defaultSets : [{ reps: 10, weight: 0, type: 'Working' }];
-      // Generate a client-side ID since the backend expects one
       const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
       const payload = { id: tempId, name, muscleGroup, defaultSets: setsToSave, unitSaved: unit };
-
       const res = await apiFetch(`/api/exercises/custom`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const newEx = await res.json();
-      setCustomExercises(prev => [...prev, newEx]);
+      setCustomExercises((prev) => [...prev, newEx]);
       newlyCreatedCustomExIds.current.push(newEx.id);
       return newEx;
     } catch (err) {
-      console.error("Failed to create custom exercise", err);
+      console.error('Failed to create custom exercise', err);
       return null;
     }
   };
 
   const deleteCustomExercise = async (id) => {
     try {
-      await apiFetch(`/api/exercises/custom/${id}`, {
-        method: 'DELETE'
-      });
-      setCustomExercises(prev => prev.filter(ex => ex.id !== id));
-      
-      // Keep routines perfectly in sync visually
-      setRoutines(prev => prev.map(routine => ({
-        ...routine,
-        exercises: routine.exercises.filter(ex => ex.id !== id)
-      })));
+      await apiFetch(`/api/exercises/custom/${id}`, { method: 'DELETE' });
+      setCustomExercises((prev) => prev.filter((ex) => ex.id !== id));
+      setRoutines((prev) =>
+        prev.map((routine) => ({
+          ...routine,
+          exercises: routine.exercises.filter((ex) => ex.id !== id),
+        }))
+      );
     } catch (err) {
-      console.error("Failed to delete custom exercise", err);
+      console.error('Failed to delete custom exercise', err);
     }
   };
 
@@ -173,24 +177,23 @@ export function WorkoutProvider({ children }) {
       const res = await apiFetch(`/api/exercises/custom/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Update failed');
       const updatedEx = await res.json();
-      setCustomExercises(prev => prev.map(ex => ex.id === id ? updatedEx : ex));
-      
-      // Keep routines perfectly in sync visually
-      setRoutines(prev => prev.map(routine => {
-        if (!routine.exercises.some(ex => ex.id === id)) return routine;
-        return {
-          ...routine,
-          exercises: routine.exercises.map(ex => ex.id === id ? { ...ex, ...updatedEx } : ex)
-        };
-      }));
-      
+      setCustomExercises((prev) => prev.map((ex) => (ex.id === id ? updatedEx : ex)));
+      setRoutines((prev) =>
+        prev.map((routine) => {
+          if (!routine.exercises.some((ex) => ex.id === id)) return routine;
+          return {
+            ...routine,
+            exercises: routine.exercises.map((ex) => (ex.id === id ? { ...ex, ...updatedEx } : ex)),
+          };
+        })
+      );
       return updatedEx;
     } catch (err) {
-      console.error("Failed to update custom exercise", err);
+      console.error('Failed to update custom exercise', err);
       return null;
     }
   };
@@ -200,26 +203,24 @@ export function WorkoutProvider({ children }) {
       const res = await apiFetch(`/api/routines`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineData)
+        body: JSON.stringify(routineData),
       });
       if (!res.ok) throw new Error('Create failed');
       const newRoutine = await res.json();
-      setRoutines(prev => [...prev, newRoutine]);
+      setRoutines((prev) => [...prev, newRoutine]);
       return newRoutine;
     } catch (err) {
-      console.error("Failed to create routine", err);
+      console.error('Failed to create routine', err);
       return null;
     }
   };
 
   const deleteRoutine = async (id) => {
     try {
-      await apiFetch(`/api/routines/${id}`, {
-        method: 'DELETE'
-      });
-      setRoutines(prev => prev.filter(r => r.id !== id));
+      await apiFetch(`/api/routines/${id}`, { method: 'DELETE' });
+      setRoutines((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
-      console.error("Failed to delete routine", err);
+      console.error('Failed to delete routine', err);
     }
   };
 
@@ -228,53 +229,47 @@ export function WorkoutProvider({ children }) {
       const res = await apiFetch(`/api/routines/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineData)
+        body: JSON.stringify(routineData),
       });
       const updatedRoutine = await res.json();
-      setRoutines(prev => prev.map(r => r.id === id ? updatedRoutine : r));
+      setRoutines((prev) => prev.map((r) => (r.id === id ? updatedRoutine : r)));
       return updatedRoutine;
     } catch (err) {
-      console.error("Failed to update routine", err);
+      console.error('Failed to update routine', err);
       return null;
     }
   };
 
   useEffect(() => {
+    if (!hydrated || !username) return;
     fetchHistory();
     fetchCustomExercises();
     fetchRoutines();
-  }, []);
-
-  // Persist Data
-  useEffect(() => {
-    localStorage.setItem('workout_unit', unit);
-  }, [unit]);
+  }, [hydrated, username]);
 
   useEffect(() => {
-    if (activeWorkout) {
-      localStorage.setItem('workout_active', JSON.stringify(activeWorkout));
-    } else {
-      localStorage.removeItem('workout_active');
-    }
-  }, [activeWorkout]);
+    if (hydrated) setItem('workout_unit', unit);
+  }, [unit, hydrated]);
 
   useEffect(() => {
-    localStorage.setItem('workout_duration', workoutDuration.toString());
-  }, [workoutDuration]);
+    if (!hydrated) return;
+    if (activeWorkout) setItem('workout_active', JSON.stringify(activeWorkout));
+    else removeItem('workout_active');
+  }, [activeWorkout, hydrated]);
 
   useEffect(() => {
-    if (lastSetCompletedAt) {
-      localStorage.setItem('workout_last_set_time', lastSetCompletedAt.toString());
-    } else {
-      localStorage.removeItem('workout_last_set_time');
-    }
-  }, [lastSetCompletedAt]);
+    if (hydrated) setItem('workout_duration', workoutDuration.toString());
+  }, [workoutDuration, hydrated]);
 
-  // Timers
+  useEffect(() => {
+    if (!hydrated) return;
+    if (lastSetCompletedAt) setItem('workout_last_set_time', lastSetCompletedAt.toString());
+    else removeItem('workout_last_set_time');
+  }, [lastSetCompletedAt, hydrated]);
+
   useEffect(() => {
     let interval;
     if (activeWorkout && activeWorkout.startTime) {
-      // Initialize it immediately in case of refresh
       setWorkoutDuration(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
       interval = setInterval(() => {
         setWorkoutDuration(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
@@ -298,54 +293,20 @@ export function WorkoutProvider({ children }) {
     return () => clearInterval(interval);
   }, [lastSetCompletedAt]);
 
-  const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
-  const subscribeToPush = async () => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        let subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY)
-          });
-        }
-        return subscription;
-      } catch (e) {
-        console.error('Push subscription failed', e);
-        return null;
-      }
-    }
-    return null;
-  };
-
-  // Toggle Unit
   const toggleUnit = () => {
     const newUnit = unit === 'lbs' ? 'kgs' : 'lbs';
-    
     if (activeWorkout) {
-      setActiveWorkout(prev => ({
+      setActiveWorkout((prev) => ({
         ...prev,
-        exercises: prev.exercises.map(ex => ({
+        exercises: prev.exercises.map((ex) => ({
           ...ex,
-          sets: ex.sets.map(s => ({
+          sets: ex.sets.map((s) => ({
             ...s,
-            weight: convertWeight(s.weight, unit, newUnit)
-          }))
-        }))
+            weight: convertWeight(s.weight, unit, newUnit),
+          })),
+        })),
       }));
     }
-    
     setUnit(newUnit);
   };
 
@@ -353,20 +314,21 @@ export function WorkoutProvider({ children }) {
     setActiveWorkout({
       id: `wk_${Date.now()}`,
       startTime: Date.now(),
-      exercises: []
+      exercises: [],
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
   };
 
   const startWorkoutFromRoutine = (routine) => {
-    const populatedExercises = routine.exercises.map(ex => {
-      const pastWorkout = workoutHistory.find(wk => wk.exercises?.some(e => e.id === ex.id && e.sets?.length > 0));
-      const prevPerformance = pastWorkout ? pastWorkout.exercises.find(e => e.id === ex.id) : null;
-      
+    const populatedExercises = routine.exercises.map((ex) => {
+      const pastWorkout = workoutHistory.find((wk) =>
+        wk.exercises?.some((e) => e.id === ex.id && e.sets?.length > 0)
+      );
+      const prevPerformance = pastWorkout ? pastWorkout.exercises.find((e) => e.id === ex.id) : null;
       const defaultSetsCount = (ex.defaultSets || []).length || 3;
       let initialSets = [];
-      
+
       if (prevPerformance) {
         const pastUnit = pastWorkout.unitSaved || 'lbs';
         for (let i = 0; i < defaultSetsCount; i++) {
@@ -375,20 +337,22 @@ export function WorkoutProvider({ children }) {
             type: pastSet.type || 'Working',
             weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
             reps: pastSet.reps ? String(pastSet.reps) : '',
-            completedAt: null
+            completedAt: null,
           });
         }
       } else {
         const setsToUse = ex.defaultSets || [];
         if (setsToUse.length > 0) {
-          initialSets = setsToUse.map(ds => ({
+          initialSets = setsToUse.map((ds) => ({
             type: ds.type || 'Working',
             weight: ds.weight ? String(convertWeight(ds.weight, ex.unitSaved || 'lbs', unit)) : '',
             reps: ds.reps ? String(ds.reps) : '',
-            completedAt: null
+            completedAt: null,
           }));
         } else {
-          initialSets = Array(defaultSetsCount).fill(null).map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
+          initialSets = Array(defaultSetsCount)
+            .fill(null)
+            .map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
         }
       }
 
@@ -397,7 +361,7 @@ export function WorkoutProvider({ children }) {
         name: ex.name,
         muscleGroup: ex.muscleGroup,
         gifUrl: ex.gifUrl,
-        sets: initialSets
+        sets: initialSets,
       };
     });
 
@@ -406,65 +370,48 @@ export function WorkoutProvider({ children }) {
       startTime: Date.now(),
       routineId: routine.id,
       routineName: routine.name,
-      exercises: populatedExercises
+      exercises: populatedExercises,
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
   };
 
-  const cancelPushNotification = async () => {
-    if (pushTaskIdRef.current) {
-      try {
-        await apiFetch(`/api/push/cancel`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taskId: pushTaskIdRef.current })
-        });
-      } catch (err) {
-        console.error('Failed to cancel push', err);
-      }
-      pushTaskIdRef.current = null;
-    }
-  };
-
-  const finishWorkout = async () => { if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+  const finishWorkout = async () => {
+    await vibrate('success');
     try {
       const payload = {
         ...activeWorkout,
         endTime: Date.now(),
         duration: workoutDuration,
-        unitSaved: unit
+        unitSaved: unit,
       };
-      
       const res = await apiFetch(`/api/workouts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      
       const savedWorkout = await res.json();
-      
-      // Sync newly created custom exercises' default sets with what was actually performed
       for (const ex of activeWorkout.exercises) {
         if (newlyCreatedCustomExIds.current.includes(ex.id)) {
-          // Map the active workout 'sets' to 'defaultSets' for the custom exercise template
-          const mappedSets = ex.sets.map(s => ({ reps: s.reps, weight: s.weight, type: s.type || 'Working' }));
+          const mappedSets = ex.sets.map((s) => ({
+            reps: s.reps,
+            weight: s.weight,
+            type: s.type || 'Working',
+          }));
           if (mappedSets.length > 0) {
             await updateCustomExercise(ex.id, { defaultSets: mappedSets });
           }
         }
       }
-      
       await fetchHistory();
       setCompletedWorkout(savedWorkout.workout || payload);
     } catch (e) {
-      console.error("Failed to save workout", e);
+      console.error('Failed to save workout', e);
     }
-      
-      setActiveWorkout(null);
-      setWorkoutDuration(0);
-      setLastSetCompletedAt(null);
-      localStorage.removeItem('workout_active');
+    setActiveWorkout(null);
+    setWorkoutDuration(0);
+    setLastSetCompletedAt(null);
+    await removeItem('workout_active');
   };
 
   const cancelWorkout = async () => {
@@ -475,13 +422,13 @@ export function WorkoutProvider({ children }) {
 
   const addExercise = (exercise) => {
     if (!activeWorkout) return;
-    
-    const pastWorkout = workoutHistory.find(wk => wk.exercises?.some(e => e.id === exercise.id && e.sets?.length > 0));
-    const prevPerformance = pastWorkout ? pastWorkout.exercises.find(e => e.id === exercise.id) : null;
-    
+    const pastWorkout = workoutHistory.find((wk) =>
+      wk.exercises?.some((e) => e.id === exercise.id && e.sets?.length > 0)
+    );
+    const prevPerformance = pastWorkout ? pastWorkout.exercises.find((e) => e.id === exercise.id) : null;
     let initialSets = [];
     const defaultSetsCount = (exercise.defaultSets || []).length || 1;
-    
+
     if (prevPerformance) {
       const pastUnit = pastWorkout.unitSaved || 'lbs';
       for (let i = 0; i < defaultSetsCount; i++) {
@@ -490,28 +437,23 @@ export function WorkoutProvider({ children }) {
           type: pastSet.type || 'Working',
           weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
           reps: pastSet.reps ? String(pastSet.reps) : '',
-          completedAt: null
+          completedAt: null,
         });
       }
+    } else if (exercise.defaultSets && exercise.defaultSets.length > 0) {
+      initialSets = exercise.defaultSets.map((s) => ({
+        reps: s.reps ? String(s.reps) : '',
+        weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : '',
+        type: s.type || 'Working',
+        completedAt: null,
+      }));
     } else {
-      if (exercise.defaultSets && exercise.defaultSets.length > 0) {
-        initialSets = exercise.defaultSets.map(s => ({
-          reps: s.reps ? String(s.reps) : '',
-          weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : '',
-          type: s.type || 'Working',
-          completedAt: null
-        }));
-      } else {
-        initialSets = [{ reps: '', weight: '', type: 'Working', completedAt: null }];
-      }
+      initialSets = [{ reps: '', weight: '', type: 'Working', completedAt: null }];
     }
 
-    setActiveWorkout(prev => ({
+    setActiveWorkout((prev) => ({
       ...prev,
-      exercises: [...prev.exercises, { 
-        ...exercise, 
-        sets: initialSets 
-      }]
+      exercises: [...prev.exercises, { ...exercise, sets: initialSets }],
     }));
   };
 
@@ -519,8 +461,6 @@ export function WorkoutProvider({ children }) {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex][field] = value;
-    
-    // Auto-cascade edits from the first set to subsequent uncompleted sets
     if (setIndex === 0) {
       for (let i = 1; i < newExercises[exerciseIndex].sets.length; i++) {
         if (!newExercises[exerciseIndex].sets[i].completedAt) {
@@ -528,13 +468,12 @@ export function WorkoutProvider({ children }) {
         }
       }
     }
-    
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const reorderActiveExercise = (index, direction) => {
     if (!activeWorkout) return;
-    setActiveWorkout(prev => {
+    setActiveWorkout((prev) => {
       const newExercises = [...prev.exercises];
       if (direction === 'up' && index > 0) {
         [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
@@ -545,37 +484,28 @@ export function WorkoutProvider({ children }) {
     });
   };
 
-
   const startSet = (exerciseIndex, setIndex) => {
-    if (navigator.vibrate) navigator.vibrate(40);
-    setLastSetCompletedAt(null); // stop rest timer
+    vibrate();
+    setLastSetCompletedAt(null);
     setPlayingSet({ exerciseIndex, setIndex, startTime: Date.now() });
   };
-  
+
   const cancelSet = () => {
     setPlayingSet(null);
   };
 
   const completeSet = async (exerciseIndex, setIndex) => {
-
-    if (navigator.vibrate) navigator.vibrate(40);
+    vibrate();
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
-    
-    // Default weight to 0 if not entered (e.g. for bodyweight exercises)
     if (!newExercises[exerciseIndex].sets[setIndex].weight) {
       newExercises[exerciseIndex].sets[setIndex].weight = 0;
     }
-
-    // Track rest time taken before this set
     const restTimeTaken = lastSetCompletedAt ? Math.floor((Date.now() - lastSetCompletedAt) / 1000) : 0;
     newExercises[exerciseIndex].sets[setIndex].restTimeTaken = restTimeTaken;
-    
     newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
-    
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
     setPlayingSet(null);
-    // Start tracking rest for the *next* set
     setLastSetCompletedAt(Date.now());
   };
 
@@ -583,7 +513,7 @@ export function WorkoutProvider({ children }) {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex].completedAt = null;
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const addSetToExercise = (exerciseIndex) => {
@@ -591,63 +521,57 @@ export function WorkoutProvider({ children }) {
     const newExercises = [...activeWorkout.exercises];
     const sets = newExercises[exerciseIndex].sets;
     const lastSet = sets.length > 0 ? sets[sets.length - 1] : { reps: '', weight: '', type: 'Working' };
-    
     newExercises[exerciseIndex].sets.push({
       reps: lastSet.reps,
       weight: lastSet.weight,
       type: lastSet.type,
-      completedAt: null
+      completedAt: null,
     });
-    
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const removeActiveExercise = (exerciseIndex) => {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises.splice(exerciseIndex, 1);
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const removeSet = (exerciseIndex, setIndex) => {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets.splice(setIndex, 1);
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
-  // Streak Calculation
   const getStreaks = () => {
     if (workoutHistory.length === 0) return { current: 0, best: 0 };
-    
-    const dates = [...new Set(workoutHistory.map(w => startOfDay(parseISO(w.timestamp)).getTime()))].sort((a, b) => b - a);
-    
+    const dates = [
+      ...new Set(workoutHistory.map((w) => startOfDay(parseISO(w.timestamp)).getTime())),
+    ].sort((a, b) => b - a);
+
     let currentStreak = 0;
     let bestStreak = 0;
     let tempStreak = 0;
-    
     const today = startOfDay(new Date()).getTime();
-    
-    // Calculate current streak
     let expectedDate = today;
     if (dates[0] === today || dates[0] === today - 86400000) {
       expectedDate = dates[0];
       for (let i = 0; i < dates.length; i++) {
         if (dates[i] === expectedDate) {
           currentStreak++;
-          expectedDate -= 86400000; // minus 1 day
+          expectedDate -= 86400000;
         } else {
           break;
         }
       }
     }
 
-    // Calculate best streak
     for (let i = 0; i < dates.length; i++) {
       if (i === 0) {
         tempStreak = 1;
       } else {
-        const diff = differenceInDays(dates[i-1], dates[i]);
+        const diff = differenceInDays(dates[i - 1], dates[i]);
         if (diff === 1) {
           tempStreak++;
         } else {
@@ -657,7 +581,6 @@ export function WorkoutProvider({ children }) {
       }
     }
     if (tempStreak > bestStreak) bestStreak = tempStreak;
-
     return { current: currentStreak, best: bestStreak };
   };
 
@@ -665,26 +588,58 @@ export function WorkoutProvider({ children }) {
     setLastSetCompletedAt(null);
   };
 
+  const refreshAll = async () => {
+    if (!username) return;
+    await Promise.all([fetchHistory(), fetchCustomExercises(), fetchRoutines()]);
+  };
+
   return (
-    <WorkoutContext.Provider value={{
-      username, login, logout, unit, toggleUnit,
-      activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
-      addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
-    removeActiveExercise,
-      workoutDuration,
-      restTimer, stopRestTimer,
-      playingSet, setTimer, startSet, cancelSet,
-      workoutHistory,
-      customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise,
-      routines, createRoutine, updateRoutine, deleteRoutine,
-      getStreaks,
-      completedWorkout, setCompletedWorkout
-    }}>
+    <WorkoutContext.Provider
+      value={{
+        hydrated,
+        username,
+        login,
+        logout,
+        unit,
+        toggleUnit,
+        activeWorkout,
+        startWorkout,
+        startWorkoutFromRoutine,
+        finishWorkout,
+        cancelWorkout,
+        addExercise,
+        updateSet,
+        reorderActiveExercise,
+        completeSet,
+        uncompleteSet,
+        addSetToExercise,
+        removeSet,
+        removeActiveExercise,
+        workoutDuration,
+        restTimer,
+        stopRestTimer,
+        playingSet,
+        setTimer,
+        startSet,
+        cancelSet,
+        workoutHistory,
+        customExercises,
+        createCustomExercise,
+        deleteCustomExercise,
+        updateCustomExercise,
+        routines,
+        createRoutine,
+        updateRoutine,
+        deleteRoutine,
+        getStreaks,
+        completedWorkout,
+        setCompletedWorkout,
+        refreshAll,
+      }}
+    >
       {children}
     </WorkoutContext.Provider>
   );
 }
 
 export const useWorkout = () => useContext(WorkoutContext);
-
-

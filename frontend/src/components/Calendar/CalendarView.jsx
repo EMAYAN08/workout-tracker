@@ -1,11 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { useWorkout } from '../../context/WorkoutContext';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { 
-  format, addMonths, subMonths, startOfMonth, endOfMonth, 
-  eachDayOfInterval, isSameMonth, isToday, parseISO, startOfWeek, endOfWeek, isAfter
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ChevronLeft, Calendar as CalendarIcon } from 'lucide-react-native';
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isToday,
+  parseISO,
+  startOfWeek,
+  endOfWeek,
+  isAfter,
 } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useWorkout } from '../../context/WorkoutContext';
+import { colors, fonts } from '../../theme';
 
 export default function CalendarView({ onDayClick, onBack }) {
   const { workoutHistory } = useWorkout();
@@ -14,15 +25,14 @@ export default function CalendarView({ onDayClick, onBack }) {
   const daysInMonth = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
-    const startDate = startOfWeek(start, { weekStartsOn: 1 }); // Monday start
+    const startDate = startOfWeek(start, { weekStartsOn: 1 });
     const endDate = endOfWeek(end, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: startDate, end: endDate });
   }, [currentMonth]);
 
   const workoutsMap = useMemo(() => {
     const map = {};
-    if (!workoutHistory) return map;
-    workoutHistory.forEach(wk => {
+    workoutHistory?.forEach((wk) => {
       const timeStr = wk.timestamp || new Date(wk.startTime).toISOString();
       const d = format(parseISO(timeStr), 'yyyy-MM-dd');
       if (!map[d]) map[d] = [];
@@ -31,125 +41,137 @@ export default function CalendarView({ onDayClick, onBack }) {
     return map;
   }, [workoutHistory]);
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const goToToday = () => setCurrentMonth(new Date());
-
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  // Swipe to go back
-  const [touchStart, setTouchStart] = useState(null);
-  const onTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
-  const onTouchEnd = (e) => {
-    if (!touchStart) return;
-    const touchEnd = e.changedTouches[0].clientX;
-    if (touchEnd - touchStart > 100) {
-      if (onBack) onBack();
-    }
-  };
-
   return (
-    <div 
-      className="flex flex-col w-full pb-8 pt-2 h-full"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      <div className="flex items-center justify-between mb-6 px-2">
-        <div className="flex items-center gap-3">
-          {onBack && (
-            <button 
-              onClick={onBack}
-              className="py-2 px-1 -ml-2 text-textMuted hover:text-text rounded-full hover:bg-surface-light transition-colors min-w-touch min-h-touch flex items-center justify-center gap-1"
-            >
-              <ChevronLeft size={24} />
-              <span className="font-bold text-sm pr-2">Back</span>
-            </button>
-          )}
-          <h1 className="text-2xl font-black text-text tracking-tight flex items-center gap-2">
-            <CalendarIcon className="text-primary" size={24} /> History
-          </h1>
-        </div>
-      </div>
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={styles.top}>
+        {onBack && (
+          <Pressable onPress={onBack} style={styles.back}>
+            <ChevronLeft size={24} color={colors.textMuted} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <CalendarIcon size={24} color={colors.primary} />
+          <Text style={styles.pageTitle}>History</Text>
+        </View>
+      </View>
 
-      <div className="panel p-5 sm:p-6 flex flex-col gap-6 relative overflow-hidden shadow-xl shadow-black/5">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-text tracking-tight">
-            {format(currentMonth, 'MMMM')} <span className="text-textMuted font-medium">{format(currentMonth, 'yyyy')}</span>
-          </h2>
-          <div className="flex gap-2">
-            <button 
-              onClick={prevMonth}
-              className="p-2 hover:bg-surface-light rounded-full transition-colors text-textMuted hover:text-text border border-transparent hover:border-border"
-            >
-              <ChevronLeft size={20} strokeWidth={2.5} />
-            </button>
-            <button 
-              onClick={nextMonth}
-              className="p-2 hover:bg-surface-light rounded-full transition-colors text-textMuted hover:text-text border border-transparent hover:border-border"
-            >
-              <ChevronRight size={20} strokeWidth={2.5} />
-            </button>
-          </div>
-        </div>
+      <View style={styles.panel}>
+        <View style={styles.monthRow}>
+          <Text style={styles.monthTitle}>
+            {format(currentMonth, 'MMMM')}{' '}
+            <Text style={{ color: colors.textMuted, fontFamily: fonts.medium }}>
+              {format(currentMonth, 'yyyy')}
+            </Text>
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            <Pressable onPress={() => setCurrentMonth(subMonths(currentMonth, 1))} style={styles.navBtn}>
+              <ChevronLeft size={20} color={colors.textMuted} />
+            </Pressable>
+            <Pressable onPress={() => setCurrentMonth(addMonths(currentMonth, 1))} style={styles.navBtn}>
+              <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fonts.bold }}>›</Text>
+            </Pressable>
+          </View>
+        </View>
 
-        {/* Calendar Body */}
-        <div className="flex flex-col gap-4">
-          {/* Days of Week Header */}
-          <div 
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }} 
-            className="gap-1 sm:gap-2 mb-1"
-          >
-            {weekDays.map((day, idx) => (
-              <div key={idx} className="text-center text-[11px] font-bold text-textMuted/60 uppercase">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Grid */}
-          <div 
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }} 
-            className="gap-y-3 gap-x-1 sm:gap-2"
-          >
-            {daysInMonth.map((day, i) => {
-              const dateKey = format(day, 'yyyy-MM-dd');
-              const dayWorkouts = workoutsMap[dateKey] || [];
-              const hasWorkout = dayWorkouts.length > 0;
-              const isRestOnly = hasWorkout && dayWorkouts.every(w => w.exercises && w.exercises.length === 0);
-              const isCurrentMonth = isSameMonth(day, currentMonth);
-              const isDayToday = isToday(day);
-              const isFuture = isAfter(day, new Date()) && !isDayToday;
-
-              return (
-                <div key={i} className="flex justify-center">
-                    <div className="relative">
-                      <motion.button
-                        whileHover={hasWorkout ? { scale: 1.05 } : {}}
-                        whileTap={hasWorkout ? { scale: 0.95 } : {}}
-                        onClick={() => { if (hasWorkout) onDayClick(dateKey); }}
-                        disabled={!hasWorkout}
-                        className={`
-                          relative w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center rounded-full font-bold transition-all
-                          ${!isCurrentMonth ? 'opacity-0 pointer-events-none' : ''}
-                          ${isDayToday ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-surface text-amber-500' : ''}
-                          ${hasWorkout && !isRestOnly ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)] cursor-pointer' : ''}
-                          ${hasWorkout && isRestOnly ? 'bg-primary/15 text-primary border border-primary/30 backdrop-blur-md shadow-[0_0_12px_rgba(59,130,246,0.15)] cursor-pointer' : ''}
-                          ${!hasWorkout && isDayToday ? 'bg-surface-light' : ''}
-                          ${!hasWorkout && !isFuture && !isDayToday && isCurrentMonth ? 'text-textMuted hover:bg-surface-light' : ''}
-                          ${isFuture ? 'text-textMuted/20' : ''}
-                        `}
-                      >
-                        <span className="text-sm sm:text-base z-10">{format(day, 'd')}</span>
-                      </motion.button>
-                    </div>
-                  </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
+        <View style={styles.weekRow}>
+          {weekDays.map((d, i) => (
+            <Text key={i} style={styles.weekLbl}>
+              {d}
+            </Text>
+          ))}
+        </View>
+        <View style={styles.grid}>
+          {daysInMonth.map((day, i) => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            const dayWorkouts = workoutsMap[dateKey] || [];
+            const hasWorkout = dayWorkouts.length > 0;
+            const isRestOnly = hasWorkout && dayWorkouts.every((w) => w.exercises && w.exercises.length === 0);
+            const isCurrentMonth = isSameMonth(day, currentMonth);
+            const isDayToday = isToday(day);
+            const isFuture = isAfter(day, new Date()) && !isDayToday;
+            if (!isCurrentMonth) {
+              return <View key={i} style={styles.daySlot} />;
+            }
+            return (
+              <View key={i} style={styles.daySlot}>
+                <Pressable
+                  onPress={() => hasWorkout && onDayClick(dateKey)}
+                  disabled={!hasWorkout}
+                  style={[
+                    styles.day,
+                    isDayToday && styles.dayToday,
+                    hasWorkout && !isRestOnly && styles.dayWorkout,
+                    hasWorkout && isRestOnly && styles.dayRest,
+                    isFuture && { opacity: 0.25 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayNum,
+                      hasWorkout && !isRestOnly && { color: '#34d399' },
+                      hasWorkout && isRestOnly && { color: colors.primary },
+                      isDayToday && { color: '#f59e0b' },
+                    ]}
+                  >
+                    {format(day, 'd')}
+                  </Text>
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: { padding: 16, paddingBottom: 120 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+  back: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingRight: 8 },
+  backText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 14 },
+  pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
+  panel: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+  },
+  monthRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  monthTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 20 },
+  navBtn: { padding: 8 },
+  weekRow: { flexDirection: 'row', marginBottom: 8 },
+  weekLbl: {
+    flex: 1,
+    textAlign: 'center',
+    color: 'rgba(161,161,170,0.6)',
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    textTransform: 'uppercase',
+  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  daySlot: { width: '14.285%', alignItems: 'center', paddingVertical: 6 },
+  day: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayToday: { borderWidth: 2, borderColor: '#f59e0b' },
+  dayWorkout: {
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
+  },
+  dayRest: {
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.3)',
+  },
+  dayNum: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 14 },
+});

@@ -1,8 +1,11 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Delete, ArrowRight } from 'lucide-react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
+import { fonts } from '../../theme';
 
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
+  const insets = useSafeAreaInsets();
   if (!activeInput) return null;
 
   const handleKeyPress = (key) => {
@@ -18,85 +21,177 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
       const step = activeInput.field === 'weight' ? 2.5 : 1;
       if (key === '+') num += step;
       if (key === '-') num = Math.max(0, num - step);
-      // clean up decimals
       onUpdate(String(Math.round(num * 100) / 100));
+    } else if (currentVal === '0' && key !== '.') {
+      onUpdate(key);
     } else {
-      if (currentVal === '0' && key !== '.') {
-        onUpdate(key);
-      } else {
-        onUpdate(currentVal + key);
-      }
+      onUpdate(currentVal + key);
     }
   };
 
+  const Key = ({ label, onPress, style, children, flex }) => (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.key,
+        flex && { flex },
+        style,
+        pressed && { transform: [{ scale: 0.95 }], opacity: 0.85 },
+      ]}
+    >
+      {children || <Text style={styles.keyText}>{label}</Text>}
+    </Pressable>
+  );
+
   const tabs = [
     { id: 'weight', label: 'Weight' },
-    { id: 'reps', label: 'Reps' }
+    { id: 'reps', label: 'Reps' },
   ];
 
   return (
-    <AnimatePresence>
-      <motion.div
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
-        onDragEnd={(e, info) => {
-          if (info.offset.y > 50 || info.velocity.y > 200) {
-            onClose();
-          }
-        }}
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed bottom-0 left-0 right-0 z-[100] bg-[#1c1c1e] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-[calc(1rem+env(safe-area-inset-bottom))] pt-2 touch-none"
-      >
-        {/* Drag Handle */}
-        <div className="w-full flex justify-center pb-2 cursor-grab active:cursor-grabbing">
-          <div className="w-12 h-1.5 bg-white/20 rounded-full" />
-        </div>
-        <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/5 mb-2 relative">
-          <div className="flex-1 flex justify-center gap-4">
-            {tabs.map(tab => (
-              <div 
-                key={tab.id}
-                className={`text-base font-bold px-4 py-1 rounded-full cursor-pointer transition-colors flex items-center gap-2 ${activeInput.field === tab.id ? 'text-white' : 'text-gray-500'}`}
-                onClick={() => activeInput.onChangeField(tab.id)}
-              >
-                {tab.label} {activeInput.field === tab.id ? <div className="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center text-xs">✓</div> : <div className="w-5 h-5 rounded-full border border-gray-500" />}
-              </div>
-            ))}
-          </div>
-        </div>
+    <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={styles.handleWrap}>
+        <View style={styles.handle} />
+      </View>
+      <View style={styles.tabs}>
+        {tabs.map((tab) => {
+          const active = activeInput.field === tab.id;
+          return (
+            <Pressable
+              key={tab.id}
+              onPress={() => activeInput.onChangeField(tab.id)}
+              style={styles.tab}
+            >
+              <Text style={[styles.tabLabel, !active && { color: '#6b7280' }]}>{tab.label}</Text>
+              {active ? (
+                <View style={styles.checkOn}>
+                  <Text style={styles.checkOnText}>✓</Text>
+                </View>
+              ) : (
+                <View style={styles.checkOff} />
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
 
-        <div className="p-3 grid grid-cols-4 gap-1.5 bg-[#1c1c1e]">
-          {/* Row 1 */}
-          <button onClick={() => handleKeyPress('1')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">1</button>
-          <button onClick={() => handleKeyPress('2')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">2</button>
-          <button onClick={() => handleKeyPress('3')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">3</button>
-          <button onClick={onClose} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12"><ChevronDown size={24} /></button>
-
-          {/* Row 2 */}
-          <button onClick={() => handleKeyPress('4')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">4</button>
-          <button onClick={() => handleKeyPress('5')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">5</button>
-          <button onClick={() => handleKeyPress('6')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">6</button>
-          <div className="flex rounded-xl overflow-hidden shadow-sm h-11 sm:h-12">
-            <button onClick={() => handleKeyPress('-')} className="flex-1 flex items-center justify-center font-mono text-xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white border-r border-[#1c1c1e]">-</button>
-            <button onClick={() => handleKeyPress('+')} className="flex-1 flex items-center justify-center font-mono text-xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white">+</button>
-          </div>
-
-          {/* Row 3 */}
-          <button onClick={() => handleKeyPress('7')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">7</button>
-          <button onClick={() => handleKeyPress('8')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">8</button>
-          <button onClick={() => handleKeyPress('9')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">9</button>
-          <button onClick={() => activeInput.onNext()} className="row-span-2 h-full flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-white hover:bg-gray-200 text-black"><ArrowRight size={24} strokeWidth={3} /></button>
-
-          {/* Row 4 */}
-          <button onClick={() => handleKeyPress('.')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">.</button>
-          <button onClick={() => handleKeyPress('0')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">0</button>
-          <button onClick={() => handleKeyPress('delete')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12"><Delete size={24} /></button>
-        </div>
-      </motion.div>
-    </AnimatePresence>
+      <View style={styles.grid}>
+        <View style={styles.row}>
+          <Key label="1" onPress={() => handleKeyPress('1')} />
+          <Key label="2" onPress={() => handleKeyPress('2')} />
+          <Key label="3" onPress={() => handleKeyPress('3')} />
+          <Key onPress={onClose}>
+            <ChevronDown size={24} color="#fff" />
+          </Key>
+        </View>
+        <View style={styles.row}>
+          <Key label="4" onPress={() => handleKeyPress('4')} />
+          <Key label="5" onPress={() => handleKeyPress('5')} />
+          <Key label="6" onPress={() => handleKeyPress('6')} />
+          <View style={styles.split}>
+            <Key label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} />
+            <Key label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} />
+          </View>
+        </View>
+        <View style={styles.rowBottom}>
+          <View style={{ flex: 3 }}>
+            <View style={styles.row}>
+              <Key label="7" onPress={() => handleKeyPress('7')} />
+              <Key label="8" onPress={() => handleKeyPress('8')} />
+              <Key label="9" onPress={() => handleKeyPress('9')} />
+            </View>
+            <View style={styles.row}>
+              <Key label="." onPress={() => handleKeyPress('.')} />
+              <Key label="0" onPress={() => handleKeyPress('0')} />
+              <Key onPress={() => handleKeyPress('delete')}>
+                <Delete size={24} color="#fff" />
+              </Key>
+            </View>
+          </View>
+          <Pressable
+            onPress={() => activeInput.onNext()}
+            style={({ pressed }) => [
+              styles.nextKey,
+              pressed && { transform: [{ scale: 0.96 }] },
+            ]}
+          >
+            <ArrowRight size={24} color="#000" strokeWidth={3} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+    backgroundColor: '#1c1c1e',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingTop: 8,
+  },
+  handleWrap: { alignItems: 'center', paddingBottom: 8 },
+  handle: { width: 48, height: 6, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.2)' },
+  tabs: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+    marginBottom: 8,
+  },
+  tab: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 6 },
+  tabLabel: { color: '#fff', fontFamily: fonts.bold, fontSize: 16 },
+  checkOn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOnText: { color: '#000', fontSize: 11, fontFamily: fonts.bold },
+  checkOff: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#6b7280',
+  },
+  grid: { padding: 12, gap: 6 },
+  row: { flexDirection: 'row', gap: 6, marginBottom: 6 },
+  rowBottom: { flexDirection: 'row', gap: 6 },
+  key: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#2c2c2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyText: { color: '#fff', fontSize: 20, fontFamily: fonts.regular },
+  split: {
+    flex: 1,
+    flexDirection: 'row',
+    height: 48,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#2c2c2e',
+  },
+  splitKey: { borderRadius: 0, height: 48 },
+  nextKey: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

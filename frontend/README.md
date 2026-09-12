@@ -1,16 +1,52 @@
-# React + Vite
+# TrackIt — React Native (Expo)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Mobile app for the TrackIt workout tracker. Full lift-and-shift of the previous React PWA onto Expo / React Native. The Express + Mongo backend is unchanged.
 
-Currently, two official plugins are available:
+## Run on your phone (Expo Go)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Install [Expo Go](https://expo.dev/go) (SDK 57) on iOS or Android.
+2. From `frontend/`:
 
-## React Compiler
+```bash
+npm install
+npx expo start --tunnel
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+3. Open Expo Go and scan the QR code, or type the `exp://` URL it prints.
 
-## Expanding the Oxlint configuration
+The app talks to the production API at `https://workout-tracker-ngpe.onrender.com`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Copy `.env.example` to `.env` if you want to point at a different backend:
+
+```
+EXPO_PUBLIC_API_URL=https://workout-tracker-ngpe.onrender.com
+```
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm start` | Start Metro bundler |
+| `npm run ios` | Open iOS simulator |
+| `npm run android` | Open Android emulator |
+| `npm run web` | Run the Expo web build |
+| `npm run tunnel` | Start with a public Expo Go tunnel |
+
+## What's included
+
+- Login / auto-register (same `/api/auth/login` backend)
+- Empty workout + routine-started workouts, rest-day logging
+- Custom numpad, set timer, rest timer, LBS/KGS toggle
+- Custom exercises + routine builder
+- Profile dashboard: streaks, consistency map, strength ring, progression charts
+- Calendar history + workout detail
+- Share workout summary / consistency map
+
+## Stack
+
+- Expo SDK 57 / React Native 0.86 / React 19
+- AsyncStorage for session + in-progress workout persistence
+- lucide-react-native icons, react-native-svg charts
+- Outfit font via `@expo-google-fonts/outfit`
+
+Backend lives in `../backend` and is not modified by this migration.

@@ -1,77 +1,52 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
+import { Info } from 'lucide-react-native';
+import { colors, fonts } from '../../theme';
 
-export default function InfoPopover({ title, description, size = 16, className = "", align = "center", color = "primary" }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const popoverRef = useRef(null);
+const colorMap = {
+  primary: colors.primary,
+  emerald: '#10B981',
+  amber: '#f59e0b',
+};
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const alignmentClass = 
-    align === 'right' ? 'right-0' : 
-    align === 'left' ? 'left-0' : 
-    'left-1/2 -translate-x-1/2';
-
-  const colorMap = {
-    primary: {
-      text: 'text-primary',
-      border: 'border-primary/20',
-      iconActive: 'text-primary'
-    },
-    emerald: {
-      text: 'text-emerald-500',
-      border: 'border-emerald-500/20',
-      iconActive: 'text-emerald-500'
-    },
-    amber: {
-      text: 'text-amber-500',
-      border: 'border-amber-500/20',
-      iconActive: 'text-amber-500'
-    }
-  };
-
-  const theme = colorMap[color] || colorMap.primary;
+export default function InfoPopover({ title, description, size = 16, color = 'primary' }) {
+  const [open, setOpen] = useState(false);
+  const accent = colorMap[color] || colors.primary;
 
   return (
-    <div className="relative flex items-center" ref={popoverRef}>
-      <button 
-        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
-        className={`transition-colors ${isOpen ? theme.iconActive : 'text-textMuted hover:text-text'} ${className}`}
-        aria-label="More information"
-      >
-        <Info size={size} />
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute ${alignmentClass} top-full mt-2 w-64 p-4 bg-surface border border-border-strong rounded-2xl shadow-2xl z-50 text-left`}
-          >
-            <h4 className={`text-sm font-black mb-1.5 ${theme.text}`}>{title}</h4>
-            <p className="text-xs text-textMuted font-medium leading-relaxed">
-              {description}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <View>
+      <Pressable onPress={() => setOpen(true)} hitSlop={8}>
+        <Info size={size} color={open ? accent : colors.textMuted} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+          <View style={styles.card}>
+            <Text style={[styles.title, { color: accent }]}>{title}</Text>
+            <Text style={styles.body}>{description}</Text>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    padding: 16,
+    width: '100%',
+    maxWidth: 320,
+  },
+  title: { fontFamily: fonts.black, fontSize: 14, marginBottom: 6 },
+  body: { color: colors.textMuted, fontFamily: fonts.medium, fontSize: 13, lineHeight: 20 },
+});

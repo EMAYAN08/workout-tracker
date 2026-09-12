@@ -1,114 +1,171 @@
 import React from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+import { Play, Plus, Edit2, Trash2, ClipboardList } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { Play, Plus, Edit2, Trash2, ClipboardList } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { colors, fonts } from '../../theme';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
   const { routines, deleteRoutine, startWorkoutFromRoutine, activeWorkout } = useWorkout();
 
   const handleStartRoutine = (routine) => {
     if (activeWorkout) {
-      if (!window.confirm("You already have an active workout. Do you want to overwrite it?")) {
-        return;
-      }
+      Alert.alert(
+        'Active workout',
+        'You already have an active workout. Do you want to overwrite it?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Overwrite', style: 'destructive', onPress: () => startWorkoutFromRoutine(routine) },
+        ]
+      );
+      return;
     }
     startWorkoutFromRoutine(routine);
   };
 
-  const handleDelete = (e, id) => {
-    e.stopPropagation();
-    deleteRoutine(id);
+  const getRoutineCategories = (exercises) => {
+    if (!exercises) return [];
+    const categories = new Set();
+    exercises.forEach((ex) => {
+      if (ex.muscleGroup) categories.add(ex.muscleGroup);
+    });
+    return Array.from(categories);
   };
 
-    const getRoutineCategories = (exercises) => {
-      if (!exercises) return [];
-      const categories = new Set();
-      exercises.forEach(ex => {
-        if (ex.muscleGroup) categories.add(ex.muscleGroup);
-      });
-      return Array.from(categories);
-    };
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={styles.head}>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ClipboardList size={24} color={colors.primary} />
+            <Text style={styles.title}>My Routines</Text>
+          </View>
+          <Text style={styles.sub}>Build templates for faster logging</Text>
+        </View>
+        <Pressable onPress={onCreateNew} style={styles.plus}>
+          <Plus size={24} color={colors.primary} strokeWidth={3} />
+        </Pressable>
+      </View>
 
-    return (
-      <div className="flex flex-col w-full relative pt-0 mt-[-8px]">
-      <div className="sticky top-0 z-20 bg-background pt-1 pb-4">
-        <div className="flex items-center justify-between mb-2 px-1">
-          <div>
-            <h2 className="text-[clamp(24px,6vw,28px)] font-black text-white tracking-tight flex items-center gap-2">
-              <ClipboardList className="text-primary w-6 h-6 sm:w-7 sm:h-7" /> My Routines
-            </h2>
-            <p className="text-sm text-textMuted font-semibold px-1 mt-1">Build templates for faster logging</p>
-          </div>
-          <button 
-            onClick={onCreateNew}
-            className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95 shrink-0"
-          >
-            <Plus size={24} strokeWidth={3} />
-          </button>
-        </div>
-      </div>
-  
-        <div className="flex flex-col gap-3 mt-2">
-          {routines.length === 0 ? (
-            <div className="panel p-8 flex flex-col items-center justify-center text-center">
-              <ClipboardList size={40} className="text-textMuted/30 mb-3" />
-              <p className="text-text font-bold mb-1">No routines yet</p>
-              <p className="text-sm text-textMuted">Create your first routine to easily start a structured workout.</p>
-            </div>
-          ) : (
-            routines.map((routine, i) => (
-              <motion.div
-                key={routine.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="panel p-4 flex flex-col gap-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-text">{routine.name}</h3>
-                    <p className="text-xs text-textMuted font-semibold mt-1">
-                      {routine.exercises?.length || 0} exercises
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleStartRoutine(routine)}
-                      className="p-2 text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-500/40 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)] transition-all rounded-lg"
-                      title="Start Routine"
-                    >
-                      <Play size={16} fill="currentColor" />
-                    </button>
-                    <button 
-                      onClick={() => onEdit(routine)}
-                      className="p-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 backdrop-blur-md transition-all rounded-lg"
-                      title="Edit Routine"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button 
-                      onClick={(e) => handleDelete(e, routine.id)}
-                      className="p-2 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg"
-                      title="Delete Routine"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                {getRoutineCategories(routine.exercises).length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-[-4px]">
-                    {getRoutineCategories(routine.exercises).map(cat => (
-                      <span key={cat} className="px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30 rounded-md backdrop-blur-md">
-                        {cat}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-          ))
-        )}
-      </div>
-    </div>
+      {routines.length === 0 ? (
+        <View style={styles.empty}>
+          <ClipboardList size={40} color="rgba(161,161,170,0.3)" />
+          <Text style={styles.emptyTitle}>No routines yet</Text>
+          <Text style={styles.emptySub}>Create your first routine to easily start a structured workout.</Text>
+        </View>
+      ) : (
+        routines.map((routine) => (
+          <View key={routine.id} style={styles.card}>
+            <View style={styles.cardTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardName}>{routine.name}</Text>
+                <Text style={styles.cardMeta}>{routine.exercises?.length || 0} exercises</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable onPress={() => handleStartRoutine(routine)} style={styles.actPlay}>
+                  <Play size={16} color="#34d399" fill="#34d399" />
+                </Pressable>
+                <Pressable onPress={() => onEdit(routine)} style={styles.actEdit}>
+                  <Edit2 size={16} color="#60a5fa" />
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    Alert.alert('Delete routine', 'Delete this routine?', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteRoutine(routine.id) },
+                    ])
+                  }
+                  style={styles.actDel}
+                >
+                  <Trash2 size={16} color="#f87171" />
+                </Pressable>
+              </View>
+            </View>
+            {getRoutineCategories(routine.exercises).length > 0 && (
+              <View style={styles.chips}>
+                {getRoutineCategories(routine.exercises).map((cat) => (
+                  <View key={cat} style={styles.chip}>
+                    <Text style={styles.chipText}>{cat}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ))
+      )}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: { padding: 8, paddingBottom: 120 },
+  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  title: { color: '#fff', fontFamily: fonts.black, fontSize: 24 },
+  sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
+  plus: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59,130,246,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  empty: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 28,
+    alignItems: 'center',
+  },
+  emptyTitle: { color: colors.text, fontFamily: fonts.bold, marginTop: 10 },
+  emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: 4 },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    marginBottom: 10,
+    gap: 10,
+  },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardName: { color: colors.text, fontFamily: fonts.black, fontSize: 17 },
+  cardMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 4 },
+  actPlay: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
+  },
+  actEdit: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.2)',
+  },
+  actDel: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.3)',
+  },
+  chipText: {
+    color: '#f59e0b',
+    fontSize: 10,
+    fontFamily: fonts.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+});
