@@ -93,35 +93,34 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
         type: 'Working',
       }));
     }
-    setExercises((prev) => {
-      const next = [...prev, { ...exercise, unitSaved: unit, defaultSets: initialSets }];
-      setExpandedExerciseIndex(next.length - 1);
-      return next;
-    });
+    const newItem = { ...exercise, unitSaved: unit, defaultSets: initialSets };
+    setExercises((prev) => [...prev, newItem]);
+    setExpandedExerciseIndex(exercises.length);
     setIsSearching(false);
     setSearchQuery('');
     setSearchResults([]);
   };
 
   const moveExercise = (index, direction) => {
+    const target = direction === 'up' ? index - 1 : index + 1;
     setExercises((prev) => {
+      if (target < 0 || target >= prev.length) return prev;
       const next = [...prev];
-      if (direction === 'up' && index > 0) {
-        [next[index - 1], next[index]] = [next[index], next[index - 1]];
-        if (expandedExerciseIndex === index) setExpandedExerciseIndex(index - 1);
-        else if (expandedExerciseIndex === index - 1) setExpandedExerciseIndex(index);
-      } else if (direction === 'down' && index < next.length - 1) {
-        [next[index + 1], next[index]] = [next[index], next[index + 1]];
-        if (expandedExerciseIndex === index) setExpandedExerciseIndex(index + 1);
-        else if (expandedExerciseIndex === index + 1) setExpandedExerciseIndex(index);
-      }
+      [next[index], next[target]] = [next[target], next[index]];
       return next;
+    });
+    setExpandedExerciseIndex((cur) => {
+      if (cur === index) return target;
+      if (cur === target) return index;
+      return cur;
     });
   };
 
   const handleCreateCustom = async () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
     setIsCreatingCustom(true);
-    const newEx = await createCustomExercise(searchQuery, newMuscleGroup);
+    const newEx = await createCustomExercise(trimmed, newMuscleGroup);
     if (newEx) {
       handleAddExercise(newEx);
       setNewCustomExIds((prev) => [...prev, newEx.id]);
@@ -129,7 +128,15 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     setIsCreatingCustom(false);
   };
 
-  const removeExercise = (index) => setExercises((prev) => prev.filter((_, i) => i !== index));
+  const removeExercise = (index) => {
+    setExercises((prev) => prev.filter((_, i) => i !== index));
+    setExpandedExerciseIndex((cur) => {
+      if (cur < 0) return cur;
+      if (cur === index) return -1;
+      if (cur > index) return cur - 1;
+      return cur;
+    });
+  };
   const updateSet = (exerciseIndex, setIndex, field, value) => {
     setExercises((prev) =>
       prev.map((ex, i) =>
