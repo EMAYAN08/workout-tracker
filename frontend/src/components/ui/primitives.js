@@ -212,8 +212,20 @@ export function Select({ value, options = [], onChange, style, searchable = true
   const [query, setQuery] = useState('');
   const [anchor, setAnchor] = useState({ x: 16, y: 80, w: 240, h: 44, winH: 800, winW: 390 });
   const selected = options.find((o) => o.value === value);
+  const ignoreUntil = useRef(0);
+
+  const closeMenu = () => {
+    setOpen(false);
+    setQuery('');
+    ignoreUntil.current = Date.now() + 280;
+  };
 
   const openMenu = () => {
+    if (Date.now() < ignoreUntil.current) return;
+    if (open) {
+      closeMenu();
+      return;
+    }
     haptic('selection');
     const win = Dimensions.get('window');
     const apply = (x, y, w, h) => {
@@ -239,11 +251,6 @@ export function Select({ value, options = [], onChange, style, searchable = true
       return;
     }
     apply(16, 80, 240, HIT);
-  };
-
-  const closeMenu = () => {
-    setOpen(false);
-    setQuery('');
   };
 
   const filtered = useMemo(() => {
@@ -295,7 +302,11 @@ export function Select({ value, options = [], onChange, style, searchable = true
         >
           {selected?.label || 'Select'}
         </Text>
-        <ChevronDown size={16} color={colors.textMuted} />
+        <ChevronDown
+          size={16}
+          color={colors.textMuted}
+          style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}
+        />
       </Pressable>
       </View>
       <Modal visible={open} transparent animationType="fade" onRequestClose={closeMenu}>

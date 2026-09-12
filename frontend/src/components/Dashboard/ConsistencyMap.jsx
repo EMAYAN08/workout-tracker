@@ -67,7 +67,7 @@ export default function ConsistencyMap({ onMapClick }) {
     return map;
   }, [workoutHistory]);
 
-  const { displayMonths, monthPairs, activeDaysInChunk, score, yearLabel } = useMemo(() => {
+  const { displayMonths, monthPairs, activeDaysInChunk, score, yearLabel, rangeLabel } = useMemo(() => {
     const now = startOfDay(new Date());
     const pairs = [];
     for (let i = 0; i < 6; i++) {
@@ -93,7 +93,7 @@ export default function ConsistencyMap({ onMapClick }) {
           if (data && data.hasRealWorkout) activeDays++;
         }
       });
-      return { name: format(date, 'MMMM'), grid };
+      return { name: format(date, 'MMM'), grid };
     });
 
     if (prevPair) {
@@ -118,6 +118,7 @@ export default function ConsistencyMap({ onMapClick }) {
       score: calcScore(activeDays, validDays),
       previousScore: prevPair ? calcScore(prevActiveDays, prevValidDays) : calcScore(activeDays, validDays),
       yearLabel: format(activePair.dates[activePair.dates.length - 1], 'yyyy'),
+      rangeLabel: generatedMonths.map((m) => m.name).join(' – '),
     };
   }, [countsMap, chunkOffset]);
 
@@ -148,58 +149,58 @@ export default function ConsistencyMap({ onMapClick }) {
   return (
     <View style={{ marginTop: 16 }}>
       <View ref={mapRef} collapsable={false} style={styles.panel}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>Consistency</Text>
-              <Pressable
-                onPress={handleShare}
-                style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Share2 size={16} color={colors.textMuted} />
-              </Pressable>
-            </View>
-            <View style={styles.metaRow}>
-              <View style={styles.scorePill}>
-                <Flame size={14} color={colors.textMuted} />
-                <Text style={styles.scoreText}>Score: {score}%</Text>
-              </View>
-              <Text style={styles.daysText}>{activeDaysInChunk} Days</Text>
-              <Pressable onPress={onMapClick} style={styles.historyBtn}>
-                <Text style={styles.historyText}>History</Text>
-              </Pressable>
-            </View>
+        <View style={styles.topRow}>
+          <Text style={styles.title}>Consistency</Text>
+          <View style={styles.actions}>
+            <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
+              <Text style={styles.historyText}>History</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleShare}
+              style={styles.iconBtn}
+              accessibilityLabel="Share consistency"
+            >
+              <Share2 size={16} color={colors.textMuted} />
+            </Pressable>
           </View>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <View style={styles.statValRow}>
+              <Flame size={14} color={colors.textMuted} />
+              <Text style={styles.statVal}>{score}%</Text>
+            </View>
+            <Text style={styles.statLbl}>Score</Text>
+          </View>
+          <View style={styles.statRule} />
+          <View style={styles.stat}>
+            <Text style={styles.statVal}>{activeDaysInChunk}</Text>
+            <Text style={styles.statLbl}>Days</Text>
+          </View>
+          <View style={{ flex: 1 }} />
           <View style={styles.nav}>
             <Pressable
               onPress={() => setChunkOffset((p) => Math.min(p + 1, monthPairs.length - 1))}
               disabled={chunkOffset >= monthPairs.length - 1}
-              style={{
-                width: HIT,
-                height: HIT,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: chunkOffset >= monthPairs.length - 1 ? 0.3 : 1,
-              }}
+              style={[styles.navBtn, chunkOffset >= monthPairs.length - 1 && { opacity: 0.3 }]}
             >
               <ChevronLeft size={16} color={colors.textMuted} />
             </Pressable>
-            <Text style={styles.year}>{yearLabel}</Text>
+            <Text style={styles.year} numberOfLines={1}>
+              {rangeLabel || yearLabel}
+            </Text>
             <Pressable
               onPress={() => setChunkOffset((p) => Math.max(p - 1, 0))}
               disabled={chunkOffset <= 0}
-              style={{
-                width: HIT,
-                height: HIT,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: chunkOffset <= 0 ? 0.3 : 1,
-              }}
+              style={[styles.navBtn, chunkOffset <= 0 && { opacity: 0.3 }]}
             >
               <ChevronRight size={16} color={colors.textMuted} />
             </Pressable>
           </View>
         </View>
+
+        <View style={styles.divider} />
 
         <View style={styles.calRow}>
           <View style={styles.yAxis}>
@@ -213,9 +214,9 @@ export default function ConsistencyMap({ onMapClick }) {
             {displayMonths.map((monthData, idx) => (
               <View key={idx} style={styles.month}>
                 <Text style={styles.monthName}>{monthData.name}</Text>
-                <View style={{ flexDirection: 'row', gap: 4 }}>
+                <View style={styles.grid}>
                   {monthData.grid.map((week, wIdx) => (
-                    <View key={wIdx} style={{ gap: 4 }}>
+                    <View key={wIdx} style={styles.weekCol}>
                       {week.map((day, dIdx) => (
                         <View
                           key={dIdx}
@@ -243,8 +244,12 @@ function makeStyles(colors) {
       borderColor: colors.border,
       padding: 16,
     },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: HIT,
+    },
     title: {
       color: colors.textSubtle,
       fontFamily: fonts.semibold,
@@ -252,22 +257,9 @@ function makeStyles(colors) {
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
-    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
-    scorePill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: radius.xs,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface2,
-    },
-    scoreText: { fontFamily: fonts.semibold, fontSize: 11, textTransform: 'uppercase', color: colors.textMuted },
-    daysText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.medium },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     historyBtn: {
-      minHeight: HIT,
+      minHeight: 32,
       paddingHorizontal: 12,
       borderRadius: radius.sm,
       borderWidth: 1,
@@ -276,28 +268,59 @@ function makeStyles(colors) {
       justifyContent: 'center',
     },
     historyText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
+    iconBtn: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
+    statsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+      gap: 12,
+    },
+    stat: { gap: 2 },
+    statValRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    statVal: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 20, letterSpacing: -0.4 },
+    statLbl: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 10,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    statRule: { width: 1, height: 28, backgroundColor: colors.border },
     nav: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.surface2,
-      borderRadius: radius.md,
-      padding: 4,
+      borderRadius: radius.sm,
       borderWidth: 1,
       borderColor: colors.border,
+      paddingHorizontal: 2,
+      minHeight: 36,
     },
-    year: { color: colors.text, fontFamily: fonts.semibold, fontSize: 12, minWidth: 40, textAlign: 'center' },
-    calRow: { flexDirection: 'row', marginTop: 16, gap: 8 },
-    yAxis: { paddingTop: 22, gap: 4 },
+    navBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+    year: {
+      color: colors.text,
+      fontFamily: fonts.semibold,
+      fontSize: 12,
+      minWidth: 72,
+      textAlign: 'center',
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginTop: 14,
+      marginBottom: 14,
+    },
+    calRow: { flexDirection: 'row', gap: 10 },
+    yAxis: { paddingTop: 22, gap: 4, width: 14 },
     yLabel: {
-      width: 12,
       height: 14,
       color: colors.textMuted,
       fontSize: 9,
       fontFamily: fonts.bold,
       textAlign: 'center',
     },
-    months: { flexDirection: 'row', gap: 20, flex: 1 },
-    month: { gap: 10 },
+    months: { flexDirection: 'row', gap: 16, flex: 1 },
+    month: { flex: 1, gap: 8 },
     monthName: {
       color: colors.textMuted,
       fontSize: 11,
@@ -305,6 +328,8 @@ function makeStyles(colors) {
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
-    cell: { width: 14, height: 14, borderRadius: 0 },
+    grid: { flexDirection: 'row', gap: 3, justifyContent: 'space-between' },
+    weekCol: { gap: 3, flex: 1, alignItems: 'center' },
+    cell: { width: 12, height: 12, borderRadius: 0, alignSelf: 'stretch', maxWidth: 16, aspectRatio: 1 },
   });
 }
