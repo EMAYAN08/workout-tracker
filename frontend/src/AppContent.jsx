@@ -50,14 +50,12 @@ export default function AppContent() {
   const [currentTab, setCurrentTab] = useState('routines');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);
-
-  if (!hydrated) {
-    return (
-      <View style={styles.boot}>
-        <ActivityIndicator color={colors.accent} size="large" />
-      </View>
-    );
-  }
+  const navRef = useRef({
+    activeWorkout,
+    tabBarHidden,
+    currentTab,
+    navigateTab: () => {},
+  });
 
   const navigateTab = (newTab) => {
     if (newTab === currentTab) return;
@@ -68,7 +66,6 @@ export default function AppContent() {
     });
   };
 
-  const navRef = useRef({ activeWorkout, tabBarHidden, currentTab, navigateTab });
   navRef.current = { activeWorkout, tabBarHidden, currentTab, navigateTab };
 
   const swipe = useMemo(
@@ -98,6 +95,14 @@ export default function AppContent() {
         }),
     []
   );
+
+  if (!hydrated) {
+    return (
+      <View style={styles.boot}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
 
   const renderBody = () => {
     if (activeWorkout) return <ActiveWorkout />;
