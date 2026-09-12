@@ -28,6 +28,23 @@ function hexLum(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+function hexToRgb(hex) {
+  const h = String(hex || '').replace('#', '');
+  if (h.length < 6) return [0, 0, 0];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+function rgbToHex(r, g, b) {
+  const c = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+
+export function mixHex(a, b, t) {
+  const A = hexToRgb(a);
+  const B = hexToRgb(b);
+  return rgbToHex(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t);
+}
+
 export function resolvePalette(scheme = 'dark', accentId = DEFAULT_ACCENT_ID, chartId = DEFAULT_CHART_ID) {
   const base = palettes[scheme] || palettes.dark;
   const acc = ACCENT_SWATCHES.find((s) => s.id === accentId) || ACCENT_SWATCHES[0];
@@ -35,6 +52,9 @@ export function resolvePalette(scheme = 'dark', accentId = DEFAULT_ACCENT_ID, ch
   const accent = scheme === 'light' ? acc.light : acc.dark;
   const chartAccent = scheme === 'light' ? ch.light : ch.dark;
   const accentFg = hexLum(accent) > 0.62 ? '#141414' : '#F4F4F2';
+  const chartFg = hexLum(chartAccent) > 0.62 ? '#141414' : '#F4F4F2';
+  const bg = base.background;
+  const restMix = scheme === 'dark' ? 0.58 : 0.5;
   return {
     ...base,
     accent,
@@ -45,6 +65,16 @@ export function resolvePalette(scheme = 'dark', accentId = DEFAULT_ACCENT_ID, ch
     indigo: accent,
     accentFg,
     chartAccent,
+    chartFg,
+    heatmapWork: chartAccent,
+    heatmapRest: mixHex(chartAccent, bg, restMix),
+    chartRings: [
+      mixHex(chartAccent, bg, 0.78),
+      mixHex(chartAccent, bg, 0.6),
+      mixHex(chartAccent, bg, 0.42),
+      mixHex(chartAccent, bg, 0.24),
+      chartAccent,
+    ],
   };
 }
 

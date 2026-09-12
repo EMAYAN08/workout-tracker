@@ -43,7 +43,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
           </View>
           <Text style={styles.sub}>Build templates for faster logging</Text>
         </View>
-        <Pressable onPress={onCreateNew} style={styles.plus}>
+        <Pressable onPress={onCreateNew} style={styles.plus} accessibilityLabel="New Routine">
           <Plus size={24} color={colors.text} strokeWidth={3} />
         </Pressable>
       </View>
@@ -83,10 +83,14 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
                 <Text style={styles.cardMeta}>{routine.exercises?.length || 0} exercises</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable onPress={() => handleStartRoutine(routine)} style={styles.actPlay}>
+                <Pressable
+                  onPress={() => handleStartRoutine(routine)}
+                  style={styles.actPlay}
+                  accessibilityLabel="Start routine"
+                >
                   <Play size={16} color={colors.accentFg} fill={colors.accentFg} />
                 </Pressable>
-                <Pressable onPress={() => onEdit(routine)} style={styles.actEdit}>
+                <Pressable onPress={() => onEdit(routine)} style={styles.actEdit} accessibilityLabel="Edit routine">
                   <Edit2 size={16} color={colors.text} />
                 </Pressable>
                 <Pressable
@@ -94,6 +98,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
                     confirmAction('Delete routine', 'Delete this routine?', () => deleteRoutine(routine.id))
                   }
                   style={styles.actDel}
+                  accessibilityLabel="Delete routine"
                 >
                   <Trash2 size={16} color={colors.danger} />
                 </Pressable>

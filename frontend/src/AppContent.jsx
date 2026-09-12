@@ -186,13 +186,9 @@ export default function AppContent() {
         </View>
       )}
 
-      {activeWorkout || tabBarHidden ? (
+      <GestureDetector gesture={swipe}>
         <Animated.View style={[styles.main, { opacity: fade }]}>{renderBody()}</Animated.View>
-      ) : (
-        <GestureDetector gesture={swipe}>
-          <Animated.View style={[styles.main, { opacity: fade }]}>{renderBody()}</Animated.View>
-        </GestureDetector>
-      )}
+      </GestureDetector>
 
       {!activeWorkout && !tabBarHidden && (
         <View style={styles.navWrap}>

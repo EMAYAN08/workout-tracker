@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator, Keyboard } from 'react-native';
 import { Dumbbell, Plus, Trash2, Search, Settings, ChevronDown } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
@@ -260,7 +260,10 @@ export default function CustomExercises() {
           {defaultSets.map((s, i) => (
             <View key={i} style={styles.setEdit}>
               <Pressable
-                onPress={() => setActiveInput({ index: i, field: 'weight' })}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setActiveInput({ index: i, field: 'weight' });
+                }}
                 accessibilityLabel={`Set ${i + 1} weight`}
                 style={[
                   styles.setCell,
@@ -271,7 +274,10 @@ export default function CustomExercises() {
                 <Text style={styles.cellVal}>{s.weight || 0}</Text>
               </Pressable>
               <Pressable
-                onPress={() => setActiveInput({ index: i, field: 'reps' })}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setActiveInput({ index: i, field: 'reps' });
+                }}
                 accessibilityLabel={`Set ${i + 1} reps`}
                 style={[
                   styles.setCell,

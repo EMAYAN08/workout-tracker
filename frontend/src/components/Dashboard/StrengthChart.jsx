@@ -56,12 +56,12 @@ export default function StrengthChart() {
   const styles = makeStyles(colors);
   const CATEGORIES = CATEGORY_META.map((c) => ({ ...c, color: muscleColors[c.id] }));
   const emptyFill = colors.chartEmpty;
-  const ringFills = [
+  const ringFills = colors.chartRings || [
     colors.surface3,
     colors.borderStrong,
     colors.textSubtle,
     colors.textMuted,
-    colors.text,
+    colors.chartAccent || colors.text,
   ];
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');

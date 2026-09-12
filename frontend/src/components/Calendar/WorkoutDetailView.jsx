@@ -82,8 +82,8 @@ export default function WorkoutDetailView({ date, onBack }) {
           <Text style={styles.metaText}>{Math.round(totalDuration / 60)} mins</Text>
         </View>
         <View style={styles.metaItem}>
-          <Activity size={16} color={colors.textMuted} />
-          <Text style={styles.metaText}>
+          <Activity size={16} color={colors.chartAccent || colors.textMuted} />
+          <Text style={[styles.metaText, { color: colors.chartAccent || colors.textMuted }]}>
             {Math.round(totalVolume).toLocaleString()} {unit}
           </Text>
         </View>
@@ -135,7 +135,7 @@ export default function WorkoutDetailView({ date, onBack }) {
                       return (
                         <View key={sIdx} style={styles.tRow}>
                           <Text style={[styles.tdMuted, { width: 48 }]}>{sIdx + 1}</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>
+                          <Text style={[styles.td, { flex: 1, color: colors.chartAccent || colors.text }]}>
                             {convertedWeight} <Text style={styles.unit}>{unit}</Text>
                           </Text>
                           <Text style={[styles.td, { flex: 1 }]}>{set.reps}</Text>

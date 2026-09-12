@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Platform } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
@@ -7,56 +7,112 @@ import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { haptic } from '../../haptics';
 
+const SHEET_H = 380;
+
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
   const insets = useSafeAreaInsets();
   const { colors, setTabBarHidden } = useTheme();
   const styles = makeStyles(colors);
   const freshRef = useRef(true);
   const fieldRef = useRef(null);
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(SHEET_H)).current;
   const originY = useRef(0);
   const tracking = useRef(false);
-
+  const closing = useRef(false);
+  const lastInput = useRef(activeInput);
+  const [mounted, setMounted] = useState(!!activeInput);
   const nativeDriver = Platform.OS !== 'web';
+
+  if (activeInput) lastInput.current = activeInput;
+  const input = activeInput || lastInput.current;
+
+  const animateIn = useCallback(() => {
+    closing.current = false;
+    Animated.spring(translateY, {
+      toValue: 0,
+      useNativeDriver: nativeDriver,
+      damping: 26,
+      stiffness: 280,
+      mass: 0.82,
+    }).start();
+  }, [nativeDriver, translateY]);
+
+  const animateOut = useCallback(
+    (then) => {
+      if (closing.current) return;
+      closing.current = true;
+      Animated.timing(translateY, {
+        toValue: SHEET_H,
+        duration: 240,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: nativeDriver,
+      }).start(({ finished }) => {
+        closing.current = false;
+        if (finished) {
+          setMounted(false);
+          then?.();
+        }
+      });
+    },
+    [nativeDriver, translateY]
+  );
 
   const close = useCallback(() => {
     haptic('selection');
-    translateY.setValue(0);
-    onClose?.();
-  }, [onClose, translateY]);
+    animateOut(() => onClose?.());
+  }, [animateOut, onClose]);
 
   const settle = useCallback(
     (dy, vy = 0) => {
       tracking.current = false;
-      if (dy > 36 || vy > 650) {
+      if (dy > 40 || vy > 700) {
         close();
         return;
       }
       Animated.spring(translateY, {
         toValue: 0,
         useNativeDriver: nativeDriver,
-        speed: 28,
-        bounciness: 0,
+        damping: 24,
+        stiffness: 320,
+        mass: 0.7,
       }).start();
     },
-    [close, translateY, nativeDriver]
+    [close, nativeDriver, translateY]
   );
 
   const settleRef = useRef(settle);
   settleRef.current = settle;
 
   useLayoutEffect(() => {
-    setTabBarHidden(!!activeInput);
+    if (!hideTabBar) return undefined;
+    setTabBarHidden(!!activeInput || mounted);
     return () => setTabBarHidden(false);
-  }, [activeInput, setTabBarHidden]);
+  }, [activeInput, mounted, setTabBarHidden, hideTabBar]);
 
   const keypadOpen = !!activeInput;
   useEffect(() => {
-    if (keypadOpen) translateY.setValue(0);
-  }, [keypadOpen, translateY]);
+    if (keypadOpen) {
+      Keyboard.dismiss();
+      if (closing.current) {
+        closing.current = false;
+        animateIn();
+        return;
+      }
+      if (!mounted) {
+        translateY.setValue(SHEET_H);
+        setMounted(true);
+      }
+    } else if (mounted && !closing.current) {
+      animateOut();
+    }
+  }, [keypadOpen, mounted, animateIn, animateOut, translateY]);
 
   useEffect(() => {
-    if (!keypadOpen || typeof document === 'undefined') return undefined;
+    if (mounted && keypadOpen) animateIn();
+  }, [mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!mounted || typeof document === 'undefined') return undefined;
     const onDown = (e) => {
       const sheet = document.getElementById('keypad-sheet');
       if (!sheet) return;
@@ -68,15 +124,16 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     };
     const onMove = (e) => {
       if (!tracking.current) return;
+      e.preventDefault?.();
       const dy = Math.max(0, e.clientY - originY.current);
-      if (dy > 4) translateY.setValue(dy);
+      if (dy > 2) translateY.setValue(dy);
     };
     const onUp = (e) => {
       if (!tracking.current) return;
       const dy = Math.max(0, (e.clientY ?? originY.current) - originY.current);
       settleRef.current(dy, 0);
     };
-    const opts = { capture: true };
+    const opts = { capture: true, passive: false };
     document.addEventListener('pointerdown', onDown, opts);
     document.addEventListener('pointermove', onMove, opts);
     document.addEventListener('pointerup', onUp, opts);
@@ -87,14 +144,14 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
       document.removeEventListener('pointerup', onUp, opts);
       document.removeEventListener('pointercancel', onUp, opts);
     };
-  }, [keypadOpen, translateY]);
+  }, [mounted, translateY]);
 
   const pan = useMemo(
     () =>
       Gesture.Pan()
         .runOnJS(true)
-        .activeOffsetY(6)
-        .failOffsetX([-28, 28])
+        .activeOffsetY(12)
+        .failOffsetX([-40, 40])
         .onUpdate((e) => {
           translateY.setValue(Math.max(0, e.translationY));
         })
@@ -104,10 +161,10 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     [settle, translateY]
   );
 
-  if (!activeInput) return null;
+  if (!mounted || !input) return null;
 
-  if (fieldRef.current !== activeInput.field) {
-    fieldRef.current = activeInput.field;
+  if (fieldRef.current !== input.field) {
+    fieldRef.current = input.field;
     freshRef.current = true;
   }
 
@@ -120,7 +177,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
       return;
     }
     if (key === '.') {
-      if (activeInput.field === 'reps') return;
+      if (input.field === 'reps') return;
       if (freshRef.current) {
         freshRef.current = false;
         onUpdate('0.');
@@ -132,7 +189,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     if (key === '+' || key === '-') {
       freshRef.current = false;
       let num = parseFloat(currentVal) || 0;
-      const step = activeInput.field === 'weight' ? 2.5 : 1;
+      const step = input.field === 'weight' ? 2.5 : 1;
       if (key === '+') num += step;
       if (key === '-') num = Math.max(0, num - step);
       onUpdate(String(Math.round(num * 100) / 100));
@@ -151,12 +208,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     <Pressable
       onPress={onPress}
       accessibilityLabel={accessibilityLabel || label}
-      style={({ pressed }) => [
-        styles.key,
-        flex && { flex },
-        style,
-        pressed && { opacity: 0.85 },
-      ]}
+      style={({ pressed }) => [styles.key, flex && { flex }, style, pressed && { opacity: 0.85 }]}
     >
       {children || <Text style={styles.keyText}>{label}</Text>}
     </Pressable>
@@ -168,21 +220,20 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   ];
 
   return (
-    <Animated.View
-      nativeID="keypad-sheet"
-      collapsable={false}
-      style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
-    >
-      <GestureDetector gesture={pan}>
+    <GestureDetector gesture={pan}>
+      <Animated.View
+        nativeID="keypad-sheet"
+        collapsable={false}
+        style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
+      >
         <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>
-      </GestureDetector>
         <View style={styles.tabs}>
           {tabs.map((tab) => {
-            const active = activeInput.field === tab.id;
+            const active = input.field === tab.id;
             return (
-              <Pressable key={tab.id} onPress={() => activeInput.onChangeField(tab.id)} style={styles.tab}>
+              <Pressable key={tab.id} onPress={() => input.onChangeField?.(tab.id)} style={styles.tab}>
                 <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
                 {active ? (
                   <View style={styles.checkOn}>
@@ -230,7 +281,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
               </View>
             </View>
             <Pressable
-              onPress={() => activeInput.onNext()}
+              onPress={() => input.onNext?.()}
               style={({ pressed }) => [styles.nextKey, pressed && { opacity: 0.82 }]}
             >
               <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
@@ -238,7 +289,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           </View>
         </View>
         <View style={{ height: Math.max(insets.bottom, 16) }} />
-    </Animated.View>
+      </Animated.View>
+    </GestureDetector>
   );
 }
 

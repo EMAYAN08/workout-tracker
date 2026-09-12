@@ -104,7 +104,7 @@ export default function CalendarView({ onDayClick, onBack }) {
                 : hasWorkout
                   ? colors.heatmapWork
                   : colors.heatmapEmpty;
-            const numColor = hasWorkout && !isRestOnly ? colors.background : colors.textMuted;
+            const numColor = hasWorkout && !isRestOnly ? colors.chartFg || colors.background : colors.textMuted;
             return (
               <View key={i} style={styles.daySlot}>
                 <Pressable
