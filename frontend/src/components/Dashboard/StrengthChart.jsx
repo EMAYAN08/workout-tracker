@@ -165,7 +165,7 @@ export default function StrengthChart() {
             <Select value={timeRange} onChange={setTimeRange} options={timeOptions} />
           </View>
         </View>
-        <View style={{ height: 320, alignItems: 'center' }}>
+        <View style={{ height: 260, alignItems: 'center' }}>
           <Svg width="100%" height="100%" viewBox="0 0 400 400">
             {chartValues.map((cat, i) => {
               const angleSpan = 360 / 6;

@@ -451,6 +451,7 @@ function makeStyles(colors) {
       maxWidth: 360,
       borderRadius: radius.sm,
       minHeight: 52,
+      backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 24,

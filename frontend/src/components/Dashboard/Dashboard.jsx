@@ -305,7 +305,7 @@ export default function Dashboard({ onMapClick }) {
 
 function makeStyles(colors) {
   return StyleSheet.create({
-    scroll: { padding: 16, paddingBottom: 120, gap: 12 },
+    scroll: { padding: 16, paddingBottom: 140, gap: 12 },
     profile: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
     hello: {
       color: colors.text,

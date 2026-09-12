@@ -176,7 +176,14 @@ function makeStyles(colors) {
       borderBottomColor: colors.border,
       marginBottom: 8,
     },
-    tab: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 6 },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      minHeight: 44,
+    },
     tabLabel: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
     checkOn: {
       width: 18,

@@ -30,7 +30,7 @@ export const palettes = {
     heatmapEmpty: '#E2E0DB',
     heatmapRest: '#C4C2BC',
     heatmapWork: '#2A2A2A',
-    heatmapFuture: '#F2F1EE',
+    heatmapFuture: '#D8D6D1',
     chartGrid: '#D4D2CD',
     chartEmpty: '#EBEAE6',
     chartFill: 'transparent',

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Play, Plus, Edit2, Trash2, ClipboardList } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { confirmAction } from '../../dialog';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
   const { routines, deleteRoutine, startWorkoutFromRoutine, activeWorkout } = useWorkout();
@@ -12,13 +13,11 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
 
   const handleStartRoutine = (routine) => {
     if (activeWorkout) {
-      Alert.alert(
+      confirmAction(
         'Active workout',
         'You already have an active workout. Do you want to overwrite it?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Overwrite', style: 'destructive', onPress: () => startWorkoutFromRoutine(routine) },
-        ]
+        () => startWorkoutFromRoutine(routine),
+        { confirmLabel: 'Overwrite' }
       );
       return;
     }
@@ -72,10 +71,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
                 </Pressable>
                 <Pressable
                   onPress={() =>
-                    Alert.alert('Delete routine', 'Delete this routine?', [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => deleteRoutine(routine.id) },
-                    ])
+                    confirmAction('Delete routine', 'Delete this routine?', () => deleteRoutine(routine.id))
                   }
                   style={styles.actDel}
                 >

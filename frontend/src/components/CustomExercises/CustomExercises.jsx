@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { Dumbbell, Plus, Trash2, Search, Settings, ChevronDown } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
@@ -7,6 +7,7 @@ import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { Select } from '../ui/primitives';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { confirmAction } from '../../dialog';
 
 const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
   const { colors } = useTheme();
@@ -41,12 +42,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
               <Text style={styles.editText}>Edit</Text>
             </Pressable>
             <Pressable
-              onPress={() =>
-                Alert.alert('Delete exercise', 'Delete this exercise?', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Delete', style: 'destructive', onPress: () => onDelete(ex.id) },
-                ])
-              }
+              onPress={() => confirmAction('Delete exercise', 'Delete this exercise?', () => onDelete(ex.id))}
               style={styles.delBtn}
             >
               <Text style={styles.delText}>Delete</Text>

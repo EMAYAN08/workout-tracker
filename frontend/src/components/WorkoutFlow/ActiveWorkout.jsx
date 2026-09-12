@@ -227,7 +227,7 @@ export default function ActiveWorkout() {
 
               <View style={styles.setHead}>
                 <Text style={[styles.setHeadText, { width: 36, textAlign: 'center' }]}>Set</Text>
-                <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>kg/lbs</Text>
+                <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>{unit}</Text>
                 <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>Reps</Text>
                 <View style={{ width: 88, alignItems: 'center' }}>
                   <Check size={16} color={colors.textMuted} />

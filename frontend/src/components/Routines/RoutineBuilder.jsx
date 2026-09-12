@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  Alert,
   Modal,
   ActivityIndicator,
 } from 'react-native';
@@ -28,6 +27,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
 import { Select } from '../ui/primitives';
+import { alertMessage } from '../../dialog';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -150,7 +150,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Routine name', 'Please enter a routine name.');
+      alertMessage('Routine name', 'Please enter a routine name.');
       return;
     }
     const routineData = { name, exercises };
