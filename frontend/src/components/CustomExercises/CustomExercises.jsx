@@ -28,6 +28,31 @@ const numericSets = (sets) =>
     weight: Number(s.weight) || 0,
   }));
 
+// Survive remount when the keypad hides the tab bar (parent swaps wrappers).
+const draft = {
+  isCreating: false,
+  activeInput: null,
+  editingId: null,
+  activeExerciseId: null,
+  searchQuery: '',
+  selectedMuscleGroup: 'All',
+  newName: '',
+  newMuscleGroup: 'chest',
+  defaultSets: [blankSet()],
+};
+
+function useDraftState(key) {
+  const [value, setValue] = useState(() => draft[key]);
+  const set = (next) => {
+    setValue((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      draft[key] = resolved;
+      return resolved;
+    });
+  };
+  return [value, set];
+}
+
 const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -89,15 +114,15 @@ export default function CustomExercises() {
     useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [isCreating, setIsCreating] = useState(false);
-  const [activeInput, setActiveInput] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [activeExerciseId, setActiveExerciseId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
-  const [newName, setNewName] = useState('');
-  const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
-  const [defaultSets, setDefaultSets] = useState([blankSet()]);
+  const [isCreating, setIsCreating] = useDraftState('isCreating');
+  const [activeInput, setActiveInput] = useDraftState('activeInput');
+  const [editingId, setEditingId] = useDraftState('editingId');
+  const [activeExerciseId, setActiveExerciseId] = useDraftState('activeExerciseId');
+  const [searchQuery, setSearchQuery] = useDraftState('searchQuery');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useDraftState('selectedMuscleGroup');
+  const [newName, setNewName] = useDraftState('newName');
+  const [newMuscleGroup, setNewMuscleGroup] = useDraftState('newMuscleGroup');
+  const [defaultSets, setDefaultSets] = useDraftState('defaultSets');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredExercises = useMemo(() => {

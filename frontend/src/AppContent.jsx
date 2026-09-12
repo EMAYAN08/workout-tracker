@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -68,29 +68,36 @@ export default function AppContent() {
     });
   };
 
-  const swipe = Gesture.Pan()
-    .enabled(!activeWorkout && !tabBarHidden)
-    .runOnJS(true)
-    .activeOffsetX([-50, 50])
-    .failOffsetY([-20, 20])
-    .onEnd((e) => {
-      if (activeWorkout) return;
-      if (currentTab === 'workout-detail' && e.translationX > 50) {
-        navigateTab('calendar');
-        return;
-      }
-      if (currentTab === 'calendar' && e.translationX > 50) {
-        navigateTab('dashboard');
-        return;
-      }
-      const idx = TAB_ORDER.indexOf(currentTab);
-      if (idx === -1) return;
-      if (e.translationX < -50 && idx < TAB_ORDER.length - 1) {
-        navigateTab(TAB_ORDER[idx + 1]);
-      } else if (e.translationX > 50 && idx > 0) {
-        navigateTab(TAB_ORDER[idx - 1]);
-      }
-    });
+  const navRef = useRef({ activeWorkout, tabBarHidden, currentTab, navigateTab });
+  navRef.current = { activeWorkout, tabBarHidden, currentTab, navigateTab };
+
+  const swipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetX([-50, 50])
+        .failOffsetY([-20, 20])
+        .onEnd((e) => {
+          const nav = navRef.current;
+          if (nav.activeWorkout || nav.tabBarHidden) return;
+          if (nav.currentTab === 'workout-detail' && e.translationX > 50) {
+            nav.navigateTab('calendar');
+            return;
+          }
+          if (nav.currentTab === 'calendar' && e.translationX > 50) {
+            nav.navigateTab('dashboard');
+            return;
+          }
+          const idx = TAB_ORDER.indexOf(nav.currentTab);
+          if (idx === -1) return;
+          if (e.translationX < -50 && idx < TAB_ORDER.length - 1) {
+            nav.navigateTab(TAB_ORDER[idx + 1]);
+          } else if (e.translationX > 50 && idx > 0) {
+            nav.navigateTab(TAB_ORDER[idx - 1]);
+          }
+        }),
+    []
+  );
 
   const renderBody = () => {
     if (activeWorkout) return <ActiveWorkout />;
