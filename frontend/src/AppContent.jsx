@@ -11,12 +11,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   Activity,
   LayoutDashboard,
   Database,
   ClipboardList,
-  RefreshCw,
   Sun,
   Moon,
 } from 'lucide-react-native';
@@ -24,7 +24,6 @@ import { useWorkout } from './context/WorkoutContext';
 import { useTheme } from './context/ThemeContext';
 import ActiveWorkout from './components/WorkoutFlow/ActiveWorkout';
 import WorkoutSummary from './components/WorkoutFlow/WorkoutSummary';
-import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import CustomExercises from './components/CustomExercises/CustomExercises';
 import RoutinesMain from './components/Routines/RoutinesMain';
@@ -36,11 +35,15 @@ import { haptic } from './haptics';
 
 const TAB_ORDER = ['home', 'routines', 'custom_exercises', 'dashboard'];
 
+const formatTime = (seconds) => {
+  const m = Math.floor(Math.max(0, seconds) / 60);
+  const s = Math.max(0, seconds) % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
 export default function AppContent() {
   const {
     hydrated,
-    username,
-    login,
     activeWorkout,
     startWorkout,
     finishWorkout,
@@ -49,7 +52,10 @@ export default function AppContent() {
     toggleUnit,
     completedWorkout,
     setCompletedWorkout,
-    refreshAll,
+    restTimer,
+    playingSet,
+    restTargetSec,
+    workoutHistory,
   } = useWorkout();
   const { colors, isDark, toggleTheme, tabBarHidden } = useTheme();
   const insets = useSafeAreaInsets();
@@ -66,10 +72,6 @@ export default function AppContent() {
         <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
-  }
-
-  if (!username) {
-    return <Login onLogin={login} />;
   }
 
   const navigateTab = (newTab) => {
@@ -96,14 +98,28 @@ export default function AppContent() {
       }
     });
 
+  const lastSession = workoutHistory.find((w) => w.exercises?.length > 0);
+  const restRemaining = Math.max(0, restTargetSec - restTimer);
+  const restReady = restTimer >= restTargetSec;
+
   const renderBody = () => {
     if (activeWorkout) return <ActiveWorkout />;
     if (currentTab === 'home') {
       return (
         <View style={styles.home}>
+          <LinearGradient
+            colors={isDark ? ['rgba(255,79,46,0.22)', 'rgba(255,79,46,0.0)'] : ['rgba(224,58,31,0.16)', 'rgba(224,58,31,0)']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={styles.homeGlow}
+          />
           <Text style={styles.kicker}>Session</Text>
           <Text style={styles.homeTitle}>Ready{'\n'}to lift.</Text>
-          <Text style={styles.homeSub}>Log every set with quiet precision.</Text>
+          <Text style={styles.homeSub}>
+            {lastSession
+              ? `${lastSession.exercises.length} movements last time. Keep the chain.`
+              : 'Every set lives on this phone. No cloud. No login.'}
+          </Text>
           <Pressable
             onPress={() => {
               haptic('medium');
@@ -111,7 +127,14 @@ export default function AppContent() {
             }}
             style={({ pressed }) => [styles.startBtn, pressed && { transform: [{ scale: 0.96 }] }]}
           >
-            <Text style={styles.startBtnText}>Start Empty Workout</Text>
+            <LinearGradient
+              colors={[colors.accent, '#FF7A63']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.startGrad}
+            >
+              <Text style={styles.startBtnText}>Start Empty Workout</Text>
+            </LinearGradient>
           </Pressable>
           <Pressable
             onPress={() => navigateTab('routines')}
@@ -147,7 +170,7 @@ export default function AppContent() {
     { id: 'home', label: 'Workout', Icon: Activity },
     { id: 'routines', label: 'Routines', Icon: ClipboardList },
     { id: 'custom_exercises', label: 'Exercises', Icon: Database },
-    { id: 'dashboard', label: 'Profile', Icon: LayoutDashboard },
+    { id: 'dashboard', label: 'You', Icon: LayoutDashboard },
   ];
 
   return (
@@ -161,16 +184,6 @@ export default function AppContent() {
         </Pressable>
 
         <View style={styles.headerRight}>
-          <Pressable
-            onPress={() => {
-              haptic('light');
-              refreshAll();
-            }}
-            style={({ pressed }) => [styles.iconCircle, pressed && { opacity: 0.55 }]}
-          >
-            <RefreshCw size={18} color={colors.text} strokeWidth={2} />
-          </Pressable>
-
           <Pressable
             onPress={() => {
               haptic('selection');
@@ -198,6 +211,18 @@ export default function AppContent() {
           </Pressable>
         </View>
       </View>
+
+      {activeWorkout && restTimer > 0 && !playingSet && (
+        <View style={styles.islandWrap} pointerEvents="none">
+          <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.island}>
+            <View style={[styles.islandDot, restReady && { backgroundColor: colors.success }]} />
+            <Text style={[styles.islandKicker, restReady && { color: colors.success }]}>
+              {restReady ? 'GO' : 'REST'}
+            </Text>
+            <Text style={styles.islandTime}>{formatTime(restReady ? restTimer : restRemaining)}</Text>
+          </BlurView>
+        </View>
+      )}
 
       {activeWorkout && (
         <View style={styles.workoutBar}>
@@ -248,7 +273,7 @@ export default function AppContent() {
 
       {!activeWorkout && !tabBarHidden && (
         <View style={styles.navWrap}>
-          <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={styles.navBlur}>
+          <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.navBlur}>
             <View style={[styles.navRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
               {tabs.map((t) => {
                 const active =
@@ -291,12 +316,12 @@ function makeStyles(colors) {
       zIndex: 40,
     },
     brand: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: HIT },
-    logo: { width: 28, height: 28, borderRadius: 7 },
+    logo: { width: 28, height: 28, borderRadius: 8 },
     brandText: {
       color: colors.text,
       fontFamily: fonts.bold,
       fontSize: 20,
-      letterSpacing: -0.5,
+      letterSpacing: -0.6,
     },
     headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     iconCircle: {
@@ -305,11 +330,12 @@ function makeStyles(colors) {
       borderRadius: radius.md,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: colors.surface2,
     },
     unitToggle: {
       width: 80,
       height: 32,
-      borderRadius: 8,
+      borderRadius: 16,
       backgroundColor: colors.surface2,
       overflow: 'hidden',
       flexDirection: 'row',
@@ -320,8 +346,8 @@ function makeStyles(colors) {
       top: 2,
       width: 38,
       height: 28,
-      borderRadius: 6,
-      backgroundColor: colors.surface,
+      borderRadius: 14,
+      backgroundColor: colors.accent,
     },
     unitLabel: {
       width: 40,
@@ -332,7 +358,43 @@ function makeStyles(colors) {
       color: colors.textMuted,
       zIndex: 1,
     },
-    unitLabelOn: { color: colors.text },
+    unitLabelOn: { color: colors.accentFg },
+    islandWrap: {
+      alignItems: 'center',
+      marginBottom: 6,
+      zIndex: 50,
+    },
+    island: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 22,
+      overflow: 'hidden',
+      backgroundColor: colors.glass,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.borderStrong,
+      minWidth: 168,
+    },
+    islandDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.accent,
+    },
+    islandKicker: {
+      color: colors.accent,
+      fontFamily: fonts.bold,
+      fontSize: 11,
+      letterSpacing: 1.4,
+    },
+    islandTime: {
+      color: colors.text,
+      fontFamily: fonts.monoBold,
+      fontSize: 16,
+      marginLeft: 'auto',
+    },
     workoutBar: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -368,44 +430,54 @@ function makeStyles(colors) {
       paddingHorizontal: 28,
       paddingBottom: 120,
     },
+    homeGlow: {
+      position: 'absolute',
+      top: 40,
+      left: -20,
+      right: -20,
+      height: 280,
+      borderRadius: 180,
+    },
     kicker: {
       color: colors.accent,
       fontFamily: fonts.semibold,
       fontSize: 13,
-      letterSpacing: 1.2,
+      letterSpacing: 1.6,
       textTransform: 'uppercase',
       marginBottom: 10,
     },
     homeTitle: {
       color: colors.text,
       fontFamily: fonts.bold,
-      fontSize: 48,
-      lineHeight: 50,
-      letterSpacing: 0.35,
-      marginBottom: 10,
+      fontSize: 52,
+      lineHeight: 54,
+      letterSpacing: -1.6,
+      marginBottom: 12,
     },
     homeSub: {
       color: colors.textMuted,
       fontSize: 17,
-      lineHeight: 22,
+      lineHeight: 24,
       fontFamily: fonts.regular,
       marginBottom: 32,
-      maxWidth: 280,
+      maxWidth: 300,
     },
     startBtn: {
-      backgroundColor: colors.accent,
-      minHeight: 52,
-      paddingHorizontal: 24,
-      borderRadius: 14,
       width: '100%',
       maxWidth: 360,
+      borderRadius: 18,
+      overflow: 'hidden',
+    },
+    startGrad: {
+      minHeight: 54,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: 24,
     },
     startBtnText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17, letterSpacing: -0.4 },
     link: {
       color: colors.accent,
-      fontFamily: fonts.regular,
+      fontFamily: fonts.medium,
       fontSize: 16,
     },
     navWrap: {

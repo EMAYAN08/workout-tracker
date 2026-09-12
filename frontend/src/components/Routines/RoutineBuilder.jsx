@@ -27,13 +27,12 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
-import { API_URL } from '../../config';
 import { Select } from '../ui/primitives';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
-  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit } =
+  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit, searchExercises } =
     useWorkout();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -79,36 +78,11 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   }, [unit]);
 
   useEffect(() => {
-    const t = setTimeout(async () => {
-      if (searchQuery.length > 0) {
-        try {
-          const query = searchQuery.toLowerCase();
-          const localMatches = (customExercises || []).filter(
-            (ex) =>
-              ex.name.toLowerCase().includes(query) ||
-              (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query))
-          );
-          const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
-          let data = [];
-          if (res.ok) data = await res.json();
-          const localIds = new Set(localMatches.map((l) => l.id));
-          const apiMatches = (Array.isArray(data) ? data : []).filter((apiEx) => !localIds.has(apiEx.id));
-          setSearchResults([...localMatches, ...apiMatches]);
-        } catch (err) {
-          console.error('Search failed', err);
-          const query = searchQuery.toLowerCase();
-          setSearchResults(
-            (customExercises || []).filter(
-              (ex) =>
-                ex.name.toLowerCase().includes(query) ||
-                (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query))
-            )
-          );
-        }
-      } else setSearchResults([]);
-    }, 500);
+    const t = setTimeout(() => {
+      setSearchResults(searchQuery.length > 0 ? searchExercises(searchQuery) : []);
+    }, 180);
     return () => clearTimeout(t);
-  }, [searchQuery, customExercises]);
+  }, [searchQuery, searchExercises]);
 
   const handleAddExercise = (exercise) => {
     let initialSets = [{ reps: 10, weight: 0, type: 'Working' }];

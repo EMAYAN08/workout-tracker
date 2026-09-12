@@ -17,7 +17,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppContent from './src/AppContent';
 
 function Root() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -39,7 +39,7 @@ export default function App() {
   if (!fontsLoaded) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator color="#2563EB" size="large" />
+        <ActivityIndicator color="#FF4F2E" size="large" />
       </View>
     );
   }
@@ -60,7 +60,7 @@ export default function App() {
 const styles = StyleSheet.create({
   boot: {
     flex: 1,
-    backgroundColor: '#F4F3EF',
+    backgroundColor: '#070707',
     alignItems: 'center',
     justifyContent: 'center',
   },

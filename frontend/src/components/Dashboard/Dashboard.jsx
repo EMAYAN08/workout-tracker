@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Activity, TrendingUp, Flame, Trophy } from 'lucide-react-native';
-import { format, parseISO } from 'date-fns';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
+import { Activity, TrendingUp, Flame, Trophy, Download, Upload } from 'lucide-react-native';
+import { format } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getBest1RM, calculateVolume, convertWeight } from '../../utils/calculations';
@@ -52,13 +52,22 @@ const StatCard = ({ icon: Icon, title, value, unit, description, colors, styles 
 };
 
 export default function Dashboard({ onMapClick }) {
-  const { username, logout, workoutHistory, unit, getStreaks } = useWorkout();
+  const {
+    workoutHistory,
+    unit,
+    getStreaks,
+    exportData,
+    importData,
+    restTargetSec,
+    setRestTargetSec,
+  } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { current, best } = getStreaks();
   const [metric, setMetric] = useState('1rm');
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [weightExerciseId, setWeightExerciseId] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const uniqueExercises = useMemo(() => {
     const exercisesMap = new Map();
@@ -83,7 +92,7 @@ export default function Dashboard({ onMapClick }) {
     workoutHistory.forEach((wk) => {
       const ex = wk.exercises?.find((e) => e.id === selectedExerciseId);
       if (ex && ex.sets && ex.sets.length > 0) {
-        const date = format(parseISO(wk.timestamp), 'MMM d');
+        const date = format(new Date(wk.timestamp), 'MMM d');
         if (metric === '1rm') {
           const rm = getBest1RM(ex.sets);
           data.push({ date, value: Number(convertWeight(rm, wk.unitSaved || 'lbs', unit).toFixed(1)) });
@@ -102,7 +111,7 @@ export default function Dashboard({ onMapClick }) {
     workoutHistory.forEach((wk) => {
       const ex = wk.exercises?.find((e) => e.id === weightExerciseId);
       if (ex && ex.sets && ex.sets.length > 0) {
-        const date = format(parseISO(wk.timestamp), 'MMM d');
+        const date = format(new Date(wk.timestamp), 'MMM d');
         const maxWeight = Math.max(...ex.sets.map((s) => s.weight || 0));
         data.push({ date, value: Number(convertWeight(maxWeight, wk.unitSaved || 'lbs', unit).toFixed(1)) });
       }
@@ -115,16 +124,51 @@ export default function Dashboard({ onMapClick }) {
     return acc + convertWeight(vol, wk.unitSaved || 'lbs', unit);
   }, 0);
 
+  const toast = (title, message) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const onExport = async () => {
+    setBusy(true);
+    try {
+      const res = await exportData();
+      if (res?.ok) toast('Exported', `${res.count} workouts saved to a TrackIt backup file.`);
+    } catch (err) {
+      toast('Export failed', err.message || 'Could not write backup.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onImport = async () => {
+    setBusy(true);
+    try {
+      const res = await importData();
+      if (res?.cancelled) return;
+      if (res?.ok) {
+        toast(
+          'Imported',
+          `${res.mode === 'replace' ? 'Replaced' : 'Merged'} ${res.workouts} workouts, ${res.routines} routines, ${res.customExercises} custom exercises.`
+        );
+      }
+    } catch (err) {
+      toast('Import failed', err.message || 'That file does not look like a TrackIt / Mongo backup.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
       <View style={styles.profile}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.hello}>Hey {username || 'User'}.</Text>
-          <Text style={styles.sub}>Lifetime stats, quietly arranged.</Text>
+          <Text style={styles.hello}>Your log.</Text>
+          <Text style={styles.sub}>On this phone. Yours alone.</Text>
         </View>
-        <Pressable onPress={logout} style={styles.logout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </Pressable>
       </View>
 
       <View style={styles.grid}>
@@ -216,6 +260,45 @@ export default function Dashboard({ onMapClick }) {
       </View>
 
       <WorkoutDurationChart />
+
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle}>Rest timer</Text>
+      </View>
+      <View style={styles.panel}>
+        <Text style={styles.label}>Default rest</Text>
+        <Select
+          value={String(restTargetSec)}
+          onChange={(v) => setRestTargetSec(Number(v))}
+          options={[
+            { value: '60', label: '60 seconds' },
+            { value: '90', label: '90 seconds' },
+            { value: '120', label: '2 minutes' },
+            { value: '180', label: '3 minutes' },
+          ]}
+        />
+        <Text style={styles.hint}>
+          Completing a set starts a rest countdown. You’ll get a lock-screen notification when time’s up.
+        </Text>
+      </View>
+
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle}>Backup</Text>
+      </View>
+      <View style={styles.panel}>
+        <Text style={styles.hint}>
+          Everything lives on this device. Export a JSON file and import it on another phone — including a later Mongo dump.
+        </Text>
+        <View style={styles.backupRow}>
+          <Pressable disabled={busy} onPress={onExport} style={[styles.backupBtn, busy && { opacity: 0.5 }]}>
+            <Download size={16} color={colors.accentFg} />
+            <Text style={styles.backupText}>Export</Text>
+          </Pressable>
+          <Pressable disabled={busy} onPress={onImport} style={[styles.backupBtnGhost, busy && { opacity: 0.5 }]}>
+            <Upload size={16} color={colors.accent} />
+            <Text style={styles.backupGhostText}>Import</Text>
+          </Pressable>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -229,18 +312,8 @@ function makeStyles(colors) {
       fontFamily: fonts.bold,
       fontSize: 28,
       letterSpacing: -0.8,
-      textTransform: 'capitalize',
     },
     sub: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 13, marginTop: 4 },
-    logout: {
-      backgroundColor: colors.dangerSoft,
-      borderWidth: 1,
-      borderColor: colors.danger + '33',
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      borderRadius: radius.sm,
-    },
-    logoutText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 12 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     statCard: {
       width: '48%',
@@ -294,5 +367,31 @@ function makeStyles(colors) {
       letterSpacing: 1,
       marginBottom: 6,
     },
+    hint: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, marginTop: 10 },
+    backupRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+    backupBtn: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: radius.md,
+      backgroundColor: colors.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    backupText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
+    backupBtnGhost: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: radius.md,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accentBorder,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    backupGhostText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 15 },
   });
 }

@@ -2,8 +2,11 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
-import { API_URL } from '../config';
 import { getItem, setItem, removeItem } from '../storage';
+import { localStore } from '../db/store';
+import { searchCatalog } from '../data/catalog';
+import { exportBackup, pickBackupFile, confirmImportMode } from '../db/backup';
+import { scheduleRestNotification, cancelRestNotification } from '../notifications';
 
 const WorkoutContext = createContext();
 
@@ -15,39 +18,22 @@ async function vibrate(pattern = 'light') {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
   } catch {
-    // haptics not available (web / simulator)
+    // web / simulator
   }
+}
+
+function snapshotFromStore() {
+  return {
+    workouts: localStore.workouts,
+    routines: localStore.routines,
+    customExercises: localStore.customExercises,
+  };
 }
 
 export function WorkoutProvider({ children }) {
   const [hydrated, setHydrated] = useState(false);
-  const [username, setUsername] = useState(null);
-
-  const login = async (user) => {
-    await setItem('workout_username', user);
-    setUsername(user);
-  };
-
-  const logout = async () => {
-    await removeItem('workout_username');
-    setUsername(null);
-  };
-
-  const apiFetch = async (endpoint, options = {}) => {
-    const user = username || (await getItem('workout_username'));
-    const url = new URL(API_URL + endpoint);
-    if (user) url.searchParams.append('username', user);
-
-    if (options.body && typeof options.body === 'string') {
-      const bodyObj = JSON.parse(options.body);
-      if (user) bodyObj.username = user;
-      options.body = JSON.stringify(bodyObj);
-    }
-
-    return fetch(url.toString(), options);
-  };
-
   const [unit, setUnit] = useState('lbs');
+  const [restTargetSec, setRestTargetSec] = useState(90);
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [completedWorkout, setCompletedWorkout] = useState(null);
   const [workoutDuration, setWorkoutDuration] = useState(0);
@@ -59,26 +45,34 @@ export function WorkoutProvider({ children }) {
   const [customExercises, setCustomExercises] = useState([]);
   const newlyCreatedCustomExIds = useRef([]);
   const [routines, setRoutines] = useState([]);
-  const pushTaskIdRef = useRef(null);
+
+  const syncFromStore = () => {
+    const snap = snapshotFromStore();
+    setWorkoutHistory(snap.workouts);
+    setRoutines(snap.routines);
+    setCustomExercises(snap.customExercises);
+  };
 
   useEffect(() => {
     (async () => {
       try {
-        const [savedUser, savedUnit, savedActive, savedDuration, savedLastSet, savedPlaying] =
+        await localStore.init();
+        syncFromStore();
+        const [savedUnit, savedActive, savedDuration, savedLastSet, savedPlaying, savedRest] =
           await Promise.all([
-            getItem('workout_username'),
             getItem('workout_unit'),
             getItem('workout_active'),
             getItem('workout_duration'),
             getItem('workout_last_set_time'),
             getItem('workout_playing_set'),
+            getItem('workout_rest_target'),
           ]);
-        if (savedUser) setUsername(savedUser);
         if (savedUnit) setUnit(savedUnit);
         if (savedActive) setActiveWorkout(JSON.parse(savedActive));
         if (savedDuration) setWorkoutDuration(parseInt(savedDuration, 10));
         if (savedLastSet) setLastSetCompletedAt(parseInt(savedLastSet, 10));
         if (savedPlaying) setPlayingSet(JSON.parse(savedPlaying));
+        if (savedRest) setRestTargetSec(parseInt(savedRest, 10) || 90);
       } catch (err) {
         console.error('hydrate failed', err);
       } finally {
@@ -107,149 +101,71 @@ export function WorkoutProvider({ children }) {
     return () => clearInterval(interval);
   }, [playingSet]);
 
-  const fetchHistory = async () => {
-    try {
-      const res = await apiFetch(`/api/workouts`);
-      const data = await res.json();
-      setWorkoutHistory(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch history', err);
-    }
-  };
-
-  const fetchCustomExercises = async () => {
-    try {
-      const res = await apiFetch(`/api/exercises/custom`);
-      const data = await res.json();
-      setCustomExercises(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch custom exercises', err);
-    }
-  };
-
-  const fetchRoutines = async () => {
-    try {
-      const res = await apiFetch(`/api/routines`);
-      const data = await res.json();
-      setRoutines(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch routines', err);
-    }
-  };
-
   const createCustomExercise = async (name, muscleGroup, defaultSets = []) => {
-    try {
-      const setsToSave = defaultSets.length > 0 ? defaultSets : [{ reps: 10, weight: 0, type: 'Working' }];
-      const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
-      const payload = { id: tempId, name, muscleGroup, defaultSets: setsToSave, unitSaved: unit };
-      const res = await apiFetch(`/api/exercises/custom`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const newEx = await res.json();
-      setCustomExercises((prev) => [...prev, newEx]);
-      newlyCreatedCustomExIds.current.push(newEx.id);
-      return newEx;
-    } catch (err) {
-      console.error('Failed to create custom exercise', err);
-      return null;
-    }
+    const setsToSave = defaultSets.length > 0 ? defaultSets : [{ reps: 10, weight: 0, type: 'Working' }];
+    const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
+    const saved = await localStore.upsertCustomExercise({
+      id: tempId,
+      name,
+      muscleGroup,
+      defaultSets: setsToSave,
+      unitSaved: unit,
+    });
+    setCustomExercises([...localStore.customExercises]);
+    newlyCreatedCustomExIds.current.push(saved.id);
+    return saved;
   };
 
   const deleteCustomExercise = async (id) => {
-    try {
-      await apiFetch(`/api/exercises/custom/${id}`, { method: 'DELETE' });
-      setCustomExercises((prev) => prev.filter((ex) => ex.id !== id));
-      setRoutines((prev) =>
-        prev.map((routine) => ({
-          ...routine,
-          exercises: routine.exercises.filter((ex) => ex.id !== id),
-        }))
-      );
-    } catch (err) {
-      console.error('Failed to delete custom exercise', err);
-    }
+    await localStore.deleteCustomExercise(id);
+    setCustomExercises([...localStore.customExercises]);
+    setRoutines([...localStore.routines]);
   };
 
   const updateCustomExercise = async (id, payload) => {
-    try {
-      const res = await apiFetch(`/api/exercises/custom/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Update failed');
-      const updatedEx = await res.json();
-      setCustomExercises((prev) => prev.map((ex) => (ex.id === id ? updatedEx : ex)));
-      setRoutines((prev) =>
-        prev.map((routine) => {
-          if (!routine.exercises.some((ex) => ex.id === id)) return routine;
-          return {
-            ...routine,
-            exercises: routine.exercises.map((ex) => (ex.id === id ? { ...ex, ...updatedEx } : ex)),
-          };
-        })
-      );
-      return updatedEx;
-    } catch (err) {
-      console.error('Failed to update custom exercise', err);
-      return null;
-    }
+    const current = localStore.customExercises.find((e) => e.id === id) || { id };
+    const saved = await localStore.upsertCustomExercise({ ...current, ...payload, id });
+    setCustomExercises([...localStore.customExercises]);
+    const nextRoutines = localStore.routines.map((routine) => {
+      if (!routine.exercises.some((ex) => ex.id === id)) return routine;
+      const updated = {
+        ...routine,
+        exercises: routine.exercises.map((ex) => (ex.id === id ? { ...ex, ...saved } : ex)),
+      };
+      localStore.upsertRoutine(updated);
+      return updated;
+    });
+    setRoutines(nextRoutines);
+    return saved;
   };
 
   const createRoutine = async (routineData) => {
-    try {
-      const res = await apiFetch(`/api/routines`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineData),
-      });
-      if (!res.ok) throw new Error('Create failed');
-      const newRoutine = await res.json();
-      setRoutines((prev) => [...prev, newRoutine]);
-      return newRoutine;
-    } catch (err) {
-      console.error('Failed to create routine', err);
-      return null;
-    }
+    const saved = await localStore.upsertRoutine({
+      ...routineData,
+      id: routineData.id || `rt_${Date.now()}`,
+    });
+    setRoutines([...localStore.routines]);
+    return saved;
   };
 
   const deleteRoutine = async (id) => {
-    try {
-      await apiFetch(`/api/routines/${id}`, { method: 'DELETE' });
-      setRoutines((prev) => prev.filter((r) => r.id !== id));
-    } catch (err) {
-      console.error('Failed to delete routine', err);
-    }
+    await localStore.deleteRoutine(id);
+    setRoutines([...localStore.routines]);
   };
 
   const updateRoutine = async (id, routineData) => {
-    try {
-      const res = await apiFetch(`/api/routines/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineData),
-      });
-      const updatedRoutine = await res.json();
-      setRoutines((prev) => prev.map((r) => (r.id === id ? updatedRoutine : r)));
-      return updatedRoutine;
-    } catch (err) {
-      console.error('Failed to update routine', err);
-      return null;
-    }
+    const saved = await localStore.upsertRoutine({ ...routineData, id });
+    setRoutines([...localStore.routines]);
+    return saved;
   };
-
-  useEffect(() => {
-    if (!hydrated || !username) return;
-    fetchHistory();
-    fetchCustomExercises();
-    fetchRoutines();
-  }, [hydrated, username]);
 
   useEffect(() => {
     if (hydrated) setItem('workout_unit', unit);
   }, [unit, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) setItem('workout_rest_target', String(restTargetSec));
+  }, [restTargetSec, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -378,20 +294,17 @@ export function WorkoutProvider({ children }) {
 
   const finishWorkout = async () => {
     await vibrate('success');
+    await cancelRestNotification();
     try {
       const payload = {
         ...activeWorkout,
+        timestamp: new Date(activeWorkout.startTime || Date.now()).toISOString(),
         endTime: Date.now(),
         duration: workoutDuration,
         unitSaved: unit,
       };
-      const res = await apiFetch(`/api/workouts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const savedWorkout = await res.json();
-      for (const ex of activeWorkout.exercises) {
+      const savedWorkout = await localStore.upsertWorkout(payload);
+      for (const ex of activeWorkout.exercises || []) {
         if (newlyCreatedCustomExIds.current.includes(ex.id)) {
           const mappedSets = ex.sets.map((s) => ({
             reps: s.reps,
@@ -403,8 +316,8 @@ export function WorkoutProvider({ children }) {
           }
         }
       }
-      await fetchHistory();
-      setCompletedWorkout(savedWorkout.workout || payload);
+      setWorkoutHistory([...localStore.workouts]);
+      setCompletedWorkout(savedWorkout);
       setActiveWorkout(null);
       setWorkoutDuration(0);
       setLastSetCompletedAt(null);
@@ -415,6 +328,7 @@ export function WorkoutProvider({ children }) {
   };
 
   const cancelWorkout = async () => {
+    await cancelRestNotification();
     setActiveWorkout(null);
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
@@ -486,6 +400,7 @@ export function WorkoutProvider({ children }) {
 
   const startSet = (exerciseIndex, setIndex) => {
     vibrate();
+    cancelRestNotification();
     setLastSetCompletedAt(null);
     setPlayingSet({ exerciseIndex, setIndex, startTime: Date.now() });
   };
@@ -507,6 +422,7 @@ export function WorkoutProvider({ children }) {
     setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
     setPlayingSet(null);
     setLastSetCompletedAt(Date.now());
+    scheduleRestNotification(restTargetSec);
   };
 
   const uncompleteSet = (exerciseIndex, setIndex) => {
@@ -547,7 +463,15 @@ export function WorkoutProvider({ children }) {
   const getStreaks = () => {
     if (workoutHistory.length === 0) return { current: 0, best: 0 };
     const dates = [
-      ...new Set(workoutHistory.map((w) => startOfDay(parseISO(w.timestamp)).getTime())),
+      ...new Set(
+        workoutHistory.map((w) => {
+          try {
+            return startOfDay(parseISO(w.timestamp)).getTime();
+          } catch {
+            return startOfDay(new Date(w.timestamp)).getTime();
+          }
+        })
+      ),
     ].sort((a, b) => b - a);
 
     let currentStreak = 0;
@@ -585,23 +509,55 @@ export function WorkoutProvider({ children }) {
   };
 
   const stopRestTimer = () => {
+    cancelRestNotification();
     setLastSetCompletedAt(null);
   };
 
+  const searchExercises = (query) => searchCatalog(query, customExercises);
+
+  const exportData = async () =>
+    exportBackup({
+      workouts: workoutHistory,
+      routines,
+      customExercises,
+      unit,
+      restTargetSec,
+    });
+
+  const importData = async () => {
+    const parsed = await pickBackupFile();
+    if (!parsed) return { ok: false, cancelled: true };
+    const mode = await confirmImportMode();
+    if (!mode) return { ok: false, cancelled: true };
+    if (mode === 'replace') {
+      await localStore.replaceAll(parsed);
+    } else {
+      await localStore.mergeAll(parsed);
+    }
+    syncFromStore();
+    if (parsed.unit) setUnit(parsed.unit);
+    if (parsed.restTargetSec) setRestTargetSec(parsed.restTargetSec);
+    return {
+      ok: true,
+      mode,
+      workouts: parsed.workouts.length,
+      routines: parsed.routines.length,
+      customExercises: parsed.customExercises.length,
+    };
+  };
+
   const refreshAll = async () => {
-    if (!username) return;
-    await Promise.all([fetchHistory(), fetchCustomExercises(), fetchRoutines()]);
+    syncFromStore();
   };
 
   return (
     <WorkoutContext.Provider
       value={{
         hydrated,
-        username,
-        login,
-        logout,
         unit,
         toggleUnit,
+        restTargetSec,
+        setRestTargetSec,
         activeWorkout,
         startWorkout,
         startWorkoutFromRoutine,
@@ -635,6 +591,9 @@ export function WorkoutProvider({ children }) {
         completedWorkout,
         setCompletedWorkout,
         refreshAll,
+        searchExercises,
+        exportData,
+        importData,
       }}
     >
       {children}

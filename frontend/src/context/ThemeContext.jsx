@@ -7,7 +7,7 @@ const ThemeContext = createContext(null);
 const STORAGE_KEY = 'trackit_theme';
 
 export function ThemeProvider({ children }) {
-  const [scheme, setScheme] = useState('light');
+  const [scheme, setScheme] = useState('dark');
   const [tabBarHidden, setTabBarHidden] = useState(false);
 
   useEffect(() => {
@@ -45,13 +45,13 @@ export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
     return {
-      scheme: 'light',
-      isDark: false,
-      colors: palettes.light,
+      scheme: 'dark',
+      isDark: true,
+      colors: palettes.dark,
       fonts,
       radius,
       spacing,
-      muscleColors: muscleTones.light,
+      muscleColors: muscleTones.dark,
       toggleTheme: () => {},
       tabBarHidden: false,
       setTabBarHidden: () => {},

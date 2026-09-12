@@ -29,7 +29,6 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import { getPreviousPerformance } from '../../utils/calculations';
 import CustomNumpad from './CustomNumpad';
-import { API_URL } from '../../config';
 import { fonts, radius } from '../../theme';
 import { Select } from '../ui/primitives';
 import { useTheme } from '../../context/ThemeContext';
@@ -60,6 +59,7 @@ export default function ActiveWorkout() {
     setTimer,
     startSet,
     createCustomExercise,
+    searchExercises,
   } = useWorkout();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -75,23 +75,11 @@ export default function ActiveWorkout() {
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
   React.useEffect(() => {
-    const t = setTimeout(async () => {
-      if (searchQuery.length > 0) {
-        try {
-          const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
-          if (!res.ok) throw new Error('Network response was not ok');
-          const data = await res.json();
-          setSearchResults(Array.isArray(data) ? data : []);
-        } catch (err) {
-          console.error('Search failed', err);
-          setSearchResults([]);
-        }
-      } else {
-        setSearchResults([]);
-      }
-    }, 500);
+    const t = setTimeout(() => {
+      setSearchResults(searchQuery.length > 0 ? searchExercises(searchQuery) : []);
+    }, 180);
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, searchExercises]);
 
   if (!activeWorkout) return null;
 
@@ -138,7 +126,7 @@ export default function ActiveWorkout() {
           </View>
         ) : restTimer > 0 ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.timerLabel, { color: colors.accent }]}>Since last set</Text>
+            <Text style={[styles.timerLabel, { color: colors.accent }]}>Rest</Text>
             <View style={styles.timerRow}>
               <Timer size={14} color={colors.accent} />
               <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restTimer)}</Text>

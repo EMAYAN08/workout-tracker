@@ -10,36 +10,44 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#070707"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.trackit.app",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "TrackIt needs access to save workout summary images."
+        "NSPhotoLibraryUsageDescription": "TrackIt needs access to save workout summary images.",
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#0A0A0A"
+        "backgroundColor": "#070707"
       },
       "package": "com.trackit.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "backgroundColor": "#F2F2F7",
-      "themeColor": "#007AFF"
+      "backgroundColor": "#070707",
+      "themeColor": "#FF4F2E"
     },
     "plugins": [
       "expo-font",
       "expo-sharing",
       "expo-image",
-      "expo-splash-screen"
-    ],
-    "extra": {
-      "apiUrl": "https://workout-tracker-ngpe.onrender.com"
-    }
+      "expo-splash-screen",
+      "expo-sqlite",
+      "expo-document-picker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF4F2E",
+          "defaultChannel": "rest"
+        }
+      ]
+    ]
   }
 }
