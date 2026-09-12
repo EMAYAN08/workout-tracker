@@ -107,27 +107,27 @@ export const radius = {
 };
 
 export const type = {
-  largeTitle: { fontSize: 34, lineHeight: 40, letterSpacing: -0.8, fontWeight: '800' },
-  title1: { fontSize: 28, lineHeight: 34, letterSpacing: -0.6, fontWeight: '700' },
-  title2: { fontSize: 22, lineHeight: 28, letterSpacing: -0.4, fontWeight: '700' },
-  title3: { fontSize: 20, lineHeight: 25, letterSpacing: -0.3, fontWeight: '600' },
-  headline: { fontSize: 17, lineHeight: 22, letterSpacing: -0.2, fontWeight: '600' },
-  body: { fontSize: 17, lineHeight: 24, letterSpacing: -0.1, fontWeight: '400' },
-  callout: { fontSize: 16, lineHeight: 22, letterSpacing: -0.1, fontWeight: '500' },
-  subhead: { fontSize: 15, lineHeight: 20, letterSpacing: 0, fontWeight: '400' },
-  footnote: { fontSize: 13, lineHeight: 18, letterSpacing: 0.1, fontWeight: '400' },
-  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.2, fontWeight: '500' },
+  largeTitle: { fontSize: 34, lineHeight: 41, letterSpacing: 0.37, fontWeight: '700' },
+  title1: { fontSize: 28, lineHeight: 34, letterSpacing: 0.36, fontWeight: '700' },
+  title2: { fontSize: 22, lineHeight: 28, letterSpacing: 0.35, fontWeight: '700' },
+  title3: { fontSize: 20, lineHeight: 25, letterSpacing: 0.38, fontWeight: '600' },
+  headline: { fontSize: 17, lineHeight: 22, letterSpacing: -0.41, fontWeight: '600' },
+  body: { fontSize: 17, lineHeight: 22, letterSpacing: -0.41, fontWeight: '400' },
+  callout: { fontSize: 16, lineHeight: 21, letterSpacing: -0.32, fontWeight: '400' },
+  subhead: { fontSize: 15, lineHeight: 20, letterSpacing: -0.24, fontWeight: '400' },
+  footnote: { fontSize: 13, lineHeight: 18, letterSpacing: -0.08, fontWeight: '400' },
+  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0, fontWeight: '400' },
 };
 
 export const fonts = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semibold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extrabold: 'PlusJakartaSans_800ExtraBold',
-  black: 'PlusJakartaSans_800ExtraBold',
-  mono: 'PlusJakartaSans_500Medium',
-  monoBold: 'PlusJakartaSans_700Bold',
+  regular: 'IBMPlexSans_400Regular',
+  medium: 'IBMPlexSans_500Medium',
+  semibold: 'IBMPlexSans_600SemiBold',
+  bold: 'IBMPlexSans_700Bold',
+  extrabold: 'IBMPlexSans_700Bold',
+  black: 'IBMPlexSans_700Bold',
+  mono: 'IBMPlexMono_500Medium',
+  monoBold: 'IBMPlexMono_700Bold',
 };
 
 export const HIT = 44;

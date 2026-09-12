@@ -226,7 +226,7 @@ function makeStyles(colors) {
     profile: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
     hello: {
       color: colors.text,
-      fontFamily: fonts.extrabold,
+      fontFamily: fonts.bold,
       fontSize: 28,
       letterSpacing: -0.8,
       textTransform: 'capitalize',

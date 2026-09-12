@@ -300,7 +300,7 @@ function makeStyles(colors) {
   return StyleSheet.create({
   sticky: { backgroundColor: colors.background, paddingBottom: 8 },
   formHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  pageTitle: { color: colors.text, fontFamily: fonts.extrabold, fontSize: 28, letterSpacing: -0.6 },
+  pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
   sub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
   plusBtn: {
     width: 40,
