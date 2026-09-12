@@ -84,10 +84,9 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   settleRef.current = settle;
 
   useLayoutEffect(() => {
-    if (!hideTabBar) return undefined;
     setTabBarHidden(!!activeInput || mounted);
     return () => setTabBarHidden(false);
-  }, [activeInput, mounted, setTabBarHidden, hideTabBar]);
+  }, [activeInput, mounted, setTabBarHidden]);
 
   const keypadOpen = !!activeInput;
   useEffect(() => {

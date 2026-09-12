@@ -429,6 +429,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 </Text>
               </View>
             )}
+            {searchQuery.length > 0 && (
             <View style={styles.customBox}>
               <Select
                 value={newMuscleGroup}
@@ -454,6 +455,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 )}
               </Pressable>
             </View>
+            )}
           </ScrollView>
         </View>
       </Modal>
