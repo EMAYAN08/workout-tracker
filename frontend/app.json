@@ -31,7 +31,7 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
       "backgroundColor": "#070707",
-      "themeColor": "#FF4F2E"
+      "themeColor": "#4A7C9B"
     },
     "plugins": [
       "expo-font",

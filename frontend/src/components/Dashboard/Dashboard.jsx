@@ -11,14 +11,14 @@ import WorkoutDurationChart from './WorkoutDurationChart';
 import StrengthChart from './StrengthChart';
 import AreaChart from '../charts/AreaChart';
 import { Select } from '../ui/primitives';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 
 const StatCard = ({ icon: Icon, title, value, unit, description, colors, styles }) => {
   const [open, setOpen] = useState(false);
   return (
     <Pressable onPress={() => setOpen(!open)} style={styles.statCard}>
       <View style={styles.statIcon}>
-        <Icon size={14} color={colors.accent} />
+        <Icon size={14} color={colors.textMuted} />
       </View>
       <Text style={styles.statTitle}>{title}</Text>
       {open ? (
@@ -237,7 +237,7 @@ export default function Dashboard({ onMapClick }) {
         />
       </View>
       <View style={[styles.panel, { marginTop: 10 }]}>
-        <AreaChart data={chartData} color={colors.accent} unit={unit} />
+        <AreaChart data={chartData} unit={unit} />
       </View>
 
       <View style={styles.sectionHead}>
@@ -256,7 +256,7 @@ export default function Dashboard({ onMapClick }) {
         />
       </View>
       <View style={[styles.panel, { marginTop: 10 }]}>
-        <AreaChart data={weightChartData} color={colors.accent} unit={unit} />
+        <AreaChart data={weightChartData} unit={unit} />
       </View>
 
       <WorkoutDurationChart />
@@ -294,7 +294,7 @@ export default function Dashboard({ onMapClick }) {
             <Text style={styles.backupText}>Export</Text>
           </Pressable>
           <Pressable disabled={busy} onPress={onImport} style={[styles.backupBtnGhost, busy && { opacity: 0.5 }]}>
-            <Upload size={16} color={colors.accent} />
+            <Upload size={16} color={colors.text} />
             <Text style={styles.backupGhostText}>Import</Text>
           </Pressable>
         </View>
@@ -326,13 +326,7 @@ function makeStyles(colors) {
       minHeight: 104,
     },
     statIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: radius.sm,
-      alignItems: 'center',
-      justifyContent: 'center',
       marginBottom: 10,
-      backgroundColor: colors.accentSoft,
     },
     statTitle: {
       color: colors.textMuted,
@@ -351,7 +345,13 @@ function makeStyles(colors) {
       alignItems: 'center',
       marginTop: 8,
     },
-    sectionTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, letterSpacing: -0.3 },
+    sectionTitle: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
     panel: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
@@ -371,8 +371,8 @@ function makeStyles(colors) {
     backupRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
     backupBtn: {
       flex: 1,
-      minHeight: 44,
-      borderRadius: radius.md,
+      minHeight: HIT,
+      borderRadius: radius.sm,
       backgroundColor: colors.accent,
       flexDirection: 'row',
       alignItems: 'center',
@@ -382,16 +382,16 @@ function makeStyles(colors) {
     backupText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
     backupBtnGhost: {
       flex: 1,
-      minHeight: 44,
-      borderRadius: radius.md,
-      backgroundColor: colors.accentSoft,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: colors.accentBorder,
+      borderColor: colors.borderStrong,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
     },
-    backupGhostText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 15 },
+    backupGhostText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
   });
 }

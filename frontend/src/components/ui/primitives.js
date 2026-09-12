@@ -19,8 +19,8 @@ export function Panel({ children, style, onPress }) {
   const panelStyle = [
     {
       backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderRadius: radius.sm,
+      borderWidth: 1,
       borderColor: colors.border,
     },
     style,
@@ -32,7 +32,7 @@ export function Panel({ children, style, onPress }) {
           haptic('light');
           onPress();
         }}
-        style={({ pressed }) => [panelStyle, pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
+        style={({ pressed }) => [panelStyle, pressed && { opacity: 0.92 }]}
       >
         {children}
       </Pressable>
@@ -64,11 +64,11 @@ export function Button({
   const { colors } = useTheme();
   const variants = {
     primary: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
-    solid: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
-    ghost: { bg: 'transparent', border: 'transparent', fg: colors.accent },
+    solid: { bg: colors.text, border: colors.text, fg: colors.background },
+    ghost: { bg: 'transparent', border: 'transparent', fg: colors.text },
     outline: { bg: 'transparent', border: colors.borderStrong, fg: colors.text },
-    danger: { bg: colors.dangerSoft, border: colors.danger + '33', fg: colors.danger },
-    soft: { bg: colors.accentSoft, border: colors.accentBorder, fg: colors.accent },
+    danger: { bg: 'transparent', border: colors.danger, fg: colors.danger },
+    soft: { bg: colors.surface2, border: colors.border, fg: colors.text },
   };
   const v = variants[variant] || variants.primary;
 
@@ -82,7 +82,7 @@ export function Button({
       disabled={disabled || loading}
       style={({ pressed }) => [
         {
-          borderRadius: radius.md,
+          borderRadius: radius.sm,
           paddingVertical: 12,
           paddingHorizontal: 16,
           alignItems: 'center',
@@ -94,7 +94,7 @@ export function Button({
           borderWidth: variant === 'ghost' ? 0 : 1,
           borderColor: v.border,
         },
-        pressed && { transform: [{ scale: 0.96 }], opacity: 0.88 },
+        pressed && { opacity: 0.82 },
         (disabled || loading) && { opacity: 0.4 },
         style,
       ]}
@@ -102,7 +102,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={v.fg} />
       ) : typeof children === 'string' ? (
-        <Text style={[{ fontFamily: fonts.semibold, fontSize: 17, color: v.fg, letterSpacing: -0.4 }, textStyle]}>
+        <Text style={[{ fontFamily: fonts.semibold, fontSize: 16, color: v.fg, letterSpacing: -0.2 }, textStyle]}>
           {children}
         </Text>
       ) : (
@@ -120,9 +120,9 @@ export function Input({ style, ...props }) {
       style={[
         {
           backgroundColor: colors.surface2,
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: 1,
           borderColor: colors.border,
-          borderRadius: radius.md,
+          borderRadius: radius.sm,
           paddingHorizontal: 14,
           paddingVertical: 12,
           minHeight: HIT,
@@ -141,12 +141,11 @@ export function Input({ style, ...props }) {
 
 export function Spinner({ size = 24, color }) {
   const { colors } = useTheme();
-  return <ActivityIndicator size={size} color={color || colors.accent} />;
+  return <ActivityIndicator size={size} color={color || colors.text} />;
 }
 
 export function Badge({ children, color, style }) {
   const { colors } = useTheme();
-  const c = color || colors.accent;
   return (
     <View
       style={[
@@ -154,7 +153,9 @@ export function Badge({ children, color, style }) {
           paddingHorizontal: 8,
           paddingVertical: 3,
           borderRadius: radius.xs,
-          backgroundColor: colors.accentSoft,
+          backgroundColor: colors.surface2,
+          borderWidth: 1,
+          borderColor: colors.border,
         },
         style,
       ]}
@@ -163,8 +164,9 @@ export function Badge({ children, color, style }) {
         style={{
           fontSize: 11,
           fontFamily: fonts.semibold,
-          letterSpacing: 0.2,
-          color: c,
+          letterSpacing: 0.4,
+          color: color || colors.textMuted,
+          textTransform: 'uppercase',
         }}
       >
         {children}
@@ -174,7 +176,6 @@ export function Badge({ children, color, style }) {
 }
 
 export function IconBtn({ onPress, children, style, disabled }) {
-  const { colors } = useTheme();
   return (
     <Pressable
       onPress={() => {
@@ -190,9 +191,9 @@ export function IconBtn({ onPress, children, style, disabled }) {
           height: HIT,
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: radius.md,
+          borderRadius: radius.sm,
         },
-        pressed && { opacity: 0.55, transform: [{ scale: 0.96 }] },
+        pressed && { opacity: 0.55 },
         disabled && { opacity: 0.3 },
         style,
       ]}
@@ -217,7 +218,9 @@ export function Select({ value, options, onChange, style }) {
         style={[
           {
             backgroundColor: colors.surface2,
-            borderRadius: radius.md,
+            borderRadius: radius.sm,
+            borderWidth: 1,
+            borderColor: colors.border,
             paddingHorizontal: 12,
             paddingVertical: 10,
             minHeight: HIT,
@@ -251,8 +254,8 @@ export function Select({ value, options, onChange, style }) {
           <View
             style={{
               backgroundColor: colors.surface,
-              borderTopLeftRadius: radius.xl,
-              borderTopRightRadius: radius.xl,
+              borderTopWidth: 1,
+              borderColor: colors.borderStrong,
               maxHeight: '52%',
               paddingBottom: 20,
               paddingTop: 8,
@@ -261,8 +264,7 @@ export function Select({ value, options, onChange, style }) {
             <View
               style={{
                 width: 36,
-                height: 5,
-                borderRadius: 3,
+                height: 3,
                 backgroundColor: colors.borderStrong,
                 alignSelf: 'center',
                 marginBottom: 8,
@@ -284,12 +286,12 @@ export function Select({ value, options, onChange, style }) {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    backgroundColor: opt.value === value ? colors.accentSoft : 'transparent',
+                    backgroundColor: opt.value === value ? colors.surface2 : 'transparent',
                   }}
                 >
                   <Text
                     style={{
-                      color: opt.value === value ? colors.accent : colors.text,
+                      color: colors.text,
                       fontFamily: opt.value === value ? fonts.semibold : fonts.regular,
                       fontSize: 17,
                       textTransform: 'capitalize',

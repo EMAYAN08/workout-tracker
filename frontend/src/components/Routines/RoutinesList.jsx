@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { Play, Plus, Edit2, Trash2, ClipboardList } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
@@ -39,19 +39,19 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
       <View style={styles.head}>
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClipboardList size={24} color={colors.primary} />
+            <ClipboardList size={24} color={colors.text} />
             <Text style={styles.title}>My Routines</Text>
           </View>
           <Text style={styles.sub}>Build templates for faster logging</Text>
         </View>
         <Pressable onPress={onCreateNew} style={styles.plus}>
-          <Plus size={24} color={colors.primary} strokeWidth={3} />
+          <Plus size={24} color={colors.text} strokeWidth={3} />
         </Pressable>
       </View>
 
       {routines.length === 0 ? (
         <View style={styles.empty}>
-          <ClipboardList size={40} color="rgba(161,161,170,0.3)" />
+          <ClipboardList size={40} color={colors.textSubtle} />
           <Text style={styles.emptyTitle}>No routines yet</Text>
           <Text style={styles.emptySub}>Create your first routine to easily start a structured workout.</Text>
         </View>
@@ -65,10 +65,10 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable onPress={() => handleStartRoutine(routine)} style={styles.actPlay}>
-                  <Play size={16} color={colors.accent} fill={colors.accent} />
+                  <Play size={16} color={colors.accentFg} fill={colors.accentFg} />
                 </Pressable>
                 <Pressable onPress={() => onEdit(routine)} style={styles.actEdit}>
-                  <Edit2 size={16} color={colors.accent} />
+                  <Edit2 size={16} color={colors.text} />
                 </Pressable>
                 <Pressable
                   onPress={() =>
@@ -106,16 +106,18 @@ function makeStyles(colors) {
   title: { color: colors.text, fontFamily: fonts.bold, fontSize: 28, letterSpacing: 0.36 },
   sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
   plus: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
   empty: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 28,
@@ -125,7 +127,7 @@ function makeStyles(colors) {
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: 4 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,
@@ -136,37 +138,44 @@ function makeStyles(colors) {
   cardName: { color: colors.text, fontFamily: fonts.black, fontSize: 17 },
   cardMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 4 },
   actPlay: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accentBorder,
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actEdit: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: colors.accentSoft,
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.accentBorder,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actDel: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(239,68,68,0.1)',
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.2)',
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: colors.accentSoft,
+    borderRadius: radius.xs,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.accentBorder,
+    borderColor: colors.border,
   },
   chipText: {
-    color: colors.accent,
+    color: colors.textMuted,
     fontSize: 10,
     fontFamily: fonts.black,
     textTransform: 'uppercase',
@@ -174,4 +183,3 @@ function makeStyles(colors) {
   },
 });
 }
-

@@ -15,7 +15,7 @@ const ExerciseImage = ({ src }) => {
   if (!src || error) {
     return (
       <View style={styles.thumbFallback}>
-        <Dumbbell size={24} color={colors.accent} />
+        <Dumbbell size={24} color={colors.textMuted} />
       </View>
     );
   }
@@ -71,24 +71,24 @@ export default function WorkoutDetailView({ date, onBack }) {
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
-      <Pressable onPress={onBack} style={styles.backPill}>
-        <ChevronLeft size={16} color={colors.text} />
-        <Text style={styles.backPillText}>Back</Text>
+      <Pressable onPress={onBack} style={styles.back}>
+        <ChevronLeft size={16} color={colors.textMuted} />
+        <Text style={styles.backText}>Back</Text>
       </Pressable>
       <Text style={styles.title}>{displayDate}</Text>
       <View style={styles.meta}>
         <View style={styles.metaItem}>
-          <Clock size={16} color={colors.primary} />
+          <Clock size={16} color={colors.textMuted} />
           <Text style={styles.metaText}>{Math.round(totalDuration / 60)} mins</Text>
         </View>
         <View style={styles.metaItem}>
-          <Activity size={16} color={colors.primary} />
+          <Activity size={16} color={colors.textMuted} />
           <Text style={styles.metaText}>
             {Math.round(totalVolume).toLocaleString()} {unit}
           </Text>
         </View>
         <View style={styles.metaItem}>
-          <Dumbbell size={16} color={colors.primary} />
+          <Dumbbell size={16} color={colors.textMuted} />
           <Text style={styles.metaText}>
             {dayWorkouts.reduce((acc, wk) => acc + wk.exercises.length, 0)} Exercises
           </Text>
@@ -108,7 +108,7 @@ export default function WorkoutDetailView({ date, onBack }) {
           <View style={{ padding: 16, gap: 20 }}>
             {workout.exercises.length === 0 ? (
               <View style={styles.restBox}>
-                <Moon size={28} color={colors.accent} />
+                <Moon size={28} color={colors.textMuted} />
                 <Text style={styles.restTitle}>Active Recovery Logged</Text>
                 <Text style={styles.restSub}>
                   You took a well-deserved rest day to let your muscles recover and grow.
@@ -157,27 +157,15 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   emptyWrap: { flex: 1, padding: 16 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
-  backText: { color: colors.textMuted, fontFamily: fonts.bold },
-  backPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surfaceLight,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 99,
-    marginBottom: 16,
-  },
-  backPillText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, paddingVertical: 8 },
+  backText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
   title: { color: colors.text, fontFamily: fonts.black, fontSize: 24, marginBottom: 10 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
@@ -197,19 +185,19 @@ function makeStyles(colors) {
   restBox: {
     alignItems: 'center',
     padding: 20,
-    backgroundColor: colors.accentSoft,
-    borderRadius: 16,
+    backgroundColor: colors.surface2,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.accentBorder,
+    borderColor: colors.border,
     gap: 8,
   },
-  restTitle: { color: colors.accent, fontFamily: fonts.bold, fontSize: 16 },
+  restTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
   restSub: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
-  thumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: colors.surfaceLight },
+  thumb: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surfaceLight },
   thumbFallback: {
     width: 48,
     height: 48,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
     borderColor: colors.border,
@@ -227,7 +215,7 @@ function makeStyles(colors) {
   },
   table: {
     backgroundColor: colors.surfaceLight,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     padding: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -251,4 +239,3 @@ function makeStyles(colors) {
   unit: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular },
 });
 }
-

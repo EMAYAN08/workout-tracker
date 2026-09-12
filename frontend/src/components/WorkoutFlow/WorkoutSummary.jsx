@@ -15,7 +15,7 @@ import {
   Moon,
 } from 'lucide-react-native';
 import { convertWeight } from '../../utils/calculations';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const formatTime = (seconds) => {
@@ -85,21 +85,14 @@ export default function WorkoutSummary({ data, onClose, unit }) {
           <X size={18} color={colors.textMuted} />
         </Pressable>
         <Pressable onPress={handleShare} style={[styles.cornerBtn, { right: 12 }]}>
-          <Share2 size={18} color={colors.primary} />
+          <Share2 size={18} color={colors.textMuted} />
         </Pressable>
 
-        <View
-          style={[
-            styles.iconBox,
-            isRest
-              ? { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder }
-              : { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder },
-          ]}
-        >
+        <View style={styles.iconBox}>
           {isRest ? (
-            <BatteryCharging size={32} color={colors.accent} />
+            <BatteryCharging size={32} color={colors.textMuted} />
           ) : (
-            <CheckCircle size={32} color={colors.accent} />
+            <CheckCircle size={32} color={colors.textMuted} />
           )}
         </View>
         <Text style={styles.title}>{isRest ? 'Rest Day Logged' : 'Workout Complete'}</Text>
@@ -114,12 +107,12 @@ export default function WorkoutSummary({ data, onClose, unit }) {
           {!isRest ? (
             <>
               <View style={styles.stat}>
-                <Flame size={18} color={colors.accent} />
+                <Flame size={18} color={colors.textMuted} />
                 <Text style={styles.statVal}>{totalSets}</Text>
                 <Text style={styles.statLbl}>Sets</Text>
               </View>
               <View style={styles.stat}>
-                <Weight size={18} color={colors.primary} />
+                <Weight size={18} color={colors.textMuted} />
                 <Text style={styles.statVal} numberOfLines={1}>
                   {convertWeight(totalVolume, data.unitSaved, unit)}
                 </Text>
@@ -128,9 +121,9 @@ export default function WorkoutSummary({ data, onClose, unit }) {
             </>
           ) : (
             <View style={styles.restStat}>
-              <Coffee size={18} color={colors.accent} />
+              <Coffee size={18} color={colors.textMuted} />
               <Text style={styles.restStatText}>Rest & Recover</Text>
-              <Moon size={18} color={colors.accent} />
+              <Moon size={18} color={colors.textMuted} />
             </View>
           )}
         </View>
@@ -184,7 +177,7 @@ function makeStyles(colors) {
     width: '100%',
     maxWidth: 380,
     backgroundColor: colors.surface,
-    borderRadius: 24,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     padding: 24,
@@ -195,17 +188,22 @@ function makeStyles(colors) {
     position: 'absolute',
     top: 12,
     zIndex: 2,
-    padding: 8,
-    borderRadius: 99,
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
     backgroundColor: colors.surface2,
   },
   iconBox: {
     width: 64,
     height: 64,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
     marginTop: 12,
   },
   title: {
@@ -216,7 +214,7 @@ function makeStyles(colors) {
     textAlign: 'center',
   },
   routine: {
-    color: colors.primary,
+    color: colors.textMuted,
     fontFamily: fonts.bold,
     fontSize: 12,
     letterSpacing: 2,
@@ -229,7 +227,7 @@ function makeStyles(colors) {
     backgroundColor: colors.surface2,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 12,
     alignItems: 'center',
     gap: 6,
@@ -248,13 +246,13 @@ function makeStyles(colors) {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface2,
     borderWidth: 1,
-    borderColor: colors.accentBorder,
-    borderRadius: 16,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     padding: 12,
   },
-  restStatText: { color: colors.accent, fontFamily: fonts.black, fontSize: 13, textTransform: 'uppercase' },
+  restStatText: { color: colors.text, fontFamily: fonts.black, fontSize: 13, textTransform: 'uppercase' },
   sectionLbl: {
     color: colors.textMuted,
     fontSize: 10,
@@ -267,7 +265,7 @@ function makeStyles(colors) {
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     backgroundColor: colors.surface2,
     borderWidth: 1,
     borderColor: colors.border,
@@ -278,7 +276,7 @@ function makeStyles(colors) {
     paddingTop: 16,
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -288,8 +286,8 @@ function makeStyles(colors) {
   doneBtn: {
     marginTop: 8,
     width: '100%',
-    minHeight: 48,
-    borderRadius: 12,
+    minHeight: HIT,
+    borderRadius: radius.sm,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -297,4 +295,3 @@ function makeStyles(colors) {
   doneText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
 });
 }
-

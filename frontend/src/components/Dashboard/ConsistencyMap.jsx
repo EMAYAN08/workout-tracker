@@ -12,7 +12,7 @@ import {
   subMonths,
   isAfter,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Target, Flame, Share2 } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flame, Share2 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -67,7 +67,7 @@ export default function ConsistencyMap({ onMapClick }) {
     return map;
   }, [workoutHistory]);
 
-  const { displayMonths, monthPairs, activeDaysInChunk, score, previousScore, yearLabel } = useMemo(() => {
+  const { displayMonths, monthPairs, activeDaysInChunk, score, yearLabel } = useMemo(() => {
     const now = startOfDay(new Date());
     const pairs = [];
     for (let i = 0; i < 6; i++) {
@@ -121,10 +121,6 @@ export default function ConsistencyMap({ onMapClick }) {
     };
   }, [countsMap, chunkOffset]);
 
-  let trendColor = colors.textMuted;
-  if (score > previousScore) trendColor = colors.accent;
-  else if (score < previousScore) trendColor = colors.danger;
-
   const handleShare = async () => {
     try {
       if (mapRef.current && Platform.OS !== 'web') {
@@ -167,9 +163,9 @@ export default function ConsistencyMap({ onMapClick }) {
               </Pressable>
             </View>
             <View style={styles.metaRow}>
-              <View style={[styles.scorePill, { borderColor: trendColor + '4D', backgroundColor: trendColor + '26' }]}>
-                <Flame size={14} color={trendColor} />
-                <Text style={[styles.scoreText, { color: trendColor }]}>Score: {score}%</Text>
+              <View style={styles.scorePill}>
+                <Flame size={14} color={colors.textMuted} />
+                <Text style={styles.scoreText}>Score: {score}%</Text>
               </View>
               <Text style={styles.daysText}>{activeDaysInChunk} Days</Text>
             </View>
@@ -237,7 +233,13 @@ function makeStyles(colors) {
     },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    title: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, letterSpacing: -0.3 },
+    title: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
     scorePill: {
       flexDirection: 'row',
@@ -247,8 +249,10 @@ function makeStyles(colors) {
       paddingVertical: 4,
       borderRadius: radius.xs,
       borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
     },
-    scoreText: { fontFamily: fonts.semibold, fontSize: 11, textTransform: 'uppercase' },
+    scoreText: { fontFamily: fonts.semibold, fontSize: 11, textTransform: 'uppercase', color: colors.textMuted },
     daysText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.medium },
     nav: {
       flexDirection: 'row',
@@ -279,6 +283,6 @@ function makeStyles(colors) {
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
-    cell: { width: 14, height: 14, borderRadius: 2 },
+    cell: { width: 14, height: 14, borderRadius: 0 },
   });
 }

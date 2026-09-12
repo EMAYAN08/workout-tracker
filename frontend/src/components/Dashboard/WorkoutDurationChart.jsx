@@ -64,7 +64,7 @@ export default function WorkoutDurationChart() {
                   onPress={() => setDisplayUnit(u)}
                   style={[styles.toggleBtn, displayUnit === u && styles.toggleOn]}
                 >
-                  <Text style={[styles.toggleText, displayUnit === u && { color: colors.accentFg }]}>
+                  <Text style={[styles.toggleText, displayUnit === u && styles.toggleTextOn]}>
                     {u === 'mins' ? 'Minutes' : 'Hours'}
                   </Text>
                 </Pressable>
@@ -85,7 +85,6 @@ export default function WorkoutDurationChart() {
       <View style={[styles.panel, { marginTop: 10, paddingVertical: 8 }]}>
         <AreaChart
           data={chartData}
-          color={colors.accent}
           unit={displayUnit}
           averageLine={averageValue}
           emptySubtitle="Log more workouts to see your duration trends."
@@ -104,7 +103,13 @@ function makeStyles(colors) {
       marginBottom: 8,
       marginTop: 8,
     },
-    title: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, letterSpacing: -0.3 },
+    title: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
     panel: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
@@ -130,8 +135,9 @@ function makeStyles(colors) {
       padding: 3,
     },
     toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.sm },
-    toggleOn: { backgroundColor: colors.accent },
+    toggleOn: { backgroundColor: colors.text },
     toggleText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12 },
+    toggleTextOn: { color: colors.background },
     avg: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 18 },
     avgUnit: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.regular },
   });

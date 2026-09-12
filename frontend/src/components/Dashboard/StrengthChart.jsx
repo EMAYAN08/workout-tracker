@@ -52,13 +52,17 @@ function describeArc(x, y, innerRadius, outerRadius, startAngle, endAngle) {
 
 export default function StrengthChart() {
   const { workoutHistory, unit } = useWorkout();
-  const { colors, muscleColors, isDark } = useTheme();
+  const { colors, muscleColors } = useTheme();
   const styles = makeStyles(colors);
   const CATEGORIES = CATEGORY_META.map((c) => ({ ...c, color: muscleColors[c.id] }));
   const emptyFill = colors.chartEmpty;
-  const ringFills = isDark
-    ? ['#1E3A5F', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA']
-    : ['#D6E9FF', '#A8D1FF', '#6BB3FF', '#007AFF', '#0055D4'];
+  const ringFills = [
+    colors.surface3,
+    colors.borderStrong,
+    colors.textSubtle,
+    colors.textMuted,
+    colors.text,
+  ];
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');
 
@@ -206,7 +210,7 @@ export default function StrengthChart() {
                   <TSpan
                     x={adjustedTx}
                     dy="-0.4em"
-                    fill={cat.level > 0 ? colors.accent : colors.textMuted}
+                    fill={colors.textMuted}
                     fontSize="12"
                     fontWeight="600"
                   >
@@ -228,10 +232,11 @@ export default function StrengthChart() {
 function makeStyles(colors) {
   return StyleSheet.create({
     heading: {
-      color: colors.text,
+      color: colors.textSubtle,
       fontFamily: fonts.semibold,
-      fontSize: 16,
-      letterSpacing: -0.3,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
       marginBottom: 8,
     },
     panel: {

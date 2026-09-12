@@ -29,7 +29,7 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import { getPreviousPerformance } from '../../utils/calculations';
 import CustomNumpad from './CustomNumpad';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { Select } from '../ui/primitives';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -112,26 +112,26 @@ export default function ActiveWorkout() {
         <View>
           <Text style={styles.timerLabel}>Workout</Text>
           <View style={styles.timerRow}>
-            <Timer size={14} color={colors.primary} />
+            <Timer size={14} color={colors.textMuted} />
             <Text style={styles.timerValue}>{formatTime(workoutDuration)}</Text>
           </View>
         </View>
         {playingSet ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.timerLabel, { color: colors.accent }]}>Set Time</Text>
+            <Text style={styles.timerLabel}>Set Time</Text>
             <View style={styles.timerRow}>
-              <Timer size={14} color={colors.accent} />
-              <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(setTimer)}</Text>
+              <Timer size={14} color={colors.textMuted} />
+              <Text style={styles.timerValue}>{formatTime(setTimer)}</Text>
             </View>
           </View>
         ) : restTimer > 0 ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.timerLabel, { color: colors.accent }]}>Rest</Text>
+            <Text style={styles.timerLabel}>Rest</Text>
             <View style={styles.timerRow}>
-              <Timer size={14} color={colors.accent} />
+              <Timer size={14} color={colors.textMuted} />
               <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restTimer)}</Text>
               <Pressable onPress={stopRestTimer} style={styles.stopRest}>
-                <X size={12} color={colors.accent} strokeWidth={3} />
+                <X size={12} color={colors.textMuted} strokeWidth={3} />
               </Pressable>
             </View>
           </View>
@@ -144,7 +144,7 @@ export default function ActiveWorkout() {
       >
         {activeWorkout.exercises.length === 0 && (
           <View style={styles.restCard}>
-            <Moon size={28} color={colors.accent} style={{ marginBottom: 6 }} />
+            <Moon size={28} color={colors.textMuted} style={{ marginBottom: 6 }} />
             <Text style={styles.restTitle}>Rest Day Logging</Text>
             <Text style={styles.restSub}>Tap "Log Rest Day" above to record a recovery day.</Text>
           </View>
@@ -171,7 +171,7 @@ export default function ActiveWorkout() {
                 onPress={() => removeActiveExercise(idx)}
                 style={styles.iconHit}
               >
-                <Trash2 size={16} color="rgba(239,68,68,0.8)" />
+                <Trash2 size={16} color={colors.danger} />
               </Pressable>
               {isExpanded ? (
                 <ChevronUp size={18} color={colors.textMuted} />
@@ -194,15 +194,7 @@ export default function ActiveWorkout() {
                     {ex.name}
                   </Text>
                   <Text style={styles.exMeta}>
-                    <Text
-                      style={
-                        completedSetsCount === ex.sets.length && ex.sets.length > 0
-                          ? { color: colors.accent }
-                          : null
-                      }
-                    >
-                      {completedSetsCount}
-                    </Text>
+                    {completedSetsCount}
                     {' / '}
                     {ex.sets.length} Sets Completed
                   </Text>
@@ -220,7 +212,7 @@ export default function ActiveWorkout() {
                   <Text style={styles.exName}>{ex.name}</Text>
                   {prevPerformance ? (
                     <Text style={styles.exMeta}>
-                      <Text style={{ color: colors.primary, fontFamily: fonts.bold }}>
+                      <Text style={{ color: colors.text, fontFamily: fonts.bold }}>
                         PR: {prevPerformance.allTimePR} {unit}
                       </Text>
                       {'  |  '}Last: {prevPerformance.lastSessionHeaviest} {unit}
@@ -237,7 +229,7 @@ export default function ActiveWorkout() {
                 <Text style={[styles.setHeadText, { width: 36, textAlign: 'center' }]}>Set</Text>
                 <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>kg/lbs</Text>
                 <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>Reps</Text>
-                <View style={{ width: 64, alignItems: 'center' }}>
+                <View style={{ width: 88, alignItems: 'center' }}>
                   <Check size={16} color={colors.textMuted} />
                 </View>
               </View>
@@ -245,13 +237,13 @@ export default function ActiveWorkout() {
               {ex.sets.map((set, sIdx) => {
                 if (set.completedAt) {
                   return (
-                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.successSoft }]}>
+                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.surface2 }]}>
                       <Text style={styles.setIdx}>{sIdx + 1}</Text>
                       <Text style={styles.setVal}>{String(set.weight)}</Text>
                       <Text style={styles.setVal}>{String(set.reps)}</Text>
                       <View style={styles.setActions}>
                         <Pressable onPress={() => uncompleteSet(idx, sIdx)} style={styles.iconHit}>
-                          <X size={14} color="rgba(239,68,68,0.7)" />
+                          <X size={14} color={colors.danger} />
                         </Pressable>
                         <View style={styles.doneMark}>
                           <Check size={18} color={colors.background} strokeWidth={3} />
@@ -270,7 +262,7 @@ export default function ActiveWorkout() {
                       onPress={() => setActiveInput({ eIdx: idx, sIdx, field: 'weight' })}
                       style={[styles.cell, wActive && styles.cellActive]}
                     >
-                      <Text style={[styles.cellText, !set.weight && { color: 'rgba(161,161,170,0.5)' }]}>
+                      <Text style={[styles.cellText, !set.weight && { color: colors.textSubtle }]}>
                         {set.weight || '-'}
                       </Text>
                     </Pressable>
@@ -278,13 +270,13 @@ export default function ActiveWorkout() {
                       onPress={() => setActiveInput({ eIdx: idx, sIdx, field: 'reps' })}
                       style={[styles.cell, rActive && styles.cellActive]}
                     >
-                      <Text style={[styles.cellText, !set.reps && { color: 'rgba(161,161,170,0.5)' }]}>
+                      <Text style={[styles.cellText, !set.reps && { color: colors.textSubtle }]}>
                         {set.reps || '-'}
                       </Text>
                     </Pressable>
                     <View style={styles.setActions}>
                       <Pressable onPress={() => removeSet(idx, sIdx)} style={styles.iconHit}>
-                        <Trash2 size={14} color="rgba(239,68,68,0.6)" />
+                        <Trash2 size={14} color={colors.danger} />
                       </Pressable>
                       {isPlaying ? (
                         <Pressable
@@ -297,7 +289,7 @@ export default function ActiveWorkout() {
                         </Pressable>
                       ) : (
                         <Pressable onPress={() => startSet(idx, sIdx)} style={styles.playBtn}>
-                          <Play size={16} color={colors.primary} strokeWidth={3} />
+                          <Play size={16} color={colors.text} strokeWidth={3} />
                         </Pressable>
                       )}
                     </View>
@@ -307,7 +299,7 @@ export default function ActiveWorkout() {
 
               <View style={styles.addRow}>
                 <Pressable onPress={() => addSetToExercise(idx)} style={styles.addSetBtn}>
-                  <Plus size={16} color={colors.primary} />
+                  <Plus size={16} color={colors.text} />
                   <Text style={styles.addSetText}>New Set</Text>
                 </Pressable>
                 {idx < activeWorkout.exercises.length - 1 && (
@@ -324,7 +316,7 @@ export default function ActiveWorkout() {
         })}
 
         <Pressable onPress={() => setIsSearching(true)} style={styles.addExBtn}>
-          <Plus size={20} color={colors.primary} />
+          <Plus size={20} color={colors.text} />
           <Text style={styles.addExText}>Add Exercise</Text>
         </Pressable>
       </ScrollView>
@@ -354,7 +346,7 @@ export default function ActiveWorkout() {
                   {ex.gifUrl ? (
                     <Image source={{ uri: ex.gifUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   ) : (
-                    <Dumbbell size={24} color={colors.primary} />
+                    <Dumbbell size={24} color={colors.textMuted} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -459,27 +451,27 @@ function makeStyles(colors) {
     marginBottom: 2,
   },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  timerValue: { color: colors.primary, fontFamily: fonts.bold, fontSize: 16 },
+  timerValue: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
   stopRest: {
     marginLeft: 4,
     padding: 4,
-    borderRadius: 99,
-    backgroundColor: colors.accentSoft,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface2,
   },
   restCard: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.accentBorder,
-    borderRadius: 16,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
     padding: 16,
     alignItems: 'center',
     marginBottom: 12,
   },
-  restTitle: { color: colors.accent, fontFamily: fonts.black, fontSize: 18 },
-  restSub: { color: colors.accent, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center', marginTop: 4 },
+  restTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 18 },
+  restSub: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center', marginTop: 4 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 12,
@@ -488,14 +480,14 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 12,
   },
-  cardExpanded: { borderColor: colors.accentBorder },
-  thumb: { width: 48, height: 48, borderRadius: 10, backgroundColor: colors.surface2 },
+  cardExpanded: { borderColor: colors.accent },
+  thumb: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface2 },
   thumbFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceLight },
   exName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
   exMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 2 },
   exHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 8 },
   rowBtns: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  iconHit: { padding: 10, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  iconHit: { padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center' },
   setHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8 },
   setHeadText: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.bold, textTransform: 'uppercase' },
   setRow: {
@@ -504,7 +496,7 @@ function makeStyles(colors) {
     paddingHorizontal: 8,
     paddingVertical: 6,
     marginBottom: 4,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: colors.surface2,
   },
   setIdx: { width: 36, textAlign: 'center', color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
@@ -512,62 +504,66 @@ function makeStyles(colors) {
   cell: {
     flex: 1,
     marginHorizontal: 4,
-    height: 44,
-    borderRadius: 8,
+    height: HIT,
+    borderRadius: radius.sm,
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cellActive: { borderColor: colors.primary, backgroundColor: colors.accentSoft },
+  cellActive: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
   cellText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
-  setActions: { width: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  setActions: { width: 88, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
   doneMark: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: colors.accentSoft,
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  playReady: { backgroundColor: colors.accentSoft },
+  playReady: { borderColor: colors.accent },
   playDisabled: { backgroundColor: colors.surface },
   addRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 8, marginTop: 12, marginBottom: 4 },
   addSetBtn: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.accentBorder,
+    borderColor: colors.borderStrong,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
-  addSetText: { color: colors.primary, fontFamily: fonts.bold, fontSize: 13 },
+  addSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
   addExBtn: {
     marginTop: 8,
     paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.accentBorder,
+    borderColor: colors.borderStrong,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  addExText: { color: colors.primary, fontFamily: fonts.bold, fontSize: 16 },
+  addExText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
   searchRoot: { flex: 1, backgroundColor: colors.background },
   searchBar: {
     flexDirection: 'row',
@@ -582,7 +578,7 @@ function makeStyles(colors) {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceLight,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -595,9 +591,12 @@ function makeStyles(colors) {
     fontSize: 16,
   },
   searchClose: {
-    padding: 12,
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.surfaceLight,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -607,7 +606,7 @@ function makeStyles(colors) {
     gap: 12,
     padding: 14,
     backgroundColor: colors.surface2,
-    borderRadius: 20,
+    borderRadius: radius.sm,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
@@ -615,8 +614,8 @@ function makeStyles(colors) {
   searchThumb: {
     width: 48,
     height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.accentSoft,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface3,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -624,13 +623,15 @@ function makeStyles(colors) {
   searchName: { color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
   searchMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontFamily: fonts.semibold },
   mgBadge: {
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   mgBadgeText: {
-    color: colors.primary,
+    color: colors.textMuted,
     fontSize: 10,
     fontFamily: fonts.black,
     textTransform: 'uppercase',
@@ -642,7 +643,7 @@ function makeStyles(colors) {
   customBox: {
     marginTop: 8,
     backgroundColor: colors.surfaceLight,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
@@ -652,9 +653,10 @@ function makeStyles(colors) {
   },
   customAdd: {
     flex: 1,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
+    backgroundColor: colors.accent,
+    borderRadius: radius.sm,
     paddingVertical: 14,
+    minHeight: HIT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -663,4 +665,3 @@ function makeStyles(colors) {
   customAddText: { color: colors.accentFg, fontFamily: fonts.bold, fontSize: 13 },
 });
 }
-

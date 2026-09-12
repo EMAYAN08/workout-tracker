@@ -28,7 +28,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
 import { Select } from '../ui/primitives';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
@@ -174,7 +174,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable onPress={handleSave} style={styles.save}>
-              <Save size={16} color={colors.primary} />
+              <Save size={16} color={colors.accentFg} />
               <Text style={styles.saveText}>Save</Text>
             </Pressable>
           </View>
@@ -263,7 +263,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                           onPress={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' })}
                           style={[styles.cell, wOn && styles.cellOn]}
                         >
-                          <Text style={[styles.cellText, !set.weight && { color: 'rgba(161,161,170,0.5)' }]}>
+                          <Text style={[styles.cellText, !set.weight && { color: colors.textSubtle }]}>
                             {set.weight || 'Weight'}
                           </Text>
                         </Pressable>
@@ -271,7 +271,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                           onPress={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' })}
                           style={[styles.cell, rOn && styles.cellOn]}
                         >
-                          <Text style={[styles.cellText, !set.reps && { color: 'rgba(161,161,170,0.5)' }]}>
+                          <Text style={[styles.cellText, !set.reps && { color: colors.textSubtle }]}>
                             {set.reps || 'Reps'}
                           </Text>
                         </Pressable>
@@ -282,7 +282,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                     );
                   })}
                   <Pressable onPress={() => addSet(exIdx)} style={styles.addSet}>
-                    <Plus size={16} color={colors.primary} />
+                    <Plus size={16} color={colors.text} />
                     <Text style={styles.addSetText}>Add Set</Text>
                   </Pressable>
                 </View>
@@ -292,7 +292,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
         })}
 
         <Pressable onPress={() => setIsSearching(true)} style={styles.addEx}>
-          <Plus size={22} color={colors.primary} />
+          <Plus size={22} color={colors.text} />
           <Text style={styles.addExText}>Add Exercise</Text>
         </Pressable>
       </ScrollView>
@@ -322,7 +322,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   {ex.gifUrl ? (
                     <Image source={{ uri: ex.gifUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   ) : (
-                    <Dumbbell size={24} color={colors.primary} />
+                    <Dumbbell size={24} color={colors.textMuted} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -418,23 +418,21 @@ function makeStyles(colors) {
   return StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
-  cancel: { paddingHorizontal: 12, paddingVertical: 8 },
-  cancelText: { color: colors.textMuted, fontFamily: fonts.bold },
+  cancel: { paddingHorizontal: 12, paddingVertical: 8, minHeight: HIT, justifyContent: 'center' },
+  cancelText: { color: colors.text, fontFamily: fonts.bold },
   save: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accentBorder,
+    backgroundColor: colors.accent,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    minHeight: HIT,
+    borderRadius: radius.sm,
   },
-  saveText: { color: colors.primary, fontFamily: fonts.black },
+  saveText: { color: colors.accentFg, fontFamily: fonts.black },
   panel: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,
@@ -452,25 +450,26 @@ function makeStyles(colors) {
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    minHeight: HIT,
     color: colors.text,
     fontFamily: fonts.bold,
     fontSize: 16,
   },
   restHint: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface2,
     borderWidth: 1,
-    borderColor: colors.accentBorder,
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
     padding: 14,
     marginBottom: 10,
   },
-  restHintText: { color: colors.accent, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center' },
+  restHintText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center' },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 10,
@@ -483,11 +482,11 @@ function makeStyles(colors) {
     padding: 12,
     backgroundColor: colors.surface2,
   },
-  thumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface },
+  thumb: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.surface },
   thumbFallback: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.sm,
     backgroundColor: colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -501,12 +500,15 @@ function makeStyles(colors) {
     letterSpacing: 1,
   },
   delEx: {
-    padding: 6,
+    width: HIT,
+    height: HIT,
     marginLeft: 4,
-    backgroundColor: 'rgba(239,68,68,0.1)',
-    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.2)',
+    borderColor: colors.borderStrong,
   },
   setHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   th: {
@@ -523,45 +525,50 @@ function makeStyles(colors) {
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingVertical: 10,
+    minHeight: HIT,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  cellOn: { borderColor: colors.primary, backgroundColor: colors.accentSoft },
+  cellOn: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
   cellText: { color: colors.text, fontFamily: fonts.bold },
   delSet: {
-    width: 32,
-    padding: 6,
+    width: HIT,
+    height: HIT,
     alignItems: 'center',
-    backgroundColor: 'rgba(239,68,68,0.1)',
-    borderRadius: 6,
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: radius.sm,
   },
   addSet: {
     marginTop: 6,
     paddingVertical: 8,
-    backgroundColor: colors.accentSoft,
+    minHeight: HIT,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.1)',
-    borderRadius: 8,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
   },
-  addSetText: { color: colors.primary, fontFamily: fonts.bold, fontSize: 13 },
+  addSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
   addEx: {
     marginTop: 8,
     paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.accentBorder,
+    borderColor: colors.borderStrong,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  addExText: { color: colors.primary, fontFamily: fonts.bold, fontSize: 16 },
+  addExText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
   searchRoot: { flex: 1, backgroundColor: colors.background },
   searchBar: {
     flexDirection: 'row',
@@ -577,16 +584,19 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 8,
     backgroundColor: colors.surfaceLight,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 12,
   },
   searchInput: { flex: 1, color: colors.text, fontFamily: fonts.bold, fontSize: 16, paddingVertical: 12 },
   searchClose: {
-    padding: 12,
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.surfaceLight,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -596,7 +606,7 @@ function makeStyles(colors) {
     gap: 12,
     padding: 14,
     backgroundColor: colors.surface2,
-    borderRadius: 20,
+    borderRadius: radius.sm,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
@@ -604,8 +614,8 @@ function makeStyles(colors) {
   searchThumb: {
     width: 48,
     height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.accentSoft,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface3,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -613,13 +623,15 @@ function makeStyles(colors) {
   searchName: { color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
   searchMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   mgBadge: {
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   mgBadgeText: {
-    color: colors.primary,
+    color: colors.textMuted,
     fontSize: 10,
     fontFamily: fonts.black,
     textTransform: 'uppercase',
@@ -629,7 +641,7 @@ function makeStyles(colors) {
   customBox: {
     marginTop: 8,
     backgroundColor: colors.surfaceLight,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
@@ -639,9 +651,10 @@ function makeStyles(colors) {
   },
   customAdd: {
     flex: 1,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
+    backgroundColor: colors.accent,
+    borderRadius: radius.sm,
     paddingVertical: 14,
+    minHeight: HIT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -649,4 +662,3 @@ function makeStyles(colors) {
   },
 });
 }
-

@@ -5,7 +5,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { Select } from '../ui/primitives';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
@@ -15,7 +15,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
   <View style={styles.card}>
     <Pressable onPress={onToggle} style={styles.cardHead}>
       <View style={styles.cardIcon}>
-        <Settings size={22} color={colors.primary} />
+        <Settings size={22} color={colors.textMuted} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.cardName} numberOfLines={1}>
@@ -233,10 +233,7 @@ export default function CustomExercises() {
       <View style={styles.sticky}>
         <View style={styles.formHead}>
           <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Dumbbell size={24} color={colors.primary} />
-              <Text style={styles.pageTitle}>Custom Exercises</Text>
-            </View>
+            <Text style={styles.pageTitle}>Custom Exercises</Text>
             <Text style={styles.sub}>Create your own exercise</Text>
           </View>
           <Pressable
@@ -248,7 +245,7 @@ export default function CustomExercises() {
             }}
             style={styles.plusBtn}
           >
-            <Plus size={24} color={colors.primary} strokeWidth={3} />
+            <Plus size={24} color={colors.text} strokeWidth={3} />
           </Pressable>
         </View>
         <View style={styles.searchRow}>
@@ -303,10 +300,12 @@ function makeStyles(colors) {
   pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
   sub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
   plusBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -317,14 +316,16 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 8,
     backgroundColor: colors.surface2,
-    borderRadius: 16,
+    borderRadius: radius.sm,
     paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 15, paddingVertical: 12 },
   results: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, marginBottom: 8 },
   card: {
     backgroundColor: colors.surface2,
-    borderRadius: 20,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 8,
@@ -334,20 +335,22 @@ function makeStyles(colors) {
   cardIcon: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface3,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
   cardMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontFamily: fonts.semibold },
   mgBadge: {
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    backgroundColor: 'transparent',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  mgBadgeText: { color: colors.primary, fontSize: 10, fontFamily: fonts.bold, textTransform: 'capitalize' },
+  mgBadgeText: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'capitalize' },
   cardBody: {
     padding: 14,
     borderTopWidth: 1,
@@ -357,9 +360,27 @@ function makeStyles(colors) {
   },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   tinyLbl: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
-  editBtn: { backgroundColor: colors.accentSoft, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
-  editText: { color: colors.accent, fontFamily: fonts.bold, fontSize: 12 },
-  delBtn: { backgroundColor: 'rgba(239,68,68,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  editBtn: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    justifyContent: 'center',
+  },
+  editText: { color: colors.text, fontFamily: fonts.bold, fontSize: 12 },
+  delBtn: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    justifyContent: 'center',
+  },
   delText: { color: colors.danger, fontFamily: fonts.bold, fontSize: 12 },
   setLine: {
     flexDirection: 'row',
@@ -367,7 +388,7 @@ function makeStyles(colors) {
     backgroundColor: colors.surfaceLight,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -387,20 +408,21 @@ function makeStyles(colors) {
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    minHeight: HIT,
     color: colors.text,
     fontFamily: fonts.bold,
     fontSize: 16,
   },
-  cancel: { paddingHorizontal: 14, paddingVertical: 8 },
-  cancelText: { color: colors.textMuted, fontFamily: fonts.bold },
+  cancel: { paddingHorizontal: 14, paddingVertical: 8, minHeight: HIT, justifyContent: 'center' },
+  cancelText: { color: colors.text, fontFamily: fonts.bold },
   save: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    minHeight: HIT,
+    borderRadius: radius.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -412,21 +434,23 @@ function makeStyles(colors) {
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    minHeight: HIT,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  setCellOn: { borderColor: colors.primary, backgroundColor: colors.accentSoft },
+  setCellOn: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
   cellVal: { color: colors.text, fontFamily: fonts.bold },
   addSet: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderStyle: 'solid',
     borderColor: colors.borderStrong,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     paddingVertical: 10,
+    minHeight: HIT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -436,4 +460,3 @@ function makeStyles(colors) {
   addSetText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 12 },
 });
 }
-

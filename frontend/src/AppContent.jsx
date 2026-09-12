@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Activity,
   LayoutDashboard,
@@ -107,12 +105,6 @@ export default function AppContent() {
     if (currentTab === 'home') {
       return (
         <View style={styles.home}>
-          <LinearGradient
-            colors={isDark ? ['rgba(255,79,46,0.22)', 'rgba(255,79,46,0.0)'] : ['rgba(224,58,31,0.16)', 'rgba(224,58,31,0)']}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={styles.homeGlow}
-          />
           <Text style={styles.kicker}>Session</Text>
           <Text style={styles.homeTitle}>Ready{'\n'}to lift.</Text>
           <Text style={styles.homeSub}>
@@ -125,16 +117,9 @@ export default function AppContent() {
               haptic('medium');
               startWorkout();
             }}
-            style={({ pressed }) => [styles.startBtn, pressed && { transform: [{ scale: 0.96 }] }]}
+            style={({ pressed }) => [styles.startBtn, pressed && { opacity: 0.82 }]}
           >
-            <LinearGradient
-              colors={[colors.accent, '#FF7A63']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.startGrad}
-            >
-              <Text style={styles.startBtnText}>Start Empty Workout</Text>
-            </LinearGradient>
+            <Text style={styles.startBtnText}>Start Empty Workout</Text>
           </Pressable>
           <Pressable
             onPress={() => navigateTab('routines')}
@@ -178,9 +163,7 @@ export default function AppContent() {
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
         <Pressable onPress={() => navigateTab('home')} style={styles.brand} hitSlop={8}>
           <Image source={LOGO} style={styles.logo} />
-          <Text style={styles.brandText}>
-            Track<Text style={{ color: colors.accent }}>It</Text>
-          </Text>
+          <Text style={styles.brandText}>TrackIt</Text>
         </Pressable>
 
         <View style={styles.headerRight}>
@@ -205,22 +188,30 @@ export default function AppContent() {
             }}
             style={styles.unitToggle}
           >
-            <View style={[styles.unitPill, { left: unit === 'lbs' ? 2 : 40 }]} />
-            <Text style={[styles.unitLabel, unit === 'lbs' && styles.unitLabelOn]}>LB</Text>
-            <Text style={[styles.unitLabel, unit === 'kgs' && styles.unitLabelOn]}>KG</Text>
+            <View style={[styles.unitSeg, unit === 'lbs' && styles.unitSegOn]}>
+              <Text style={[styles.unitLabel, unit === 'lbs' && styles.unitLabelOn]}>LB</Text>
+            </View>
+            <View style={[styles.unitSeg, unit === 'kgs' && styles.unitSegOn]}>
+              <Text style={[styles.unitLabel, unit === 'kgs' && styles.unitLabelOn]}>KG</Text>
+            </View>
           </Pressable>
         </View>
       </View>
 
       {activeWorkout && restTimer > 0 && !playingSet && (
         <View style={styles.islandWrap} pointerEvents="none">
-          <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.island}>
-            <View style={[styles.islandDot, restReady && { backgroundColor: colors.success }]} />
-            <Text style={[styles.islandKicker, restReady && { color: colors.success }]}>
+          <View style={styles.island}>
+            <View
+              style={[
+                styles.islandDot,
+                { backgroundColor: restReady ? colors.accent : colors.textMuted },
+              ]}
+            />
+            <Text style={[styles.islandKicker, restReady && { color: colors.accent }]}>
               {restReady ? 'GO' : 'REST'}
             </Text>
             <Text style={styles.islandTime}>{formatTime(restReady ? restTimer : restRemaining)}</Text>
-          </BlurView>
+          </View>
         </View>
       )}
 
@@ -273,7 +264,7 @@ export default function AppContent() {
 
       {!activeWorkout && !tabBarHidden && (
         <View style={styles.navWrap}>
-          <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.navBlur}>
+          <View style={styles.navBar}>
             <View style={[styles.navRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
               {tabs.map((t) => {
                 const active =
@@ -295,7 +286,7 @@ export default function AppContent() {
                 );
               })}
             </View>
-          </BlurView>
+          </View>
         </View>
       )}
     </View>
@@ -313,10 +304,12 @@ function makeStyles(colors) {
       paddingHorizontal: 16,
       paddingBottom: 8,
       backgroundColor: colors.background,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
       zIndex: 40,
     },
     brand: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: HIT },
-    logo: { width: 28, height: 28, borderRadius: 8 },
+    logo: { width: 24, height: 24, borderRadius: 2, borderWidth: 1, borderColor: colors.border },
     brandText: {
       color: colors.text,
       fontFamily: fonts.bold,
@@ -327,38 +320,38 @@ function makeStyles(colors) {
     iconCircle: {
       width: HIT,
       height: HIT,
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.surface2,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
     },
     unitToggle: {
-      width: 80,
-      height: 32,
-      borderRadius: 16,
+      width: 96,
+      height: HIT,
+      borderRadius: radius.sm,
       backgroundColor: colors.surface2,
       overflow: 'hidden',
       flexDirection: 'row',
-      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
     },
-    unitPill: {
-      position: 'absolute',
-      top: 2,
-      width: 38,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: colors.accent,
+    unitSeg: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unitSegOn: {
+      backgroundColor: colors.text,
     },
     unitLabel: {
-      width: 40,
-      textAlign: 'center',
       fontSize: 12,
       fontFamily: fonts.semibold,
-      letterSpacing: 0.3,
+      letterSpacing: 0.4,
       color: colors.textMuted,
-      zIndex: 1,
     },
-    unitLabelOn: { color: colors.accentFg },
+    unitLabelOn: { color: colors.background },
     islandWrap: {
       alignItems: 'center',
       marginBottom: 6,
@@ -370,9 +363,8 @@ function makeStyles(colors) {
       gap: 10,
       paddingHorizontal: 18,
       paddingVertical: 10,
-      borderRadius: 22,
-      overflow: 'hidden',
-      backgroundColor: colors.glass,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.borderStrong,
       minWidth: 168,
@@ -381,10 +373,10 @@ function makeStyles(colors) {
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: colors.accent,
+      backgroundColor: colors.textMuted,
     },
     islandKicker: {
-      color: colors.accent,
+      color: colors.textMuted,
       fontFamily: fonts.bold,
       fontSize: 11,
       letterSpacing: 1.4,
@@ -406,18 +398,18 @@ function makeStyles(colors) {
     cancelBtn: {
       minHeight: HIT,
       paddingHorizontal: 16,
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.dangerSoft,
+      backgroundColor: 'transparent',
     },
-    cancelText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 17 },
+    cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 17 },
     finishBtn: {
       flex: 1,
       backgroundColor: colors.accent,
       paddingHorizontal: 16,
       minHeight: HIT,
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -426,23 +418,15 @@ function makeStyles(colors) {
     main: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center', overflow: 'visible' },
     home: {
       flex: 1,
-      justifyContent: 'center',
-      paddingHorizontal: 28,
+      justifyContent: 'flex-end',
+      paddingHorizontal: 16,
       paddingBottom: 120,
     },
-    homeGlow: {
-      position: 'absolute',
-      top: 40,
-      left: -20,
-      right: -20,
-      height: 280,
-      borderRadius: 180,
-    },
     kicker: {
-      color: colors.accent,
+      color: colors.textSubtle,
       fontFamily: fonts.semibold,
-      fontSize: 13,
-      letterSpacing: 1.6,
+      fontSize: 11,
+      letterSpacing: 2,
       textTransform: 'uppercase',
       marginBottom: 10,
     },
@@ -465,18 +449,15 @@ function makeStyles(colors) {
     startBtn: {
       width: '100%',
       maxWidth: 360,
-      borderRadius: 18,
-      overflow: 'hidden',
-    },
-    startGrad: {
-      minHeight: 54,
+      borderRadius: radius.sm,
+      minHeight: 52,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 24,
     },
     startBtnText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17, letterSpacing: -0.4 },
     link: {
-      color: colors.accent,
+      color: colors.textMuted,
       fontFamily: fonts.medium,
       fontSize: 16,
     },
@@ -486,7 +467,7 @@ function makeStyles(colors) {
       right: 0,
       bottom: 0,
     },
-    navBlur: {
+    navBar: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
       backgroundColor: colors.nav,

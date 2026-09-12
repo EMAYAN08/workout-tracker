@@ -68,7 +68,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         styles.key,
         flex && { flex },
         style,
-        pressed && { transform: [{ scale: 0.96 }], opacity: 0.85 },
+        pressed && { opacity: 0.85 },
       ]}
     >
       {children || <Text style={styles.keyText}>{label}</Text>}
@@ -138,7 +138,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           </View>
           <Pressable
             onPress={() => activeInput.onNext()}
-            style={({ pressed }) => [styles.nextKey, pressed && { transform: [{ scale: 0.96 }] }]}
+            style={({ pressed }) => [styles.nextKey, pressed && { opacity: 0.82 }]}
           >
             <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
           </Pressable>
@@ -159,8 +159,8 @@ function makeStyles(colors) {
       zIndex: 200,
       elevation: 24,
       backgroundColor: colors.surface,
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
       borderTopWidth: 1,
       borderColor: colors.borderStrong,
       paddingTop: 8,
@@ -200,8 +200,10 @@ function makeStyles(colors) {
     key: {
       flex: 1,
       height: 52,
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -210,14 +212,16 @@ function makeStyles(colors) {
       flex: 1,
       flexDirection: 'row',
       height: 52,
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       overflow: 'hidden',
       backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     splitKey: { borderRadius: 0, height: 52, borderWidth: 0 },
     nextKey: {
       flex: 1,
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',

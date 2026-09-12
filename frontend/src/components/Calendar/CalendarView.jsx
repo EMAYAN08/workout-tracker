@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import {
   format,
   addMonths,
@@ -97,6 +97,14 @@ export default function CalendarView({ onDayClick, onBack }) {
             if (!isCurrentMonth) {
               return <View key={i} style={styles.daySlot} />;
             }
+            const fill = isFuture
+              ? colors.heatmapFuture
+              : isRestOnly
+                ? colors.heatmapRest
+                : hasWorkout
+                  ? colors.heatmapWork
+                  : colors.heatmapEmpty;
+            const numColor = hasWorkout && !isRestOnly ? colors.background : colors.textMuted;
             return (
               <View key={i} style={styles.daySlot}>
                 <Pressable
@@ -104,20 +112,11 @@ export default function CalendarView({ onDayClick, onBack }) {
                   disabled={!hasWorkout}
                   style={[
                     styles.day,
+                    { backgroundColor: fill },
                     isDayToday && styles.dayToday,
-                    hasWorkout && !isRestOnly && styles.dayWorkout,
-                    hasWorkout && isRestOnly && styles.dayRest,
-                    isFuture && { opacity: 0.25 },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.dayNum,
-                      hasWorkout && !isRestOnly && { color: colors.accent },
-                      hasWorkout && isRestOnly && { color: colors.textMuted },
-                      isDayToday && { color: colors.accent },
-                    ]}
-                  >
+                  <Text style={[styles.dayNum, { color: isDayToday && !hasWorkout ? colors.text : numColor }]}>
                     {format(day, 'd')}
                   </Text>
                 </Pressable>
@@ -139,7 +138,7 @@ function makeStyles(colors) {
   pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
   panel: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 20,
@@ -161,22 +160,11 @@ function makeStyles(colors) {
   day: {
     width: 36,
     height: 36,
-    borderRadius: radius.md,
+    borderRadius: radius.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayToday: { borderWidth: 2, borderColor: colors.accent },
-  dayWorkout: {
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accentBorder,
-  },
-  dayRest: {
-    backgroundColor: 'rgba(59,130,246,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.3)',
-  },
+  dayToday: { borderWidth: 1, borderColor: colors.text },
   dayNum: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 14 },
 });
 }
-

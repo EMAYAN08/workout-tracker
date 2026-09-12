@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Line, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -14,8 +14,8 @@ export default function AreaChart({
   emptySubtitle = 'Log this more than once to see progression.',
   averageLine,
 }) {
-  const { colors, scheme } = useTheme();
-  const stroke = color || colors.accent;
+  const { colors } = useTheme();
+  const stroke = color || colors.text;
   const styles = makeStyles(colors);
   const [boxW, setBoxW] = useState(0);
   const [activeIdx, setActiveIdx] = useState(null);
@@ -39,7 +39,6 @@ export default function AreaChart({
       return { x, y, ...d };
     });
     const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-    const area = `${line} L ${points[points.length - 1].x.toFixed(1)} ${padT + innerH} L ${points[0].x.toFixed(1)} ${padT + innerH} Z`;
     const yTicks = [max, (max + min) / 2, min].map((v, i) => ({
       value: Number(v.toFixed(v >= 100 ? 0 : 1)),
       y: padT + (i / 2) * innerH,
@@ -49,10 +48,8 @@ export default function AreaChart({
       const step = Math.ceil(points.length / 5);
       return i % step === 0 || i === points.length - 1;
     });
-    return { padL, padT, innerH, innerW, points, line, area, yTicks, xTicks, min, span };
+    return { padL, padT, innerH, innerW, points, line, yTicks, xTicks, min, span };
   }, [data, width, height]);
-
-  const gradId = `area-${scheme}-${stroke.replace('#', '')}`;
 
   return (
     <View
@@ -87,12 +84,6 @@ export default function AreaChart({
               setActiveIdx(nearest);
             }}
           >
-            <Defs>
-              <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0%" stopColor={stroke} stopOpacity={scheme === 'dark' ? '0.32' : '0.2'} />
-                <Stop offset="100%" stopColor={stroke} stopOpacity="0" />
-              </LinearGradient>
-            </Defs>
             {chart.yTicks.map((t, i) => (
               <React.Fragment key={i}>
                 <Line
@@ -134,7 +125,6 @@ export default function AreaChart({
                 opacity={0.45}
               />
             )}
-            <Path d={chart.area} fill={`url(#${gradId})`} />
             <Path d={chart.line} fill="none" stroke={stroke} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
             {chart.xTicks.map((p, i) => (
               <SvgText key={i} x={p.x} y={height - 8} fill={colors.chartAxis} fontSize="11" textAnchor="middle">
@@ -146,7 +136,7 @@ export default function AreaChart({
                 cx={chart.points[activeIdx].x}
                 cy={chart.points[activeIdx].y}
                 r={5}
-                fill={stroke}
+                fill={colors.accent}
                 stroke={colors.chartDotStroke}
                 strokeWidth={3}
               />
@@ -162,7 +152,7 @@ export default function AreaChart({
               ]}
             >
               <Text style={styles.tooltipLabel}>{chart.points[activeIdx].date}</Text>
-              <Text style={[styles.tooltipValue, { color: stroke }]}>
+              <Text style={styles.tooltipValue}>
                 {chart.points[activeIdx].value}
                 <Text style={styles.tooltipUnit}> {unit}</Text>
               </Text>
@@ -202,7 +192,7 @@ function makeStyles(colors) {
       fontFamily: fonts.medium,
       marginBottom: 1,
     },
-    tooltipValue: { fontFamily: fonts.monoBold, fontSize: 16 },
+    tooltipValue: { fontFamily: fonts.monoBold, fontSize: 16, color: colors.text },
     tooltipUnit: { fontSize: 12, color: colors.textMuted, fontFamily: fonts.regular },
   });
 }
