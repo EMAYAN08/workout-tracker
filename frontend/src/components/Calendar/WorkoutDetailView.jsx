@@ -1,18 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { ChevronLeft, Clock, Activity, Dumbbell } from 'lucide-react-native';
+import { ChevronLeft, Clock, Activity, Dumbbell, Moon } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const ExerciseImage = ({ src }) => {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [error, setError] = useState(false);
   if (!src || error) {
     return (
       <View style={styles.thumbFallback}>
-        <Dumbbell size={24} color={colors.primary} />
+        <Dumbbell size={24} color={colors.accent} />
       </View>
     );
   }
@@ -28,6 +31,8 @@ const ExerciseImage = ({ src }) => {
 
 export default function WorkoutDetailView({ date, onBack }) {
   const { workoutHistory, unit } = useWorkout();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const dayWorkouts = useMemo(() => {
     if (!workoutHistory || !date) return [];
@@ -97,7 +102,7 @@ export default function WorkoutDetailView({ date, onBack }) {
           <View style={{ padding: 16, gap: 20 }}>
             {workout.exercises.length === 0 ? (
               <View style={styles.restBox}>
-                <Text style={{ fontSize: 32 }}>🛋️</Text>
+                <Moon size={28} color={colors.accent} />
                 <Text style={styles.restTitle}>Active Recovery Logged</Text>
                 <Text style={styles.restSub}>
                   You took a well-deserved rest day to let your muscles recover and grow.
@@ -142,7 +147,8 @@ export default function WorkoutDetailView({ date, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   emptyWrap: { flex: 1, padding: 16 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
@@ -185,13 +191,13 @@ const styles = StyleSheet.create({
   restBox: {
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'rgba(16,185,129,0.05)',
+    backgroundColor: colors.accentSoft,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.1)',
+    borderColor: colors.accentBorder,
     gap: 8,
   },
-  restTitle: { color: '#34d399', fontFamily: fonts.bold, fontSize: 16 },
+  restTitle: { color: colors.accent, fontFamily: fonts.bold, fontSize: 16 },
   restSub: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
   thumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: colors.surfaceLight },
   thumbFallback: {
@@ -238,3 +244,5 @@ const styles = StyleSheet.create({
   tdMuted: { color: colors.textMuted, fontFamily: fonts.bold },
   unit: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular },
 });
+}
+

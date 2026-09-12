@@ -16,10 +16,13 @@ import {
   isAfter,
 } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function CalendarView({ onDayClick, onBack }) {
   const { workoutHistory } = useWorkout();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const daysInMonth = useMemo(() => {
@@ -53,7 +56,6 @@ export default function CalendarView({ onDayClick, onBack }) {
           </Pressable>
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <CalendarIcon size={24} color={colors.primary} />
           <Text style={styles.pageTitle}>History</Text>
         </View>
       </View>
@@ -111,9 +113,9 @@ export default function CalendarView({ onDayClick, onBack }) {
                   <Text
                     style={[
                       styles.dayNum,
-                      hasWorkout && !isRestOnly && { color: '#34d399' },
-                      hasWorkout && isRestOnly && { color: colors.primary },
-                      isDayToday && { color: '#f59e0b' },
+                      hasWorkout && !isRestOnly && { color: colors.accent },
+                      hasWorkout && isRestOnly && { color: colors.textMuted },
+                      isDayToday && { color: colors.accent },
                     ]}
                   >
                     {format(day, 'd')}
@@ -128,7 +130,8 @@ export default function CalendarView({ onDayClick, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
   back: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingRight: 8 },
@@ -156,17 +159,17 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   daySlot: { width: '14.285%', alignItems: 'center', paddingVertical: 6 },
   day: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayToday: { borderWidth: 2, borderColor: '#f59e0b' },
+  dayToday: { borderWidth: 2, borderColor: colors.accent },
   dayWorkout: {
-    backgroundColor: 'rgba(16,185,129,0.15)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.3)',
+    borderColor: colors.accentBorder,
   },
   dayRest: {
     backgroundColor: 'rgba(59,130,246,0.15)',
@@ -175,3 +178,5 @@ const styles = StyleSheet.create({
   },
   dayNum: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 14 },
 });
+}
+

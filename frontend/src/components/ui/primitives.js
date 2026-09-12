@@ -9,38 +9,41 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { colors, fonts, radius } from '../../theme';
+import { BlurView } from 'expo-blur';
+import { ChevronDown } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
+import { fonts, radius } from '../../theme';
 
 export function Panel({ children, style, onPress }) {
-  const content = (
-    <View style={[styles.panel, style]}>{children}</View>
-  );
+  const { colors } = useTheme();
+  const panelStyle = [
+    {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    style,
+  ];
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => pressed && { opacity: 0.9 }}>
-        {content}
+      <Pressable onPress={onPress} style={({ pressed }) => [panelStyle, pressed && { opacity: 0.92 }]}>
+        {children}
       </Pressable>
     );
   }
-  return content;
+  return <View style={panelStyle}>{children}</View>;
 }
 
 export function AppText({ children, style, numberOfLines, onPress, ...rest }) {
-  const Comp = onPress ? Pressable : View;
-  if (onPress) {
-    return (
-      <Pressable onPress={onPress}>
-        <Text style={[styles.text, style]} numberOfLines={numberOfLines} {...rest}>
-          {children}
-        </Text>
-      </Pressable>
-    );
-  }
-  return (
-    <Text style={[styles.text, style]} numberOfLines={numberOfLines} {...rest}>
+  const { colors } = useTheme();
+  const text = (
+    <Text style={[{ color: colors.text, fontFamily: fonts.regular }, style]} numberOfLines={numberOfLines} {...rest}>
       {children}
     </Text>
   );
+  if (onPress) return <Pressable onPress={onPress}>{text}</Pressable>;
+  return text;
 }
 
 export function Button({
@@ -52,37 +55,46 @@ export function Button({
   loading,
   variant = 'primary',
 }) {
-  const variantStyle =
-    variant === 'danger'
-      ? styles.btnDanger
-      : variant === 'ghost'
-        ? styles.btnGhost
-        : variant === 'solid'
-          ? styles.btnSolid
-          : styles.btnPrimary;
-  const variantText =
-    variant === 'solid'
-      ? styles.btnSolidText
-      : variant === 'danger'
-        ? styles.btnDangerText
-        : styles.btnPrimaryText;
+  const { colors } = useTheme();
+  const variants = {
+    primary: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
+    solid: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
+    ghost: { bg: 'transparent', border: 'transparent', fg: colors.textMuted },
+    outline: { bg: 'transparent', border: colors.borderStrong, fg: colors.text },
+    danger: { bg: colors.dangerSoft, border: colors.danger + '33', fg: colors.danger },
+    soft: { bg: colors.accentSoft, border: colors.accentBorder, fg: colors.accent },
+  };
+  const v = variants[variant] || variants.primary;
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => [
-        styles.btn,
-        variantStyle,
-        pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 },
-        (disabled || loading) && { opacity: 0.5 },
+        {
+          borderRadius: radius.md,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'row',
+          gap: 8,
+          minHeight: 48,
+          backgroundColor: v.bg,
+          borderWidth: 1,
+          borderColor: v.border,
+        },
+        pressed && { transform: [{ scale: 0.96 }], opacity: 0.9 },
+        (disabled || loading) && { opacity: 0.45 },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'solid' ? '#fff' : colors.primary} />
+        <ActivityIndicator color={v.fg} />
       ) : typeof children === 'string' ? (
-        <Text style={[styles.btnText, variantText, textStyle]}>{children}</Text>
+        <Text style={[{ fontFamily: fonts.semibold, fontSize: 15, color: v.fg, letterSpacing: -0.2 }, textStyle]}>
+          {children}
+        </Text>
       ) : (
         children
       )}
@@ -91,10 +103,25 @@ export function Button({
 }
 
 export function Input({ style, ...props }) {
+  const { colors } = useTheme();
   return (
     <TextInput
-      placeholderTextColor={colors.textMuted}
-      style={[styles.input, style]}
+      placeholderTextColor={colors.textSubtle}
+      style={[
+        {
+          backgroundColor: colors.surface2,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: radius.md,
+          paddingHorizontal: 14,
+          paddingVertical: 14,
+          minHeight: 48,
+          color: colors.text,
+          fontFamily: fonts.medium,
+          fontSize: 16,
+        },
+        style,
+      ]}
       autoCapitalize="none"
       autoCorrect={false}
       {...props}
@@ -102,27 +129,62 @@ export function Input({ style, ...props }) {
   );
 }
 
-export function Spinner({ size = 24, color = colors.primary }) {
-  return <ActivityIndicator size={size} color={color} />;
+export function Spinner({ size = 24, color }) {
+  const { colors } = useTheme();
+  return <ActivityIndicator size={size} color={color || colors.accent} />;
 }
 
-export function Badge({ children, color = colors.primary, style }) {
+export function Badge({ children, color, style }) {
+  const { colors } = useTheme();
+  const c = color || colors.accent;
   return (
-    <View style={[styles.badge, { backgroundColor: color + '26' }, style]}>
-      <Text style={[styles.badgeText, { color }]}>{children}</Text>
+    <View
+      style={[
+        {
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: radius.xs,
+          backgroundColor: colors.accentSoft,
+          borderWidth: 1,
+          borderColor: colors.accentBorder,
+        },
+        style,
+      ]}
+    >
+      <Text
+        style={{
+          fontSize: 10,
+          fontFamily: fonts.semibold,
+          textTransform: 'uppercase',
+          letterSpacing: 0.8,
+          color: c,
+        }}
+      >
+        {children}
+      </Text>
     </View>
   );
 }
 
 export function IconBtn({ onPress, children, style, disabled }) {
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       hitSlop={8}
       style={({ pressed }) => [
-        styles.iconBtn,
-        pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+        {
+          width: 40,
+          height: 40,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+        },
+        pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] },
         disabled && { opacity: 0.3 },
         style,
       ]}
@@ -133,6 +195,7 @@ export function IconBtn({ onPress, children, style, disabled }) {
 }
 
 export function Select({ value, options, onChange, style }) {
+  const { colors, isDark } = useTheme();
   const [open, setOpen] = React.useState(false);
   const selected = options.find((o) => o.value === value);
 
@@ -140,16 +203,65 @@ export function Select({ value, options, onChange, style }) {
     <>
       <Pressable
         onPress={() => setOpen(true)}
-        style={[styles.select, style]}
+        style={[
+          {
+            backgroundColor: colors.surface,
+            borderRadius: radius.md,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            minHeight: 48,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderWidth: 1,
+            borderColor: colors.border,
+          },
+          style,
+        ]}
       >
-        <Text style={styles.selectText} numberOfLines={1}>
+        <Text
+          style={{
+            color: colors.text,
+            fontFamily: fonts.medium,
+            fontSize: 14,
+            flex: 1,
+            marginRight: 8,
+            textTransform: 'capitalize',
+          }}
+          numberOfLines={1}
+        >
           {selected?.label || 'Select'}
         </Text>
-        <Text style={styles.selectChevron}>▾</Text>
+        <ChevronDown size={16} color={colors.textMuted} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setOpen(false)}>
-          <View style={styles.modalSheet}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
+          onPress={() => setOpen(false)}
+        >
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+              maxHeight: '50%',
+              borderWidth: 1,
+              borderColor: colors.borderStrong,
+              paddingVertical: 8,
+              overflow: 'hidden',
+            }}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.borderStrong,
+                alignSelf: 'center',
+                marginBottom: 8,
+                marginTop: 4,
+              }}
+            />
             <ScrollView>
               {options.map((opt) => (
                 <Pressable
@@ -158,16 +270,21 @@ export function Select({ value, options, onChange, style }) {
                     onChange(opt.value);
                     setOpen(false);
                   }}
-                  style={[
-                    styles.modalItem,
-                    opt.value === value && styles.modalItemActive,
-                  ]}
+                  style={{
+                    paddingHorizontal: 20,
+                    paddingVertical: 14,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                    backgroundColor: opt.value === value ? colors.accentSoft : 'transparent',
+                  }}
                 >
                   <Text
-                    style={[
-                      styles.modalItemText,
-                      opt.value === value && { color: colors.primary },
-                    ]}
+                    style={{
+                      color: opt.value === value ? colors.accent : colors.text,
+                      fontFamily: fonts.medium,
+                      fontSize: 15,
+                      textTransform: 'capitalize',
+                    }}
                   >
                     {opt.label}
                   </Text>
@@ -181,126 +298,11 @@ export function Select({ value, options, onChange, style }) {
   );
 }
 
-const styles = StyleSheet.create({
-  panel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  text: {
-    color: colors.text,
-    fontFamily: fonts.regular,
-  },
-  btn: {
-    borderRadius: radius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  btnPrimary: {
-    backgroundColor: 'rgba(59,130,246,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.3)',
-  },
-  btnDanger: {
-    backgroundColor: 'rgba(239,68,68,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.3)',
-  },
-  btnGhost: {
-    backgroundColor: 'transparent',
-  },
-  btnSolid: {
-    backgroundColor: colors.primary,
-  },
-  btnText: {
-    fontFamily: fonts.bold,
-    fontSize: 14,
-  },
-  btnPrimaryText: { color: colors.primary },
-  btnDangerText: { color: '#f87171' },
-  btnSolidText: { color: '#fff' },
-  input: {
-    backgroundColor: 'rgba(23,23,23,0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: radius.lg,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: colors.text,
-    fontFamily: fonts.bold,
-    fontSize: 16,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontFamily: fonts.black,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  iconBtn: {
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  select: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  selectText: {
-    color: colors.text,
-    fontFamily: fonts.semibold,
-    fontSize: 14,
-    flex: 1,
-    marginRight: 8,
-    textTransform: 'capitalize',
-  },
-  selectChevron: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingVertical: 8,
-  },
-  modalItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalItemActive: {
-    backgroundColor: 'rgba(59,130,246,0.1)',
-  },
-  modalItemText: {
-    color: colors.text,
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    textTransform: 'capitalize',
-  },
-});
+export function Glass({ children, style, intensity = 40 }) {
+  const { isDark } = useTheme();
+  return (
+    <BlurView intensity={intensity} tint={isDark ? 'dark' : 'light'} style={style}>
+      {children}
+    </BlurView>
+  );
+}

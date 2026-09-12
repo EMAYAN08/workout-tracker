@@ -24,13 +24,15 @@ import {
   ArrowDown,
   ChevronUp,
   ChevronDown,
+  Moon,
 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { getPreviousPerformance } from '../../utils/calculations';
 import CustomNumpad from './CustomNumpad';
 import { API_URL } from '../../config';
-import { colors, fonts, radius } from '../../theme';
+import { fonts, radius } from '../../theme';
 import { Select } from '../ui/primitives';
+import { useTheme } from '../../context/ThemeContext';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -60,6 +62,8 @@ export default function ActiveWorkout() {
     createCustomExercise,
   } = useWorkout();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
   const [activeInput, setActiveInput] = useState(null);
@@ -128,18 +132,18 @@ export default function ActiveWorkout() {
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={[styles.timerLabel, { color: 'rgba(52,211,153,0.8)' }]}>Set Time</Text>
             <View style={styles.timerRow}>
-              <Timer size={14} color="#34d399" />
-              <Text style={[styles.timerValue, { color: '#34d399' }]}>{formatTime(setTimer)}</Text>
+              <Timer size={14} color={colors.accent} />
+              <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(setTimer)}</Text>
             </View>
           </View>
         ) : restTimer > 0 ? (
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={[styles.timerLabel, { color: 'rgba(96,165,250,0.8)' }]}>Resting</Text>
             <View style={styles.timerRow}>
-              <Timer size={14} color="#60a5fa" />
-              <Text style={[styles.timerValue, { color: '#60a5fa' }]}>{formatTime(restTimer)}</Text>
+              <Timer size={14} color={colors.accent} />
+              <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restTimer)}</Text>
               <Pressable onPress={stopRestTimer} style={styles.stopRest}>
-                <X size={12} color="#60a5fa" strokeWidth={3} />
+                <X size={12} color={colors.accent} strokeWidth={3} />
               </Pressable>
             </View>
           </View>
@@ -152,7 +156,7 @@ export default function ActiveWorkout() {
       >
         {activeWorkout.exercises.length === 0 && (
           <View style={styles.restCard}>
-            <Text style={{ fontSize: 28, marginBottom: 4 }}>🛋️</Text>
+            <Moon size={28} color={colors.accent} style={{ marginBottom: 6 }} />
             <Text style={styles.restTitle}>Rest Day Logging</Text>
             <Text style={styles.restSub}>Tap "Log Rest Day" above to record a recovery day.</Text>
           </View>
@@ -205,7 +209,7 @@ export default function ActiveWorkout() {
                     <Text
                       style={
                         completedSetsCount === ex.sets.length && ex.sets.length > 0
-                          ? { color: '#22c55e' }
+                          ? { color: colors.accent }
                           : null
                       }
                     >
@@ -253,7 +257,7 @@ export default function ActiveWorkout() {
               {ex.sets.map((set, sIdx) => {
                 if (set.completedAt) {
                   return (
-                    <View key={sIdx} style={[styles.setRow, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.accentSoft }]}>
                       <Text style={styles.setIdx}>{sIdx + 1}</Text>
                       <Text style={styles.setVal}>{String(set.weight)}</Text>
                       <Text style={styles.setVal}>{String(set.reps)}</Text>
@@ -301,7 +305,7 @@ export default function ActiveWorkout() {
                           }}
                           style={[styles.playBtn, set.reps ? styles.playReady : styles.playDisabled]}
                         >
-                          <Check size={18} color={set.reps ? '#34d399' : 'rgba(161,161,170,0.3)'} strokeWidth={3} />
+                          <Check size={18} color={set.reps ? colors.accent : colors.textSubtle} strokeWidth={3} />
                         </Pressable>
                       ) : (
                         <Pressable onPress={() => startSet(idx, sIdx)} style={styles.playBtn}>
@@ -397,10 +401,10 @@ export default function ActiveWorkout() {
                   style={[styles.customAdd, (isCreatingCustom || searchQuery.trim().length < 1) && { opacity: 0.5 }]}
                 >
                   {isCreatingCustom ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.accentFg} />
                   ) : (
                     <>
-                      <Plus size={18} color="#fff" />
+                      <Plus size={18} color={colors.accentFg} />
                       <Text style={styles.customAddText}>Add Custom Exercise</Text>
                     </>
                   )}
@@ -447,7 +451,8 @@ export default function ActiveWorkout() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   timerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -474,16 +479,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59,130,246,0.12)',
   },
   restCard: {
-    backgroundColor: 'rgba(16,185,129,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.2)',
+    borderColor: colors.accentBorder,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     marginBottom: 12,
   },
-  restTitle: { color: '#34d399', fontFamily: fonts.black, fontSize: 18 },
-  restSub: { color: 'rgba(16,185,129,0.8)', fontFamily: fonts.bold, fontSize: 13, textAlign: 'center', marginTop: 4 },
+  restTitle: { color: colors.accent, fontFamily: fonts.black, fontSize: 18 },
+  restSub: { color: colors.accent, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center', marginTop: 4 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -546,7 +551,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  playReady: { backgroundColor: 'rgba(16,185,129,0.2)' },
+  playReady: { backgroundColor: colors.accentSoft },
   playDisabled: { backgroundColor: colors.surface },
   addRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 8, marginTop: 12, marginBottom: 4 },
   addSetBtn: {
@@ -667,5 +672,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  customAddText: { color: '#fff', fontFamily: fonts.bold, fontSize: 13 },
+  customAddText: { color: colors.accentFg, fontFamily: fonts.bold, fontSize: 13 },
 });
+}
+

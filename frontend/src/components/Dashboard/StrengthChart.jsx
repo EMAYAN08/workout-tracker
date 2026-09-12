@@ -6,15 +6,16 @@ import { subMonths, subYears, isAfter } from 'date-fns';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Select } from '../ui/primitives';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
-const CATEGORIES = [
-  { id: 'chest', label: 'Chest', color: '#34d399' },
-  { id: 'back', label: 'Back', color: '#22d3ee' },
-  { id: 'legs', label: 'Legs', color: '#38bdf8' },
-  { id: 'shoulders', label: 'Shoulders', color: '#a3e635' },
-  { id: 'core', label: 'Core', color: '#fbbf24' },
-  { id: 'arms', label: 'Arms', color: '#2dd4bf' },
+const CATEGORY_META = [
+  { id: 'chest', label: 'Chest' },
+  { id: 'back', label: 'Back' },
+  { id: 'legs', label: 'Legs' },
+  { id: 'shoulders', label: 'Shoulders' },
+  { id: 'core', label: 'Core' },
+  { id: 'arms', label: 'Arms' },
 ];
 
 const mapMuscleGroup = (rawGroup) => {
@@ -52,6 +53,9 @@ function describeArc(x, y, innerRadius, outerRadius, startAngle, endAngle) {
 
 export default function StrengthChart() {
   const { workoutHistory, unit } = useWorkout();
+  const { colors, muscleColors } = useTheme();
+  const styles = makeStyles(colors);
+  const CATEGORIES = CATEGORY_META.map((c) => ({ ...c, color: muscleColors[c.id] }));
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');
 
@@ -181,9 +185,9 @@ export default function StrengthChart() {
                       <Path
                         key={ringIndex}
                         d={describeArc(200, 200, iRadius, oRadius, startAngle, endAngle)}
-                        fill={isFilled ? `url(#grad-${cat.id})` : '#161921'}
-                        stroke="#222631"
-                        strokeWidth="2.5"
+                        fill={isFilled ? `url(#grad-${cat.id})` : colors.chartEmpty}
+                        stroke={colors.border}
+                        strokeWidth="2"
                       />
                     );
                   })}
@@ -208,13 +212,13 @@ export default function StrengthChart() {
                   <TSpan
                     x={adjustedTx}
                     dy="-0.5em"
-                    fill={cat.level > 0 ? cat.color : '#71717a'}
+                    fill={cat.level > 0 ? cat.color : colors.textMuted}
                     fontSize="14"
                     fontWeight="800"
                   >
                     {cat.displayStr}
                   </TSpan>
-                  <TSpan x={adjustedTx} dy="1.4em" fill="#f8fafc" fontSize="12" fontWeight="700">
+                  <TSpan x={adjustedTx} dy="1.4em" fill={colors.text} fontSize="12" fontWeight="600">
                     {cat.label}
                   </TSpan>
                 </SvgText>
@@ -227,14 +231,22 @@ export default function StrengthChart() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: { color: colors.text, fontFamily: fonts.black, fontSize: 18, marginBottom: 8, paddingHorizontal: 8 },
-  panel: {
-    backgroundColor: '#21232c',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    padding: 16,
-  },
-  controls: { flexDirection: 'row', marginBottom: 12 },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text,
+      fontFamily: fonts.semibold,
+      fontSize: 16,
+      letterSpacing: -0.3,
+      marginBottom: 8,
+    },
+    panel: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+    },
+    controls: { flexDirection: 'row', marginBottom: 12 },
+  });
+}

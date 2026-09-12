@@ -2,10 +2,13 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { Play, Plus, Edit2, Trash2, ClipboardList } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
   const { routines, deleteRoutine, startWorkoutFromRoutine, activeWorkout } = useWorkout();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const handleStartRoutine = (routine) => {
     if (activeWorkout) {
@@ -62,10 +65,10 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable onPress={() => handleStartRoutine(routine)} style={styles.actPlay}>
-                  <Play size={16} color="#34d399" fill="#34d399" />
+                  <Play size={16} color={colors.accent} fill={colors.accent} />
                 </Pressable>
                 <Pressable onPress={() => onEdit(routine)} style={styles.actEdit}>
-                  <Edit2 size={16} color="#60a5fa" />
+                  <Edit2 size={16} color={colors.accent} />
                 </Pressable>
                 <Pressable
                   onPress={() =>
@@ -76,7 +79,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
                   }
                   style={styles.actDel}
                 >
-                  <Trash2 size={16} color="#f87171" />
+                  <Trash2 size={16} color={colors.danger} />
                 </Pressable>
               </View>
             </View>
@@ -96,10 +99,11 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   scroll: { padding: 8, paddingBottom: 120 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { color: '#fff', fontFamily: fonts.black, fontSize: 24 },
+  title: { color: colors.accentFg, fontFamily: fonts.black, fontSize: 24 },
   sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
   plus: {
     width: 40,
@@ -134,9 +138,9 @@ const styles = StyleSheet.create({
   actPlay: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(16,185,129,0.15)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.3)',
+    borderColor: colors.accentBorder,
   },
   actEdit: {
     padding: 8,
@@ -157,15 +161,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: 'rgba(245,158,11,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(245,158,11,0.3)',
+    borderColor: colors.accentBorder,
   },
   chipText: {
-    color: '#f59e0b',
+    color: colors.accent,
     fontSize: 10,
     fontFamily: fonts.black,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
 });
+}
+

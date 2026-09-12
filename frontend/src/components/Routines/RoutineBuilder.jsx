@@ -29,12 +29,15 @@ import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
 import { API_URL } from '../../config';
 import { Select } from '../ui/primitives';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
   const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit } =
     useWorkout();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const [name, setName] = useState(initialRoutine?.name || '');
   const [newCustomExIds, setNewCustomExIds] = useState([]);
@@ -216,7 +219,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
         {exercises.length === 0 && (
           <View style={styles.restHint}>
-            <Text style={styles.restHintText}>🛋️  Saving with 0 exercises will create a Rest Day routine</Text>
+            <Text style={styles.restHintText}>Saving with 0 exercises will create a Rest Day routine</Text>
           </View>
         )}
 
@@ -253,7 +256,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                     </Pressable>
                   )}
                   <Pressable onPress={() => removeExercise(exIdx)} style={styles.delEx}>
-                    <Trash2 size={16} color="#f87171" />
+                    <Trash2 size={16} color={colors.danger} />
                   </Pressable>
                   {isExpanded ? (
                     <ChevronUp size={18} color={colors.textMuted} />
@@ -299,7 +302,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                           </Text>
                         </Pressable>
                         <Pressable onPress={() => removeSet(exIdx, sIdx)} style={styles.delSet}>
-                          <Trash2 size={14} color="#f87171" />
+                          <Trash2 size={14} color={colors.danger} />
                         </Pressable>
                       </View>
                     );
@@ -382,11 +385,11 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   style={[styles.customAdd, (isCreatingCustom || !searchQuery.trim()) && { opacity: 0.5 }]}
                 >
                   {isCreatingCustom ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.accentFg} />
                   ) : (
                     <>
-                      <Plus size={18} color="#fff" />
-                      <Text style={{ color: '#fff', fontFamily: fonts.bold, fontSize: 13 }}>Add Custom Exercise</Text>
+                      <Plus size={18} color={colors.accentFg} />
+                      <Text style={{ color: colors.accentFg, fontFamily: fonts.bold, fontSize: 13 }}>Add Custom Exercise</Text>
                     </>
                   )}
                 </Pressable>
@@ -437,7 +440,8 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
   cancel: { paddingHorizontal: 12, paddingVertical: 8 },
@@ -482,14 +486,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   restHint: {
-    backgroundColor: 'rgba(16,185,129,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.2)',
+    borderColor: colors.accentBorder,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
   },
-  restHintText: { color: '#34d399', fontFamily: fonts.bold, fontSize: 13, textAlign: 'center' },
+  restHintText: { color: colors.accent, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center' },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -505,7 +509,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: 'rgba(38,38,38,0.4)',
   },
-  thumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff' },
+  thumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface },
   thumbFallback: {
     width: 40,
     height: 40,
@@ -670,3 +674,5 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 });
+}
+

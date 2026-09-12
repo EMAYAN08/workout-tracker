@@ -13,9 +13,13 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { Select } from '../ui/primitives';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
-const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => (
+const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }) => {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+  return (
   <View style={styles.card}>
     <Pressable onPress={onToggle} style={styles.cardHead}>
       <View style={styles.cardIcon}>
@@ -62,11 +66,14 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
       </View>
     )}
   </View>
-);
+  );
+};
 
 export default function CustomExercises() {
   const { customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise, unit } =
     useWorkout();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [isCreating, setIsCreating] = useState(false);
   const [activeInput, setActiveInput] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -141,7 +148,7 @@ export default function CustomExercises() {
                 disabled={isSubmitting || !newName.trim()}
                 style={[styles.save, (isSubmitting || !newName.trim()) && { opacity: 0.5 }]}
               >
-                {isSubmitting && <ActivityIndicator color="#fff" size={14} />}
+                {isSubmitting && <ActivityIndicator color={colors.accentFg} size={14} />}
                 <Text style={styles.saveText}>Save</Text>
               </Pressable>
             </View>
@@ -289,7 +296,8 @@ export default function CustomExercises() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   sticky: { backgroundColor: colors.background, paddingBottom: 8 },
   formHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
@@ -308,7 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#1c1c1e',
+    backgroundColor: colors.surface2,
     borderRadius: 16,
     paddingHorizontal: 14,
   },
@@ -350,9 +358,9 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   tinyLbl: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
   editBtn: { backgroundColor: 'rgba(59,130,246,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
-  editText: { color: '#60a5fa', fontFamily: fonts.bold, fontSize: 12 },
+  editText: { color: colors.accent, fontFamily: fonts.bold, fontSize: 12 },
   delBtn: { backgroundColor: 'rgba(239,68,68,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
-  delText: { color: '#f87171', fontFamily: fonts.bold, fontSize: 12 },
+  delText: { color: colors.danger, fontFamily: fonts.bold, fontSize: 12 },
   setLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -397,7 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  saveText: { color: '#fff', fontFamily: fonts.bold },
+  saveText: { color: colors.accentFg, fontFamily: fonts.bold },
   setEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   setCell: {
     flex: 1,
@@ -427,3 +435,5 @@ const styles = StyleSheet.create({
   },
   addSetText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 12 },
 });
+}
+

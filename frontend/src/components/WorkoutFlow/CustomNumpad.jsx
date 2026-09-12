@@ -2,10 +2,13 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
-import { fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   if (!activeInput) return null;
 
   const handleKeyPress = (key) => {
@@ -36,7 +39,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         styles.key,
         flex && { flex },
         style,
-        pressed && { transform: [{ scale: 0.95 }], opacity: 0.85 },
+        pressed && { transform: [{ scale: 0.96 }], opacity: 0.85 },
       ]}
     >
       {children || <Text style={styles.keyText}>{label}</Text>}
@@ -57,12 +60,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         {tabs.map((tab) => {
           const active = activeInput.field === tab.id;
           return (
-            <Pressable
-              key={tab.id}
-              onPress={() => activeInput.onChangeField(tab.id)}
-              style={styles.tab}
-            >
-              <Text style={[styles.tabLabel, !active && { color: '#6b7280' }]}>{tab.label}</Text>
+            <Pressable key={tab.id} onPress={() => activeInput.onChangeField(tab.id)} style={styles.tab}>
+              <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
               {active ? (
                 <View style={styles.checkOn}>
                   <Text style={styles.checkOnText}>✓</Text>
@@ -81,7 +80,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           <Key label="2" onPress={() => handleKeyPress('2')} />
           <Key label="3" onPress={() => handleKeyPress('3')} />
           <Key onPress={onClose}>
-            <ChevronDown size={24} color="#fff" />
+            <ChevronDown size={22} color={colors.text} />
           </Key>
         </View>
         <View style={styles.row}>
@@ -104,18 +103,15 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
               <Key label="." onPress={() => handleKeyPress('.')} />
               <Key label="0" onPress={() => handleKeyPress('0')} />
               <Key onPress={() => handleKeyPress('delete')}>
-                <Delete size={24} color="#fff" />
+                <Delete size={22} color={colors.text} />
               </Key>
             </View>
           </View>
           <Pressable
             onPress={() => activeInput.onNext()}
-            style={({ pressed }) => [
-              styles.nextKey,
-              pressed && { transform: [{ scale: 0.96 }] },
-            ]}
+            style={({ pressed }) => [styles.nextKey, pressed && { transform: [{ scale: 0.96 }] }]}
           >
-            <ArrowRight size={24} color="#000" strokeWidth={3} />
+            <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
           </Pressable>
         </View>
       </View>
@@ -123,75 +119,81 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 100,
-    backgroundColor: '#1c1c1e',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingTop: 8,
-  },
-  handleWrap: { alignItems: 'center', paddingBottom: 8 },
-  handle: { width: 48, height: 6, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.2)' },
-  tabs: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-    marginBottom: 8,
-  },
-  tab: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 6 },
-  tabLabel: { color: '#fff', fontFamily: fonts.bold, fontSize: 16 },
-  checkOn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkOnText: { color: '#000', fontSize: 11, fontFamily: fonts.bold },
-  checkOff: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#6b7280',
-  },
-  grid: { padding: 12, gap: 6 },
-  row: { flexDirection: 'row', gap: 6, marginBottom: 6 },
-  rowBottom: { flexDirection: 'row', gap: 6 },
-  key: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#2c2c2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  keyText: { color: '#fff', fontSize: 20, fontFamily: fonts.regular },
-  split: {
-    flex: 1,
-    flexDirection: 'row',
-    height: 48,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#2c2c2e',
-  },
-  splitKey: { borderRadius: 0, height: 48 },
-  nextKey: {
-    flex: 1,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    sheet: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 100,
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      borderTopWidth: 1,
+      borderColor: colors.borderStrong,
+      paddingTop: 8,
+    },
+    handleWrap: { alignItems: 'center', paddingBottom: 8 },
+    handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
+    tabs: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 16,
+      paddingBottom: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      marginBottom: 8,
+    },
+    tab: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 6 },
+    tabLabel: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    checkOn: {
+      width: 18,
+      height: 18,
+      borderRadius: 4,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkOnText: { color: colors.accentFg, fontSize: 11, fontFamily: fonts.bold },
+    checkOff: {
+      width: 18,
+      height: 18,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    grid: { padding: 12, gap: 6 },
+    row: { flexDirection: 'row', gap: 6, marginBottom: 6 },
+    rowBottom: { flexDirection: 'row', gap: 6 },
+    key: {
+      flex: 1,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    keyText: { color: colors.text, fontSize: 20, fontFamily: fonts.medium, fontVariant: ['tabular-nums'] },
+    split: {
+      flex: 1,
+      flexDirection: 'row',
+      height: 48,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    splitKey: { borderRadius: 0, height: 48, borderWidth: 0 },
+    nextKey: {
+      flex: 1,
+      borderRadius: radius.md,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });
+}

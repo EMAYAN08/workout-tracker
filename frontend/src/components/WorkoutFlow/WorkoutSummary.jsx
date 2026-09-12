@@ -15,7 +15,8 @@ import {
   Moon,
 } from 'lucide-react-native';
 import { convertWeight } from '../../utils/calculations';
-import { colors, fonts, radius } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -25,6 +26,8 @@ const formatTime = (seconds) => {
 
 export default function WorkoutSummary({ data, onClose, unit }) {
   const cardRef = useRef(null);
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   if (!data) return null;
 
   const exercises = data.exercises || [];
@@ -88,14 +91,14 @@ export default function WorkoutSummary({ data, onClose, unit }) {
           style={[
             styles.iconBox,
             isRest
-              ? { backgroundColor: 'rgba(96,165,250,0.15)', borderColor: 'rgba(59,130,246,0.2)' }
-              : { backgroundColor: 'rgba(16,185,129,0.15)', borderColor: 'rgba(16,185,129,0.2)' },
+              ? { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder }
+              : { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder },
           ]}
         >
           {isRest ? (
-            <BatteryCharging size={32} color="#60a5fa" />
+            <BatteryCharging size={32} color={colors.accent} />
           ) : (
-            <CheckCircle size={32} color="#10B981" />
+            <CheckCircle size={32} color={colors.accent} />
           )}
         </View>
         <Text style={styles.title}>{isRest ? 'Rest Day Logged' : 'Workout Complete'}</Text>
@@ -110,7 +113,7 @@ export default function WorkoutSummary({ data, onClose, unit }) {
           {!isRest ? (
             <>
               <View style={styles.stat}>
-                <Flame size={18} color="#f59e0b" />
+                <Flame size={18} color={colors.accent} />
                 <Text style={styles.statVal}>{totalSets}</Text>
                 <Text style={styles.statLbl}>Sets</Text>
               </View>
@@ -124,9 +127,9 @@ export default function WorkoutSummary({ data, onClose, unit }) {
             </>
           ) : (
             <View style={styles.restStat}>
-              <Coffee size={18} color="#60a5fa" />
+              <Coffee size={18} color={colors.accent} />
               <Text style={styles.restStatText}>Rest & Recover</Text>
-              <Moon size={18} color="#60a5fa" />
+              <Moon size={18} color={colors.accent} />
             </View>
           )}
         </View>
@@ -162,7 +165,8 @@ export default function WorkoutSummary({ data, onClose, unit }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
@@ -245,7 +249,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
   },
-  restStatText: { color: '#60a5fa', fontFamily: fonts.black, fontSize: 13, textTransform: 'uppercase' },
+  restStatText: { color: colors.accent, fontFamily: fonts.black, fontSize: 13, textTransform: 'uppercase' },
   sectionLbl: {
     color: colors.textMuted,
     fontSize: 10,
@@ -277,3 +281,5 @@ const styles = StyleSheet.create({
   brand: { color: colors.text, fontFamily: fonts.black, fontSize: 12, textTransform: 'uppercase' },
   date: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
 });
+}
+

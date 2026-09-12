@@ -14,7 +14,8 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Target, Flame, Share2 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { colors, fonts } from '../../theme';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
@@ -46,6 +47,8 @@ const generateMonthGrid = (date, countsMap) => {
 
 export default function ConsistencyMap({ onMapClick }) {
   const { workoutHistory } = useWorkout();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const mapRef = useRef(null);
   const [chunkOffset, setChunkOffset] = useState(0);
   const monthsToShow = 2;
@@ -118,9 +121,9 @@ export default function ConsistencyMap({ onMapClick }) {
     };
   }, [countsMap, chunkOffset]);
 
-  let trendColor = colors.amber;
-  if (score > previousScore) trendColor = colors.emerald;
-  else if (score < previousScore) trendColor = colors.red;
+  let trendColor = colors.textMuted;
+  if (score > previousScore) trendColor = colors.accent;
+  else if (score < previousScore) trendColor = colors.danger;
 
   const handleShare = async () => {
     try {
@@ -140,10 +143,10 @@ export default function ConsistencyMap({ onMapClick }) {
   const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const cellColor = (day) => {
     if (!day) return 'transparent';
-    if (day.isFuture) return 'rgba(38,38,38,0.3)';
-    if (day.isRestOnly) return 'rgba(16,185,129,0.8)';
-    if (day.hasWorkout) return colors.primary;
-    return colors.surfaceLight;
+    if (day.isFuture) return colors.heatmapFuture;
+    if (day.isRestOnly) return colors.heatmapRest;
+    if (day.hasWorkout) return colors.heatmapWork;
+    return colors.heatmapEmpty;
   };
 
   return (
@@ -152,8 +155,7 @@ export default function ConsistencyMap({ onMapClick }) {
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <View style={styles.titleRow}>
-              <Target size={20} color={colors.primary} />
-              <Text style={styles.title}>Consistency Map</Text>
+              <Text style={styles.title}>Consistency</Text>
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation?.();
@@ -224,57 +226,59 @@ export default function ConsistencyMap({ onMapClick }) {
   );
 }
 
-const styles = StyleSheet.create({
-  panel: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-  },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { color: colors.text, fontFamily: fonts.black, fontSize: 18 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
-  scorePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  scoreText: { fontFamily: fonts.bold, fontSize: 11, textTransform: 'uppercase' },
-  daysText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.semibold },
-  nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  year: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, minWidth: 40, textAlign: 'center' },
-  calRow: { flexDirection: 'row', marginTop: 16, gap: 8 },
-  yAxis: { paddingTop: 22, gap: 4 },
-  yLabel: {
-    width: 12,
-    height: 14,
-    color: colors.textMuted,
-    fontSize: 9,
-    fontFamily: fonts.black,
-    textAlign: 'center',
-  },
-  months: { flexDirection: 'row', gap: 20, flex: 1 },
-  month: { gap: 10 },
-  monthName: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: fonts.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  cell: { width: 14, height: 14, borderRadius: 3 },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    panel: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+    },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    title: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, letterSpacing: -0.3 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
+    scorePill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: radius.xs,
+      borderWidth: 1,
+    },
+    scoreText: { fontFamily: fonts.semibold, fontSize: 11, textTransform: 'uppercase' },
+    daysText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.medium },
+    nav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    year: { color: colors.text, fontFamily: fonts.semibold, fontSize: 12, minWidth: 40, textAlign: 'center' },
+    calRow: { flexDirection: 'row', marginTop: 16, gap: 8 },
+    yAxis: { paddingTop: 22, gap: 4 },
+    yLabel: {
+      width: 12,
+      height: 14,
+      color: colors.textMuted,
+      fontSize: 9,
+      fontFamily: fonts.bold,
+      textAlign: 'center',
+    },
+    months: { flexDirection: 'row', gap: 20, flex: 1 },
+    month: { gap: 10 },
+    monthName: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontFamily: fonts.semibold,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    cell: { width: 14, height: 14, borderRadius: 2 },
+  });
+}

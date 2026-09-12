@@ -6,31 +6,40 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   useFonts,
-  Outfit_400Regular,
-  Outfit_500Medium,
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-  Outfit_800ExtraBold,
-  Outfit_900Black,
-} from '@expo-google-fonts/outfit';
+  IBMPlexSans_400Regular,
+  IBMPlexSans_500Medium,
+  IBMPlexSans_600SemiBold,
+  IBMPlexSans_700Bold,
+} from '@expo-google-fonts/ibm-plex-sans';
+import { IBMPlexMono_500Medium, IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono';
 import { WorkoutProvider } from './src/context/WorkoutContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppContent from './src/AppContent';
-import { colors } from './src/theme';
+
+function Root() {
+  const { colors, isDark } = useTheme();
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <AppContent />
+    </>
+  );
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Outfit_400Regular,
-    Outfit_500Medium,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
-    Outfit_800ExtraBold,
-    Outfit_900Black,
+    IBMPlexSans_400Regular,
+    IBMPlexSans_500Medium,
+    IBMPlexSans_600SemiBold,
+    IBMPlexSans_700Bold,
+    IBMPlexMono_500Medium,
+    IBMPlexMono_700Bold,
   });
 
   if (!fontsLoaded) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator color="#3b82f6" size="large" />
+        <ActivityIndicator color="#2563EB" size="large" />
       </View>
     );
   }
@@ -38,10 +47,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <WorkoutProvider>
-          <StatusBar style="light" />
-          <AppContent />
-        </WorkoutProvider>
+        <ThemeProvider>
+          <WorkoutProvider>
+            <Root />
+          </WorkoutProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -50,7 +60,7 @@ export default function App() {
 const styles = StyleSheet.create({
   boot: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F4F3EF',
     alignItems: 'center',
     justifyContent: 'center',
   },

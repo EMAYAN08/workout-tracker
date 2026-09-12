@@ -10,13 +10,16 @@ import {
   Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, Sun, Moon } from 'lucide-react-native';
 import { API_URL, LOGO } from '../../config';
-import { colors, fonts, radius } from '../../theme';
+import { fonts, radius } from '../../theme';
 import { Input, Button } from '../ui/primitives';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Login({ onLogin }) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = makeStyles(colors);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -50,149 +53,153 @@ export default function Login({ onLogin }) {
       style={[styles.root, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.refreshWrap, { top: insets.top + 12 }]}>
+      <View style={[styles.topBar, { top: insets.top + 12 }]}>
+        <Pressable onPress={toggleTheme} style={styles.iconBtn}>
+          {isDark ? <Sun size={16} color={colors.text} /> : <Moon size={16} color={colors.text} />}
+        </Pressable>
         <Pressable
           onPress={() => {
             setUsername('');
             setPassword('');
             setError('');
           }}
-          style={styles.refreshBtn}
+          style={styles.iconBtn}
         >
-          <RefreshCw size={20} color={colors.primary} />
+          <RefreshCw size={16} color={colors.text} />
         </Pressable>
       </View>
 
-      <View style={styles.blobLeft} />
-      <View style={styles.blobRight} />
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
           <Image source={LOGO} style={styles.logo} />
         </View>
-        <Text style={styles.title}>TrackIt</Text>
-        <Text style={styles.subtitle}>Sign in or create an account</Text>
+        <Text style={styles.kicker}>TrackIt</Text>
+        <Text style={styles.title}>Sign in.</Text>
+        <Text style={styles.subtitle}>Enter your account, or create one to start logging.</Text>
 
-        <Input
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
-          editable={!loading}
-          autoComplete="username"
-        />
-        <Input
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          editable={!loading}
-          secureTextEntry
-          autoComplete="password"
-          style={{ marginTop: 12 }}
-        />
+        <View style={styles.card}>
+          <Text style={styles.fieldLbl}>Username</Text>
+          <Input
+            placeholder="your name"
+            value={username}
+            onChangeText={setUsername}
+            editable={!loading}
+            autoComplete="username"
+          />
+          <Text style={[styles.fieldLbl, { marginTop: 14 }]}>Password</Text>
+          <Input
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
+            secureTextEntry
+            autoComplete="password"
+          />
 
-        {!!error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+          {!!error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
-        <Button
-          onPress={handleSubmit}
-          disabled={loading}
-          loading={loading}
-          style={{ marginTop: 24, paddingVertical: 16 }}
-        >
-          {loading ? 'Processing...' : 'Enter'}
-        </Button>
+          <Button onPress={handleSubmit} disabled={loading} loading={loading} style={{ marginTop: 18 }}>
+            {loading ? 'Processing...' : 'Enter'}
+          </Button>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-    maxWidth: 420,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  refreshWrap: {
-    position: 'absolute',
-    right: 20,
-    zIndex: 50,
-  },
-  refreshBtn: {
-    padding: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.4)',
-  },
-  blobLeft: {
-    position: 'absolute',
-    top: '20%',
-    left: -80,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(59,130,246,0.18)',
-  },
-  blobRight: {
-    position: 'absolute',
-    bottom: '18%',
-    right: -80,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(96,165,250,0.16)',
-  },
-  logoWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    overflow: 'hidden',
-    alignSelf: 'center',
-    marginBottom: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.3)',
-  },
-  logo: { width: '100%', height: '100%' },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.black,
-    fontSize: 32,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 28,
-  },
-  errorBox: {
-    marginTop: 12,
-    backgroundColor: 'rgba(248,113,113,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(248,113,113,0.2)',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  errorText: {
-    color: '#f87171',
-    fontFamily: fonts.medium,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.background },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: 24,
+      maxWidth: 420,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    topBar: {
+      position: 'absolute',
+      right: 16,
+      zIndex: 50,
+      flexDirection: 'row',
+      gap: 8,
+    },
+    iconBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      marginBottom: 28,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    logo: { width: '100%', height: '100%' },
+    kicker: {
+      color: colors.accent,
+      fontFamily: fonts.semibold,
+      fontSize: 12,
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+    },
+    title: {
+      color: colors.text,
+      fontFamily: fonts.bold,
+      fontSize: 40,
+      letterSpacing: -1.2,
+      marginBottom: 8,
+    },
+    subtitle: {
+      color: colors.textMuted,
+      fontFamily: fonts.regular,
+      fontSize: 15,
+      lineHeight: 22,
+      marginBottom: 28,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+    },
+    fieldLbl: {
+      color: colors.textMuted,
+      fontFamily: fonts.semibold,
+      fontSize: 11,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      marginBottom: 6,
+    },
+    errorBox: {
+      marginTop: 12,
+      backgroundColor: colors.dangerSoft,
+      borderWidth: 1,
+      borderColor: colors.danger + '33',
+      borderRadius: radius.sm,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    errorText: {
+      color: colors.danger,
+      fontFamily: fonts.medium,
+      fontSize: 13,
+      textAlign: 'center',
+    },
+  });
+}
