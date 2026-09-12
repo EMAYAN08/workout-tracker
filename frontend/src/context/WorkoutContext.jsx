@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
@@ -10,11 +9,9 @@ import { exportBackup, pickBackupFile, confirmImportMode } from '../db/backup';
 import {
   scheduleRestNotification,
   cancelRestNotification,
-  subscribeNotificationActions,
+  tickRestNotification,
+  dismissLiveRest,
   findNextIncompleteSet,
-  ACT_START,
-  ACT_PAUSE,
-  ACT_RESUME,
 } from '../notifications';
 
 const WorkoutContext = createContext();
@@ -48,8 +45,6 @@ export function WorkoutProvider({ children }) {
   const [workoutDuration, setWorkoutDuration] = useState(0);
   const [lastSetCompletedAt, setLastSetCompletedAt] = useState(null);
   const [restTimer, setRestTimer] = useState(0);
-  const [restPaused, setRestPaused] = useState(false);
-  const [restPausedElapsed, setRestPausedElapsed] = useState(0);
   const [playingSet, setPlayingSet] = useState(null);
   const [setTimer, setSetTimer] = useState(0);
   const [workoutHistory, setWorkoutHistory] = useState([]);
@@ -207,10 +202,6 @@ export function WorkoutProvider({ children }) {
 
   useEffect(() => {
     let interval;
-    if (restPaused) {
-      setRestTimer(restPausedElapsed);
-      return undefined;
-    }
     if (lastSetCompletedAt) {
       const updateTimer = () => {
         const elapsed = Math.max(0, Math.floor((Date.now() - lastSetCompletedAt) / 1000));
@@ -222,7 +213,7 @@ export function WorkoutProvider({ children }) {
       setRestTimer(0);
     }
     return () => clearInterval(interval);
-  }, [lastSetCompletedAt, restPaused, restPausedElapsed]);
+  }, [lastSetCompletedAt]);
 
   const toggleUnit = () => {
     const newUnit = unit === 'lbs' ? 'kgs' : 'lbs';
@@ -243,8 +234,6 @@ export function WorkoutProvider({ children }) {
 
   const startWorkout = () => {
     cancelRestNotification();
-    setRestPaused(false);
-    setRestPausedElapsed(0);
     setActiveWorkout({
       id: `wk_${Date.now()}`,
       startTime: Date.now(),
@@ -308,8 +297,6 @@ export function WorkoutProvider({ children }) {
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
-    setRestPaused(false);
-    setRestPausedElapsed(0);
     cancelRestNotification();
   };
 
@@ -342,8 +329,6 @@ export function WorkoutProvider({ children }) {
       setActiveWorkout(null);
       setWorkoutDuration(0);
       setLastSetCompletedAt(null);
-      setRestPaused(false);
-      setRestPausedElapsed(0);
       await cancelRestNotification();
       await removeItem('workout_active');
     } catch (e) {
@@ -356,8 +341,6 @@ export function WorkoutProvider({ children }) {
     setActiveWorkout(null);
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
-    setRestPaused(false);
-    setRestPausedElapsed(0);
   };
 
   const addExercise = (exercise) => {
@@ -433,35 +416,20 @@ export function WorkoutProvider({ children }) {
     };
   };
 
-  const pushRestNotice = (seconds, paused = false, workout = activeWorkout) => {
+  const pushRestNotice = (seconds, workout = activeWorkout) => {
     const meta = restMeta(workout);
     return scheduleRestNotification({
       seconds,
       exerciseName: meta.exerciseName,
       setLabel: meta.setLabel,
-      paused,
     });
   };
 
   const startSet = (exerciseIndex, setIndex) => {
     vibrate();
     cancelRestNotification();
-    setRestPaused(false);
-    setRestPausedElapsed(0);
     setLastSetCompletedAt(null);
     setPlayingSet({ exerciseIndex, setIndex, startTime: Date.now() });
-  };
-
-  const startNextSet = () => {
-    const next = findNextIncompleteSet(activeWorkout);
-    if (!next) {
-      cancelRestNotification();
-      setLastSetCompletedAt(null);
-      setRestPaused(false);
-      return false;
-    }
-    startSet(next.exerciseIndex, next.setIndex);
-    return true;
   };
 
   const cancelSet = () => {
@@ -491,32 +459,8 @@ export function WorkoutProvider({ children }) {
     const nextWorkout = { ...activeWorkout, exercises: newExercises };
     setActiveWorkout(nextWorkout);
     setPlayingSet(null);
-    setRestPaused(false);
-    setRestPausedElapsed(0);
     setLastSetCompletedAt(now);
-    pushRestNotice(restTargetSec, false, nextWorkout);
-  };
-
-  const pauseRest = () => {
-    if (restPaused) return;
-    if (!lastSetCompletedAt && restTimer <= 0) return;
-    const elapsed = lastSetCompletedAt
-      ? Math.max(0, Math.floor((Date.now() - lastSetCompletedAt) / 1000))
-      : restTimer;
-    setRestPausedElapsed(elapsed);
-    setRestPaused(true);
-    setLastSetCompletedAt(null);
-    const remaining = Math.max(0, restTargetSec - elapsed);
-    pushRestNotice(remaining, true);
-  };
-
-  const resumeRest = () => {
-    if (!restPaused) return;
-    const elapsed = restPausedElapsed;
-    setLastSetCompletedAt(Date.now() - elapsed * 1000);
-    setRestPaused(false);
-    const remaining = Math.max(1, restTargetSec - elapsed);
-    pushRestNotice(remaining, false);
+    pushRestNotice(restTargetSec, nextWorkout);
   };
 
   const uncompleteSet = (exerciseIndex, setIndex) => {
@@ -605,8 +549,6 @@ export function WorkoutProvider({ children }) {
   const stopRestTimer = () => {
     cancelRestNotification();
     setLastSetCompletedAt(null);
-    setRestPaused(false);
-    setRestPausedElapsed(0);
   };
 
   const searchExercises = (query) => searchCatalog(query, customExercises);
@@ -646,45 +588,30 @@ export function WorkoutProvider({ children }) {
     syncFromStore();
   };
 
-  const actionRef = useRef({});
-  actionRef.current = {
-    startNextSet,
-    pauseRest,
-    resumeRest,
-    pushRestNotice,
-    restPaused,
-    restPausedElapsed,
-    restTargetSec,
-    lastSetCompletedAt,
-    playingSet,
-    activeWorkout,
-  };
-
   useEffect(() => {
-    const unsub = subscribeNotificationActions((id) => {
-      if (id === ACT_START) actionRef.current.startNextSet();
-      else if (id === ACT_PAUSE) actionRef.current.pauseRest();
-      else if (id === ACT_RESUME) actionRef.current.resumeRest();
-    });
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'background' && state !== 'inactive') return;
-      const cur = actionRef.current;
-      if (!cur.activeWorkout || cur.playingSet) return;
-      if (cur.restPaused) {
-        cur.pushRestNotice(Math.max(0, cur.restTargetSec - cur.restPausedElapsed), true);
+    if (!lastSetCompletedAt || playingSet) return undefined;
+    const meta = restMeta();
+    let liveCleared = false;
+    const tick = () => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - lastSetCompletedAt) / 1000));
+      const remaining = restTargetSec - elapsed;
+      if (remaining <= 0) {
+        if (!liveCleared) {
+          liveCleared = true;
+          dismissLiveRest();
+        }
         return;
       }
-      if (cur.lastSetCompletedAt) {
-        const elapsed = Math.max(0, Math.floor((Date.now() - cur.lastSetCompletedAt) / 1000));
-        const remaining = Math.max(1, cur.restTargetSec - elapsed);
-        cur.pushRestNotice(remaining, false);
-      }
-    });
-    return () => {
-      unsub();
-      sub.remove();
+      tickRestNotification({
+        remainingSec: remaining,
+        exerciseName: meta.exerciseName,
+        setLabel: meta.setLabel,
+      });
     };
-  }, []);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lastSetCompletedAt, restTargetSec, playingSet, activeWorkout]);
 
   return (
     <WorkoutContext.Provider
@@ -709,11 +636,8 @@ export function WorkoutProvider({ children }) {
         removeActiveExercise,
         workoutDuration,
         restTimer,
-        restPaused,
+        isResting: !!lastSetCompletedAt && !playingSet,
         stopRestTimer,
-        pauseRest,
-        resumeRest,
-        startNextSet,
         playingSet,
         setTimer,
         startSet,

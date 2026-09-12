@@ -13,7 +13,6 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Play,
-  Pause,
   Plus,
   Timer,
   Trash2,
@@ -53,12 +52,9 @@ export default function ActiveWorkout() {
     removeSet,
     removeActiveExercise,
     restTimer,
-    restPaused,
     restTargetSec,
+    isResting,
     stopRestTimer,
-    pauseRest,
-    resumeRest,
-    startNextSet,
     unit,
     workoutHistory,
     playingSet,
@@ -88,6 +84,9 @@ export default function ActiveWorkout() {
   }, [searchQuery, searchExercises]);
 
   if (!activeWorkout) return null;
+
+  const restRemaining = Math.max(0, restTargetSec - restTimer);
+  const showRest = isResting && restRemaining > 0;
 
   const handleAddExercise = (exercise) => {
     addExercise(exercise);
@@ -130,30 +129,13 @@ export default function ActiveWorkout() {
               <Text style={styles.timerValue}>{formatTime(setTimer)}</Text>
             </View>
           </View>
-        ) : restTimer > 0 || restPaused ? (
+        ) : showRest ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.timerLabel}>{restPaused ? 'Paused' : 'Rest'}</Text>
+            <Text style={styles.timerLabel}>Rest</Text>
             <View style={styles.timerRow}>
-              <Timer size={14} color={colors.textMuted} />
-              <Text style={[styles.timerValue, { color: restPaused ? colors.textMuted : colors.accent }]}>
-                {formatTime(Math.max(0, restTargetSec - restTimer))}
-              </Text>
-              <Pressable
-                onPress={restPaused ? resumeRest : pauseRest}
-                style={styles.stopRest}
-                accessibilityLabel={restPaused ? 'Resume rest' : 'Pause rest'}
-              >
-                {restPaused ? (
-                  <Play size={14} color={colors.text} fill={colors.text} />
-                ) : (
-                  <Pause size={14} color={colors.text} fill={colors.text} />
-                )}
-              </Pressable>
-              <Pressable onPress={startNextSet} style={styles.stopRest} accessibilityLabel="Start next set">
-                <Play size={14} color={colors.accent} />
-              </Pressable>
-              <Pressable onPress={stopRestTimer} style={styles.stopRest} accessibilityLabel="Skip rest">
-                <X size={12} color={colors.textMuted} strokeWidth={3} />
+              <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restRemaining)}</Text>
+              <Pressable onPress={stopRestTimer} style={styles.skipRest} accessibilityLabel="Skip rest">
+                <Text style={styles.skipRestText}>Skip</Text>
               </Pressable>
             </View>
           </View>
@@ -303,7 +285,10 @@ export default function ActiveWorkout() {
                       {isPlaying ? (
                         <Pressable
                           onPress={() => {
-                            if (set.reps) completeSet(idx, sIdx);
+                            if (set.reps) {
+                              setActiveInput(null);
+                              completeSet(idx, sIdx);
+                            }
                           }}
                           accessibilityLabel="Complete set"
                           style={[styles.playBtn, set.reps ? styles.playReady : styles.playDisabled]}
@@ -475,15 +460,17 @@ function makeStyles(colors) {
   },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   timerValue: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
-  stopRest: {
-    marginLeft: 4,
-    width: HIT,
-    height: HIT,
+  skipRest: {
+    marginLeft: 8,
+    minHeight: 32,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
-    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
+  skipRestText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12 },
   restCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,

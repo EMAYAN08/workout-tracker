@@ -1,17 +1,12 @@
 import { Platform } from 'react-native';
 
-export const CAT_REST_RUN = 'restRun';
-export const CAT_REST_PAUSE = 'restPause';
-export const CAT_REST_DONE = 'restDone';
-export const ACT_START = 'startSet';
-export const ACT_PAUSE = 'pauseRest';
-export const ACT_RESUME = 'resumeRest';
-
 const LIVE_ID = 'trackitRestLive';
 const DONE_ID = 'trackitRestDone';
+const CH_LIVE = 'rest-live';
+const CH_DONE = 'rest-done';
 
 let Notifications = null;
-let responseSub = null;
+let lastLiveKey = '';
 
 async function mod() {
   if (Notifications) return Notifications;
@@ -19,12 +14,15 @@ async function mod() {
     Notifications = await import('expo-notifications');
     if (Platform.OS !== 'web') {
       Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowBanner: true,
-          shouldShowList: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
+        handleNotification: async (n) => {
+          const done = n?.request?.identifier === DONE_ID || n?.request?.content?.data?.kind === 'restDone';
+          return {
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: !!done,
+            shouldSetBadge: false,
+          };
+        },
       });
     }
   } catch {
@@ -54,70 +52,70 @@ export async function registerNotificationCategories() {
   if (!N || Platform.OS === 'web') return;
   try {
     if (Platform.OS === 'android' && N.setNotificationChannelAsync) {
-      await N.setNotificationChannelAsync('rest', {
+      await N.setNotificationChannelAsync(CH_LIVE, {
         name: 'Rest timer',
+        importance: N.AndroidImportance?.DEFAULT ?? 3,
+        enableVibrate: false,
+        sound: null,
+        lockscreenVisibility: N.AndroidNotificationVisibility?.PUBLIC ?? 1,
+      });
+      await N.setNotificationChannelAsync(CH_DONE, {
+        name: 'Rest complete',
         importance: N.AndroidImportance?.HIGH ?? 4,
         vibrationPattern: [0, 220, 120, 220],
         lockscreenVisibility: N.AndroidNotificationVisibility?.PUBLIC ?? 1,
         sound: 'default',
       });
     }
-    await N.setNotificationCategoryAsync(CAT_REST_RUN, [
-      { identifier: ACT_PAUSE, buttonTitle: 'Pause', options: { opensAppToForeground: false } },
-      { identifier: ACT_START, buttonTitle: 'Start Set', options: { opensAppToForeground: true } },
-    ]);
-    await N.setNotificationCategoryAsync(CAT_REST_PAUSE, [
-      { identifier: ACT_RESUME, buttonTitle: 'Resume', options: { opensAppToForeground: false } },
-      { identifier: ACT_START, buttonTitle: 'Start Set', options: { opensAppToForeground: true } },
-    ]);
-    await N.setNotificationCategoryAsync(CAT_REST_DONE, [
-      { identifier: ACT_START, buttonTitle: 'Start Set', options: { opensAppToForeground: true } },
-    ]);
   } catch (err) {
-    console.warn('notification categories', err?.message || err);
+    console.warn('notification channels', err?.message || err);
   }
 }
 
-function payload({ exerciseName, setLabel, remainingSec, paused }) {
-  const name = exerciseName || 'TrackIt';
-  const set = setLabel || 'Next set';
-  if (paused) {
-    return {
-      title: name,
-      subtitle: set,
-      body: `Paused · ${formatRestClock(remainingSec)} left · Resume or start the next set`,
-      categoryIdentifier: CAT_REST_PAUSE,
-    };
-  }
-  return {
-    title: name,
-    subtitle: set,
-    body: `Rest ${formatRestClock(remainingSec)} · ${set}`,
-    categoryIdentifier: CAT_REST_RUN,
-  };
-}
-
-async function presentNow(identifier, content) {
+async function presentLive(content) {
   const N = await mod();
   if (!N || Platform.OS === 'web') return;
   await N.scheduleNotificationAsync({
-    identifier,
+    identifier: LIVE_ID,
     content: {
       ...content,
       sound: false,
       sticky: true,
       autoDismiss: false,
-      data: { kind: 'rest' },
+      channelId: CH_LIVE,
+      priority: N.AndroidNotificationPriority?.DEFAULT,
+      interruptionLevel: 'passive',
+      data: { kind: 'restLive' },
     },
     trigger: null,
   });
+}
+
+export async function tickRestNotification({ remainingSec, exerciseName, setLabel } = {}) {
+  const N = await mod();
+  if (!N || Platform.OS === 'web') return;
+  const remaining = Math.max(0, Math.floor(Number(remainingSec) || 0));
+  const name = exerciseName || 'TrackIt';
+  const set = setLabel || 'Next set';
+  const clock = formatRestClock(remaining);
+  const key = `${name}|${set}|${clock}`;
+  if (key === lastLiveKey) return;
+  lastLiveKey = key;
+  try {
+    await presentLive({
+      title: `${clock} rest`,
+      subtitle: name,
+      body: `${name} · ${set}`,
+    });
+  } catch (err) {
+    console.warn('live rest tick', err?.message || err);
+  }
 }
 
 export async function scheduleRestNotification({
   seconds,
   exerciseName,
   setLabel,
-  paused = false,
 } = {}) {
   const N = await mod();
   const remaining = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -126,18 +124,18 @@ export async function scheduleRestNotification({
     await cancelRestNotification();
     const ok = await ensureNotificationPermission();
     if (!ok) return;
-    const live = payload({ exerciseName, setLabel, remainingSec: remaining, paused });
-    await presentNow(LIVE_ID, live);
-    if (!paused && remaining > 0) {
+    await registerNotificationCategories();
+    await tickRestNotification({ remainingSec: remaining, exerciseName, setLabel });
+    if (remaining > 0) {
       await N.scheduleNotificationAsync({
         identifier: DONE_ID,
         content: {
-          title: exerciseName || 'TrackIt',
-          subtitle: setLabel || 'Next set',
-          body: `Rest is over · ${setLabel || 'Next set'}. Start the next set.`,
+          title: 'Rest is over',
+          subtitle: exerciseName || 'TrackIt',
+          body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
           sound: true,
+          channelId: CH_DONE,
           interruptionLevel: 'timeSensitive',
-          categoryIdentifier: CAT_REST_DONE,
           data: { kind: 'restDone', exerciseName, setLabel },
         },
         trigger: {
@@ -152,8 +150,21 @@ export async function scheduleRestNotification({
   }
 }
 
+export async function dismissLiveRest() {
+  const N = await mod();
+  if (!N || Platform.OS === 'web') return;
+  lastLiveKey = '';
+  try {
+    await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});
+    await N.dismissNotificationAsync(LIVE_ID).catch(() => {});
+  } catch {
+    /* noop */
+  }
+}
+
 export async function cancelRestNotification() {
   const N = await mod();
+  lastLiveKey = '';
   if (!N || Platform.OS === 'web') return;
   try {
     await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});
@@ -163,29 +174,6 @@ export async function cancelRestNotification() {
   } catch {
     /* noop */
   }
-}
-
-export function subscribeNotificationActions(onAction) {
-  let unsub = () => {};
-  (async () => {
-    const N = await mod();
-    if (!N || Platform.OS === 'web') return;
-    await registerNotificationCategories();
-    if (responseSub) {
-      responseSub.remove();
-      responseSub = null;
-    }
-    responseSub = N.addNotificationResponseReceivedListener((response) => {
-      const id = response?.actionIdentifier;
-      if (!id || id === N.DEFAULT_ACTION_IDENTIFIER) return;
-      onAction?.(id);
-    });
-    unsub = () => {
-      responseSub?.remove();
-      responseSub = null;
-    };
-  })();
-  return () => unsub();
 }
 
 export function findNextIncompleteSet(workout) {

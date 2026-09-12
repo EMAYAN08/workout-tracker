@@ -33,12 +33,6 @@ import { haptic } from './haptics';
 
 const TAB_ORDER = ['home', 'routines', 'custom_exercises', 'dashboard'];
 
-const formatTime = (seconds) => {
-  const m = Math.floor(Math.max(0, seconds) / 60);
-  const s = Math.max(0, seconds) % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
-
 export default function AppContent() {
   const {
     hydrated,
@@ -50,10 +44,6 @@ export default function AppContent() {
     toggleUnit,
     completedWorkout,
     setCompletedWorkout,
-    restTimer,
-    restPaused,
-    playingSet,
-    restTargetSec,
     workoutHistory,
   } = useWorkout();
   const { colors, isDark, toggleTheme, tabBarHidden } = useTheme();
@@ -107,8 +97,6 @@ export default function AppContent() {
     });
 
   const lastSession = workoutHistory.find((w) => w.exercises?.length > 0);
-  const restRemaining = Math.max(0, restTargetSec - restTimer);
-  const restReady = restTimer >= restTargetSec;
 
   const renderBody = () => {
     if (activeWorkout) return <ActiveWorkout />;
@@ -168,6 +156,18 @@ export default function AppContent() {
     { id: 'dashboard', label: 'You', Icon: LayoutDashboard },
   ];
 
+  if (completedWorkout) {
+    return (
+      <View style={styles.root}>
+        <WorkoutSummary
+          data={completedWorkout}
+          onClose={() => setCompletedWorkout(null)}
+          unit={unit}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
@@ -208,35 +208,6 @@ export default function AppContent() {
         </View>
       </View>
 
-      {activeWorkout && (restTimer > 0 || restPaused) && !playingSet && (
-        <View
-          style={styles.islandWrap}
-          pointerEvents="none"
-          accessible
-          accessibilityRole="timer"
-          accessibilityLabel={
-            restPaused
-              ? `Rest paused, ${formatTime(restRemaining)} remaining`
-              : restReady
-                ? `Go, rest ${formatTime(restTimer)}`
-                : `Rest ${formatTime(restRemaining)} remaining`
-          }
-        >
-          <View style={styles.island}>
-            <View
-              style={[
-                styles.islandDot,
-                { backgroundColor: restPaused ? colors.textMuted : restReady ? colors.accent : colors.textMuted },
-              ]}
-            />
-            <Text style={[styles.islandKicker, restReady && !restPaused && { color: colors.accent }]}>
-              {restPaused ? 'PAUSE' : restReady ? 'GO' : 'REST'}
-            </Text>
-            <Text style={styles.islandTime}>{formatTime(restReady && !restPaused ? restTimer : restRemaining)}</Text>
-          </View>
-        </View>
-      )}
-
       {activeWorkout && (
         <View style={styles.workoutBar}>
           <Pressable
@@ -270,14 +241,6 @@ export default function AppContent() {
             </Text>
           </Pressable>
         </View>
-      )}
-
-      {completedWorkout && (
-        <WorkoutSummary
-          data={completedWorkout}
-          onClose={() => setCompletedWorkout(null)}
-          unit={unit}
-        />
       )}
 
       {activeWorkout || tabBarHidden ? (
@@ -378,41 +341,6 @@ function makeStyles(colors) {
       color: colors.textMuted,
     },
     unitLabelOn: { color: colors.background },
-    islandWrap: {
-      alignItems: 'center',
-      marginBottom: 6,
-      zIndex: 50,
-    },
-    island: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      paddingHorizontal: 18,
-      paddingVertical: 10,
-      borderRadius: radius.sm,
-      backgroundColor: colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.borderStrong,
-      minWidth: 168,
-    },
-    islandDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.textMuted,
-    },
-    islandKicker: {
-      color: colors.textMuted,
-      fontFamily: fonts.bold,
-      fontSize: 11,
-      letterSpacing: 1.4,
-    },
-    islandTime: {
-      color: colors.text,
-      fontFamily: fonts.monoBold,
-      fontSize: 16,
-      marginLeft: 'auto',
-    },
     workoutBar: {
       flexDirection: 'row',
       alignItems: 'center',
