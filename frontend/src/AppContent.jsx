@@ -2,7 +2,6 @@ import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
-  Image,
   Pressable,
   StyleSheet,
   ActivityIndicator,
@@ -27,7 +26,6 @@ import CalendarView from './components/Calendar/CalendarView';
 import WorkoutDetailView from './components/Calendar/WorkoutDetailView';
 import Settings from './components/Settings/Settings';
 import { fonts, radius, HIT } from './theme';
-import { LOGO } from './config';
 import { haptic } from './haptics';
 
 const TAB_ORDER = ['routines', 'custom_exercises', 'dashboard', 'settings'];
@@ -147,14 +145,7 @@ export default function AppContent() {
   }
 
   return (
-    <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable onPress={() => navigateTab('routines')} style={styles.brand} hitSlop={8}>
-          <Image source={LOGO} style={styles.logo} />
-          <Text style={styles.brandText}>TrackIt</Text>
-        </Pressable>
-      </View>
-
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
       {activeWorkout && (
         <View style={styles.workoutBar}>
           <Pressable
@@ -225,25 +216,6 @@ function makeStyles(colors) {
   return StyleSheet.create({
     boot: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
     root: { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingBottom: 8,
-      backgroundColor: colors.background,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-      zIndex: 40,
-    },
-    brand: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: HIT },
-    logo: { width: 24, height: 24, borderRadius: 2, borderWidth: 1, borderColor: colors.border },
-    brandText: {
-      color: colors.text,
-      fontFamily: fonts.bold,
-      fontSize: 20,
-      letterSpacing: -0.6,
-    },
     workoutBar: {
       flexDirection: 'row',
       alignItems: 'center',
