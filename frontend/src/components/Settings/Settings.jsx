@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Moon, Sun, Scale, Palette, ChartLine, Timer } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
+import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
-import { Select } from '../ui/primitives';
+import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
 import { ACCENT_SWATCHES, CHART_SWATCHES, fonts, radius, HIT } from '../../theme';
 import { haptic } from '../../haptics';
 
@@ -18,14 +18,52 @@ export default function Settings() {
     setAccentId,
     setChartId,
   } = useTheme();
-  const { unit, toggleUnit, restTargetSec, setRestTargetSec } = useWorkout();
+  const { unit, toggleUnit, restTargetSec, setRestTargetSec, exportData, importData } = useWorkout();
   const styles = makeStyles(colors);
+  const [busy, setBusy] = useState(false);
+
+  const toast = (title, message) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const onExport = async () => {
+    setBusy(true);
+    try {
+      const res = await exportData();
+      if (res?.ok) toast('Exported', `${res.count} workouts saved to a TrackIt backup file.`);
+    } catch (err) {
+      toast('Export failed', err.message || 'Could not write backup.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onImport = async () => {
+    setBusy(true);
+    try {
+      const res = await importData();
+      if (res?.cancelled) return;
+      if (res?.ok) {
+        toast(
+          'Imported',
+          `${res.mode === 'replace' ? 'Replaced' : 'Merged'} ${res.workouts} workouts, ${res.routines} routines, ${res.customExercises} custom exercises.`
+        );
+      }
+    } catch (err) {
+      toast('Import failed', err.message || 'That file does not look like a TrackIt / Mongo backup.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.sub}>Looks, units, and rest — applied everywhere.</Text>
-
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title="Settings" subtitle="Looks, units, rest, and backup." />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
       <Text style={styles.section}>Appearance</Text>
       <View style={styles.card}>
         <View style={styles.row}>
@@ -124,7 +162,7 @@ export default function Settings() {
             {CHART_SWATCHES.find((s) => s.id === chartId)?.label || 'Olive'}
           </Text>
         </View>
-        <Text style={styles.hint}>You-tab charts only. Kept separate from the app accent.</Text>
+        <Text style={styles.hint}>Profile charts only. Kept separate from the app accent.</Text>
         <View style={styles.swatches}>
           {CHART_SWATCHES.map((s) => {
             const hex = isDark ? s.dark : s.light;
@@ -166,22 +204,38 @@ export default function Settings() {
         />
         <Text style={styles.hint}>Completing a set starts this countdown. A live lock-screen notice tracks the remaining time.</Text>
       </View>
-    </ScrollView>
+
+      <Text style={styles.section}>Backup</Text>
+      <View style={styles.card}>
+        <Text style={styles.hint}>
+          Everything lives on this device. Export a JSON file and import it on another phone — including a later Mongo dump.
+        </Text>
+        <View style={styles.backupRow}>
+          <Pressable disabled={busy} onPress={onExport} style={[styles.backupBtn, busy && { opacity: 0.5 }]}>
+            <Download size={16} color={colors.accentFg} />
+            <Text style={styles.backupText}>Export</Text>
+          </Pressable>
+          <Pressable disabled={busy} onPress={onImport} style={[styles.backupBtnGhost, busy && { opacity: 0.5 }]}>
+            <Upload size={16} color={colors.text} />
+            <Text style={styles.backupGhostText}>Import</Text>
+          </Pressable>
+        </View>
+      </View>
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
     scroll: { padding: 16, paddingBottom: 140 },
-    title: { color: colors.text, fontFamily: fonts.bold, fontSize: 28, letterSpacing: -0.8 },
-    sub: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 14, marginTop: 4, marginBottom: 20 },
     section: {
       color: colors.textSubtle,
       fontFamily: fonts.semibold,
       fontSize: 12,
       letterSpacing: 1,
       textTransform: 'uppercase',
-      marginTop: 18,
+      marginTop: 16,
       marginBottom: 8,
     },
     card: {
@@ -221,5 +275,30 @@ function makeStyles(colors) {
       borderColor: colors.borderStrong,
     },
     swatchOn: { borderColor: colors.text, borderWidth: 2 },
+    backupRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+    backupBtn: {
+      flex: 1,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      backgroundColor: colors.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    backupText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
+    backupBtnGhost: {
+      flex: 1,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    backupGhostText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
   });
 }

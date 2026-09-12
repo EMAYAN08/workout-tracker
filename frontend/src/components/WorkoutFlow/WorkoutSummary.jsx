@@ -103,6 +103,7 @@ export default function WorkoutSummary({ data, onClose, unit }) {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
       >
         <View ref={cardRef} collapsable={false} style={styles.body}>
           <View style={styles.iconBox}>

@@ -19,10 +19,10 @@ export default function InfoPopover({ title, description, size = 16 }) {
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={styles.card}>
+          <Pressable onPress={() => {}} style={styles.card}>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.body}>{description}</Text>
-          </View>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>

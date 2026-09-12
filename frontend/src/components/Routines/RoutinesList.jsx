@@ -5,6 +5,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
+import { ScreenHeader, hideScroll } from '../ui/primitives';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
   const { routines, deleteRoutine, startWorkoutFromRoutine, startWorkout, activeWorkout } = useWorkout();
@@ -34,19 +35,17 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <View style={styles.head}>
-        <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClipboardList size={24} color={colors.text} />
-            <Text style={styles.title}>My Routines</Text>
-          </View>
-          <Text style={styles.sub}>Build templates for faster logging</Text>
-        </View>
-        <Pressable onPress={onCreateNew} style={styles.plus} accessibilityLabel="New Routine">
-          <Plus size={24} color={colors.text} strokeWidth={3} />
-        </Pressable>
-      </View>
+    <View style={{ flex: 1 }}>
+      <ScreenHeader
+        title="Routines"
+        subtitle="Build templates for faster logging"
+        right={
+          <Pressable onPress={onCreateNew} style={styles.plus} accessibilityLabel="New Routine">
+            <Plus size={24} color={colors.text} strokeWidth={3} />
+          </Pressable>
+        }
+      />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
 
       <Pressable
         onPress={() => {
@@ -116,16 +115,14 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
           </View>
         ))
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { color: colors.text, fontFamily: fonts.bold, fontSize: 28, letterSpacing: 0.36 },
-  sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
   plus: {
     width: HIT,
     height: HIT,

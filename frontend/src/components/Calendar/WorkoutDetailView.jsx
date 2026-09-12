@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { ChevronLeft, Clock, Activity, Dumbbell, Moon } from 'lucide-react-native';
+import { Clock, Activity, Dumbbell, Moon } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { ScreenHeader, hideScroll } from '../ui/primitives';
 
 const ExerciseImage = ({ src }) => {
   const { colors } = useTheme();
@@ -45,10 +46,7 @@ export default function WorkoutDetailView({ date, onBack }) {
   if (!date || dayWorkouts.length === 0) {
     return (
       <View style={styles.emptyWrap}>
-        <Pressable onPress={onBack} style={styles.back}>
-          <ChevronLeft size={20} color={colors.textMuted} />
-          <Text style={styles.backText}>Back to Calendar</Text>
-        </Pressable>
+        <ScreenHeader title="History" onBack={onBack} />
         <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40 }}>
           No workouts found for this date.
         </Text>
@@ -70,12 +68,9 @@ export default function WorkoutDetailView({ date, onBack }) {
   const displayDate = format(parseISO(date), 'EEEE, MMMM do, yyyy');
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <Pressable onPress={onBack} style={styles.back}>
-        <ChevronLeft size={16} color={colors.textMuted} />
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
-      <Text style={styles.title}>{displayDate}</Text>
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title={displayDate} onBack={onBack} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
       <View style={styles.meta}>
         <View style={styles.metaItem}>
           <Clock size={16} color={colors.textMuted} />
@@ -149,17 +144,15 @@ export default function WorkoutDetailView({ date, onBack }) {
           </View>
         </View>
       ))}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
-  emptyWrap: { flex: 1, padding: 16 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, minHeight: HIT, paddingRight: 8 },
-  backText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
-  title: { color: colors.text, fontFamily: fonts.black, fontSize: 24, marginBottom: 10 },
+  emptyWrap: { flex: 1 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },

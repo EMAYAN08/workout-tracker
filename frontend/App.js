@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,6 +15,18 @@ import { IBMPlexMono_500Medium, IBMPlexMono_700Bold } from '@expo-google-fonts/i
 import { WorkoutProvider } from './src/context/WorkoutContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppContent from './src/AppContent';
+
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const id = 'trackit-hide-scrollbars';
+  if (!document.getElementById(id)) {
+    const s = document.createElement('style');
+    s.id = id;
+    s.textContent =
+      '*::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}' +
+      '*{scrollbar-width:none!important;-ms-overflow-style:none!important}';
+    document.head.appendChild(s);
+  }
+}
 
 function Root() {
   const { isDark } = useTheme();

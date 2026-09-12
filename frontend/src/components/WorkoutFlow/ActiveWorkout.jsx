@@ -145,6 +145,8 @@ export default function ActiveWorkout() {
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 40 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
       >
         {activeWorkout.exercises.length === 0 && (
           <View style={styles.restCard}>
@@ -347,7 +349,11 @@ export default function ActiveWorkout() {
               <X size={20} color={colors.textMuted} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+          >
             {searchResults.map((ex) => (
               <Pressable key={ex.id} onPress={() => handleAddExercise(ex)} style={styles.searchItem}>
                 <View style={styles.searchThumb}>

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,102 @@ import {
   Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Check, ChevronDown, Search } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronLeft, Search } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { fonts, radius, HIT } from '../../theme';
 import { haptic } from '../../haptics';
+
+export const hideScroll = {
+  showsVerticalScrollIndicator: false,
+  showsHorizontalScrollIndicator: false,
+};
+
+export function ScreenHeader({ title, subtitle, right, onBack, style }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        {
+          paddingHorizontal: 16,
+          paddingTop: 6,
+          paddingBottom: subtitle ? 12 : 10,
+          backgroundColor: colors.background,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+        },
+        style,
+      ]}
+    >
+      {onBack ? (
+        <Pressable
+          onPress={onBack}
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center', marginLeft: -8 }}
+        >
+          <ChevronLeft size={26} color={colors.text} strokeWidth={2.2} />
+        </Pressable>
+      ) : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text
+          style={{
+            color: colors.text,
+            fontFamily: fonts.bold,
+            fontSize: 28,
+            letterSpacing: -0.8,
+          }}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text
+            style={{
+              color: colors.textMuted,
+              fontFamily: fonts.regular,
+              fontSize: 13,
+              marginTop: 2,
+            }}
+            numberOfLines={1}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {right}
+    </View>
+  );
+}
+
+export function CountUp({ value, style, fractionDigits = 0, play = true }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (!play) {
+      setShown(0);
+      return undefined;
+    }
+    const target = Number(value) || 0;
+    const startAt = Date.now();
+    const dur = 720;
+    let raf;
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - startAt) / dur);
+      const eased = 1 - (1 - t) ** 3;
+      setShown(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, play]);
+  const text =
+    fractionDigits > 0
+      ? shown.toLocaleString(undefined, { maximumFractionDigits: fractionDigits, minimumFractionDigits: 0 })
+      : Math.floor(shown).toLocaleString();
+  return <Text style={style}>{text}</Text>;
+}
 
 export function Panel({ children, style, onPress }) {
   const { colors } = useTheme();
@@ -217,7 +309,7 @@ export function Select({ value, options = [], onChange, style, searchable = true
   const closeMenu = () => {
     setOpen(false);
     setQuery('');
-    ignoreUntil.current = Date.now() + 280;
+    ignoreUntil.current = Date.now() + 80;
   };
 
   const openMenu = () => {
@@ -310,9 +402,13 @@ export function Select({ value, options = [], onChange, style, searchable = true
       </Pressable>
       </View>
       <Modal visible={open} transparent animationType="fade" onRequestClose={closeMenu}>
-        <View style={{ flex: 1 }} pointerEvents="box-none">
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={closeMenu} />
-          <View
+        <Pressable
+          accessibilityLabel="Dismiss menu"
+          onPress={closeMenu}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' }}
+        >
+          <Pressable
+            onPress={() => {}}
             style={{
               position: 'absolute',
               top,
@@ -374,6 +470,8 @@ export function Select({ value, options = [], onChange, style, searchable = true
               <ScrollView
                 keyboardShouldPersistTaps="handled"
                 nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
                 style={{ maxHeight: searchable ? maxH - 56 : maxH }}
               >
                 {filtered.length === 0 ? (
@@ -436,8 +534,8 @@ export function Select({ value, options = [], onChange, style, searchable = true
                 )}
               </ScrollView>
             </BlurView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );

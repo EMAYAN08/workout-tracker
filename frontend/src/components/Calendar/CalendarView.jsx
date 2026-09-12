@@ -18,6 +18,7 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { ScreenHeader, hideScroll } from '../ui/primitives';
 
 export default function CalendarView({ onDayClick, onBack }) {
   const { workoutHistory } = useWorkout();
@@ -47,18 +48,9 @@ export default function CalendarView({ onDayClick, onBack }) {
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <View style={styles.top}>
-        {onBack && (
-          <Pressable onPress={onBack} style={styles.back}>
-            <ChevronLeft size={24} color={colors.textMuted} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-        )}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={styles.pageTitle}>History</Text>
-        </View>
-      </View>
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title="History" onBack={onBack} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
 
       <View style={styles.panel}>
         <View style={styles.monthRow}>
@@ -125,22 +117,14 @@ export default function CalendarView({ onDayClick, onBack }) {
           })}
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: HIT,
-    paddingRight: 8,
-  },
-  backText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 14 },
-  pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
   panel: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

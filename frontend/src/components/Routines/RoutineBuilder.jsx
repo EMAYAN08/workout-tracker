@@ -27,7 +27,7 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
-import { Select } from '../ui/primitives';
+import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
 import { alertMessage } from '../../dialog';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -196,12 +196,9 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 120 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.head}>
-          <Text style={styles.title}>{initialRoutine ? 'Edit Routine' : 'New Routine'}</Text>
+      <ScreenHeader
+        title={initialRoutine ? 'Edit Routine' : 'New Routine'}
+        right={
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Pressable onPress={onCancel} style={styles.cancel} accessibilityLabel="Cancel">
               <Text style={styles.cancelText}>Cancel</Text>
@@ -211,7 +208,14 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               <Text style={styles.saveText}>Save</Text>
             </Pressable>
           </View>
-        </View>
+        }
+      />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 120 }}
+        keyboardShouldPersistTaps="handled"
+        {...hideScroll}
+      >
 
         <View style={styles.panel}>
           <Text style={styles.label}>Routine Name</Text>
@@ -385,7 +389,11 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               <X size={20} color={colors.textMuted} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={{ padding: 16 }}
+            keyboardShouldPersistTaps="handled"
+            {...hideScroll}
+          >
             {searchResults.map((ex, i) => (
               <Pressable
                 key={`${ex.id}-${i}`}

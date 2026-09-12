@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
-import { Activity, TrendingUp, Flame, Trophy, Download, Upload } from 'lucide-react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Activity, TrendingUp, Flame, Trophy } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -10,62 +10,41 @@ import InfoPopover from './InfoPopover';
 import WorkoutDurationChart from './WorkoutDurationChart';
 import StrengthChart from './StrengthChart';
 import AreaChart from '../charts/AreaChart';
-import { Select } from '../ui/primitives';
-import { fonts, radius, HIT } from '../../theme';
+import { Select, ScreenHeader, CountUp, hideScroll } from '../ui/primitives';
+import { fonts, radius } from '../../theme';
 
-const StatCard = ({ icon: Icon, title, value, unit, description, colors, styles }) => {
+const StatCard = ({ icon: Icon, iconColor, title, value, unit, description, colors, styles, fractionDigits, play }) => {
   const [open, setOpen] = useState(false);
+  const numeric = typeof value === 'number';
   return (
     <Pressable onPress={() => setOpen(!open)} style={styles.statCard}>
       <View style={styles.statIcon}>
-        <Icon size={14} color={colors.textMuted} />
+        <Icon size={16} color={iconColor} strokeWidth={2.2} />
       </View>
       <Text style={styles.statTitle}>{title}</Text>
-      {open ? (
-        <>
-          <View style={styles.statValRow}>
-            <Text style={styles.statVal} numberOfLines={1}>
-              {typeof value === 'number'
-                ? value % 1 !== 0
-                  ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
-                  : Math.floor(value).toLocaleString()
-                : value}
-            </Text>
-            {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
-          </View>
-          <Text style={styles.statDesc}>{description}</Text>
-        </>
-      ) : (
-        <View style={styles.statValRow}>
+      <View style={styles.statValRow}>
+        {numeric ? (
+          <CountUp value={value} style={styles.statVal} fractionDigits={fractionDigits || 0} play={play} />
+        ) : (
           <Text style={styles.statVal} numberOfLines={1}>
-            {typeof value === 'number'
-              ? value % 1 !== 0
-                ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
-                : Math.floor(value).toLocaleString()
-              : value}
+            {value}
           </Text>
-          {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
-        </View>
-      )}
+        )}
+        {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
+      </View>
+      {open ? <Text style={styles.statDesc}>{description}</Text> : null}
     </Pressable>
   );
 };
 
-export default function Dashboard({ onMapClick }) {
-  const {
-    workoutHistory,
-    unit,
-    getStreaks,
-    exportData,
-    importData,
-  } = useWorkout();
+export default function Dashboard({ onMapClick, visible = true }) {
+  const { workoutHistory, unit, getStreaks } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { current, best } = getStreaks();
   const [metric, setMetric] = useState('1rm');
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [weightExerciseId, setWeightExerciseId] = useState('');
-  const [busy, setBusy] = useState(false);
 
   const uniqueExercises = useMemo(() => {
     const exercisesMap = new Map();
@@ -122,176 +101,123 @@ export default function Dashboard({ onMapClick }) {
     return acc + convertWeight(vol, wk.unitSaved || 'lbs', unit);
   }, 0);
 
-  const toast = (title, message) => {
-    if (Platform.OS === 'web') {
-      window.alert(`${title}\n${message}`);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
-
-  const onExport = async () => {
-    setBusy(true);
-    try {
-      const res = await exportData();
-      if (res?.ok) toast('Exported', `${res.count} workouts saved to a TrackIt backup file.`);
-    } catch (err) {
-      toast('Export failed', err.message || 'Could not write backup.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const onImport = async () => {
-    setBusy(true);
-    try {
-      const res = await importData();
-      if (res?.cancelled) return;
-      if (res?.ok) {
-        toast(
-          'Imported',
-          `${res.mode === 'replace' ? 'Replaced' : 'Merged'} ${res.workouts} workouts, ${res.routines} routines, ${res.customExercises} custom exercises.`
-        );
-      }
-    } catch (err) {
-      toast('Import failed', err.message || 'That file does not look like a TrackIt / Mongo backup.');
-    } finally {
-      setBusy(false);
-    }
-  };
+  const workoutCount = workoutHistory.filter((w) => w.exercises && w.exercises.length > 0).length;
+  const volumeIsDecimal = totalVolume % 1 !== 0;
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.profile}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.hello}>Your log.</Text>
-          <Text style={styles.sub}>On this phone. Yours alone.</Text>
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title="Profile" subtitle="On this phone. Yours alone." />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scroll}
+        {...hideScroll}
+      >
+        <View style={styles.grid}>
+          <StatCard
+            icon={Activity}
+            iconColor={colors.accent}
+            title="Total Workouts"
+            value={workoutCount}
+            description="The total number of workout sessions you've logged."
+            colors={colors}
+            styles={styles}
+            play={visible}
+          />
+          <StatCard
+            icon={TrendingUp}
+            iconColor={colors.chartAccent}
+            title="Total Volume"
+            value={totalVolume}
+            unit={unit}
+            fractionDigits={volumeIsDecimal ? 1 : 0}
+            description="Total weight lifted across all your workouts."
+            colors={colors}
+            styles={styles}
+            play={visible}
+          />
+          <StatCard
+            icon={Flame}
+            iconColor="#E25C4A"
+            title="Current Streak"
+            value={current}
+            unit="Days"
+            description="Current number of consecutive days you've logged a workout."
+            colors={colors}
+            styles={styles}
+            play={visible}
+          />
+          <StatCard
+            icon={Trophy}
+            iconColor="#D4B45A"
+            title="Best Streak"
+            value={best}
+            unit="Days"
+            description="Your all-time longest streak of consecutive workout days."
+            colors={colors}
+            styles={styles}
+            play={visible}
+          />
         </View>
-      </View>
 
-      <View style={styles.grid}>
-        <StatCard
-          icon={Activity}
-          title="Total Workouts"
-          value={workoutHistory.filter((w) => w.exercises && w.exercises.length > 0).length}
-          description="The total number of workout sessions you've logged."
-          colors={colors}
-          styles={styles}
-        />
-        <StatCard
-          icon={TrendingUp}
-          title="Total Volume"
-          value={totalVolume}
-          unit={unit}
-          description="Total weight lifted across all your workouts."
-          colors={colors}
-          styles={styles}
-        />
-        <StatCard
-          icon={Flame}
-          title="Current Streak"
-          value={current}
-          unit="Days"
-          description="Current number of consecutive days you've logged a workout."
-          colors={colors}
-          styles={styles}
-        />
-        <StatCard
-          icon={Trophy}
-          title="Best Streak"
-          value={best}
-          unit="Days"
-          description="Your all-time longest streak of consecutive workout days."
-          colors={colors}
-          styles={styles}
-        />
-      </View>
+        <ConsistencyMap onMapClick={onMapClick} />
+        <StrengthChart />
 
-      <ConsistencyMap onMapClick={onMapClick} />
-      <StrengthChart />
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Exercise progression</Text>
-        <InfoPopover
-          title="Exercise Progression"
-          description="Track your performance over time. 'Total Volume' shows the total weight lifted across all sets. 'Est. 1RM' calculates your theoretical 1-rep maximum based on your heaviest sets."
-        />
-      </View>
-      <View style={styles.panel}>
-        <Text style={styles.label}>Exercise</Text>
-        <Select
-          value={selectedExerciseId}
-          onChange={setSelectedExerciseId}
-          options={uniqueExercises.length > 0 ? uniqueExercises : [{ value: 'none', label: 'No Exercises' }]}
-        />
-        <Text style={[styles.label, { marginTop: 12 }]}>Metric</Text>
-        <Select
-          value={metric}
-          onChange={setMetric}
-          options={[
-            { value: '1rm', label: 'Est. 1RM' },
-            { value: 'volume', label: 'Volume' },
-          ]}
-        />
-      </View>
-      <View style={[styles.panel, { marginTop: 10 }]}>
-        <AreaChart data={chartData} unit={unit} />
-      </View>
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Max weight</Text>
-        <InfoPopover
-          title="Max Weight Progression"
-          description="Focus purely on strength. This chart plots the absolute heaviest single set you lifted during each workout for the selected exercise."
-        />
-      </View>
-      <View style={styles.panel}>
-        <Text style={styles.label}>Exercise</Text>
-        <Select
-          value={weightExerciseId}
-          onChange={setWeightExerciseId}
-          options={uniqueExercises.length > 0 ? uniqueExercises : [{ value: 'none', label: 'No Exercises' }]}
-        />
-      </View>
-      <View style={[styles.panel, { marginTop: 10 }]}>
-        <AreaChart data={weightChartData} unit={unit} />
-      </View>
-
-      <WorkoutDurationChart />
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Backup</Text>
-      </View>
-      <View style={styles.panel}>
-        <Text style={styles.hint}>
-          Everything lives on this device. Export a JSON file and import it on another phone — including a later Mongo dump.
-        </Text>
-        <View style={styles.backupRow}>
-          <Pressable disabled={busy} onPress={onExport} style={[styles.backupBtn, busy && { opacity: 0.5 }]}>
-            <Download size={16} color={colors.accentFg} />
-            <Text style={styles.backupText}>Export</Text>
-          </Pressable>
-          <Pressable disabled={busy} onPress={onImport} style={[styles.backupBtnGhost, busy && { opacity: 0.5 }]}>
-            <Upload size={16} color={colors.text} />
-            <Text style={styles.backupGhostText}>Import</Text>
-          </Pressable>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Exercise progression</Text>
+          <InfoPopover
+            title="Exercise Progression"
+            description="Track your performance over time. 'Total Volume' shows the total weight lifted across all sets. 'Est. 1RM' calculates your theoretical 1-rep maximum based on your heaviest sets."
+          />
         </View>
-      </View>
-    </ScrollView>
+        <View style={styles.panel}>
+          <Text style={styles.label}>Exercise</Text>
+          <Select
+            value={selectedExerciseId}
+            onChange={setSelectedExerciseId}
+            options={uniqueExercises.length > 0 ? uniqueExercises : [{ value: 'none', label: 'No Exercises' }]}
+          />
+          <Text style={[styles.label, { marginTop: 12 }]}>Metric</Text>
+          <Select
+            value={metric}
+            onChange={setMetric}
+            options={[
+              { value: '1rm', label: 'Est. 1RM' },
+              { value: 'volume', label: 'Volume' },
+            ]}
+          />
+        </View>
+        <View style={[styles.panel, { marginTop: 10 }]}>
+          <AreaChart data={chartData} unit={unit} />
+        </View>
+
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Max weight</Text>
+          <InfoPopover
+            title="Max Weight Progression"
+            description="Focus purely on strength. This chart plots the absolute heaviest single set you lifted during each workout for the selected exercise."
+          />
+        </View>
+        <View style={styles.panel}>
+          <Text style={styles.label}>Exercise</Text>
+          <Select
+            value={weightExerciseId}
+            onChange={setWeightExerciseId}
+            options={uniqueExercises.length > 0 ? uniqueExercises : [{ value: 'none', label: 'No Exercises' }]}
+          />
+        </View>
+        <View style={[styles.panel, { marginTop: 10 }]}>
+          <AreaChart data={weightChartData} unit={unit} />
+        </View>
+
+        <WorkoutDurationChart />
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
     scroll: { padding: 16, paddingBottom: 140, gap: 12 },
-    profile: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-    hello: {
-      color: colors.text,
-      fontFamily: fonts.bold,
-      fontSize: 28,
-      letterSpacing: -0.8,
-    },
-    sub: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 13, marginTop: 4 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     statCard: {
       width: '48%',
@@ -345,31 +271,5 @@ function makeStyles(colors) {
       letterSpacing: 1,
       marginBottom: 6,
     },
-    hint: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, marginTop: 10 },
-    backupRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-    backupBtn: {
-      flex: 1,
-      minHeight: HIT,
-      borderRadius: radius.sm,
-      backgroundColor: colors.accent,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    backupText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
-    backupBtnGhost: {
-      flex: 1,
-      minHeight: HIT,
-      borderRadius: radius.sm,
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: colors.borderStrong,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    backupGhostText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
   });
 }

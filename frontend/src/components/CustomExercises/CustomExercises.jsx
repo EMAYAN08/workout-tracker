@@ -4,7 +4,7 @@ import { Dumbbell, Plus, Trash2, Search, Settings, ChevronDown } from 'lucide-re
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
-import { Select } from '../ui/primitives';
+import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
@@ -218,15 +218,9 @@ export default function CustomExercises() {
     const canSave = !!newName.trim() && !isSubmitting;
     return (
       <View style={{ flex: 1, position: 'relative' }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 16, paddingBottom: keypadOpen ? 340 : 120 }}
-        >
-          <View style={styles.formHead}>
-            <Text style={styles.pageTitle} numberOfLines={1}>
-              {editingId ? 'Edit Exercise' : 'New Exercise'}
-            </Text>
+        <ScreenHeader
+          title={editingId ? 'Edit Exercise' : 'New Exercise'}
+          right={
             <View style={{ flexDirection: 'row', gap: 8, flexShrink: 0 }}>
               <Pressable onPress={resetForm} style={styles.cancel} accessibilityLabel="Cancel">
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -241,7 +235,14 @@ export default function CustomExercises() {
                 <Text style={styles.saveText}>Save</Text>
               </Pressable>
             </View>
-          </View>
+          }
+        />
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 16, paddingBottom: keypadOpen ? 340 : 120 }}
+          {...hideScroll}
+        >
           <Text style={styles.label}>Exercise Name</Text>
           <TextInput
             value={newName}
@@ -338,42 +339,41 @@ export default function CustomExercises() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: 16, paddingBottom: 120, flexGrow: 1 }}
-      stickyHeaderIndices={[0]}
-    >
-      <View style={styles.sticky}>
-        <View style={styles.formHead}>
-          <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
-            <Text style={styles.pageTitle}>Custom Exercises</Text>
-            <Text style={styles.sub}>Create your own exercise</Text>
-          </View>
+    <View style={{ flex: 1 }}>
+      <ScreenHeader
+        title="Exercises"
+        subtitle="Create your own exercise"
+        right={
           <Pressable onPress={startCreate} style={styles.plusBtn} accessibilityLabel="Create exercise">
             <Plus size={24} color={colors.text} strokeWidth={3} />
           </Pressable>
+        }
+      />
+      <View style={styles.searchBar}>
+        <View style={styles.searchWrap}>
+          <Search size={18} color={colors.textMuted} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search exercises..."
+            placeholderTextColor={colors.textSubtle}
+            style={styles.searchInput}
+          />
         </View>
-        <View style={styles.searchRow}>
-          <View style={styles.searchWrap}>
-            <Search size={18} color={colors.textMuted} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search exercises..."
-              placeholderTextColor={colors.textSubtle}
-              style={styles.searchInput}
-            />
-          </View>
-          <View style={styles.filterWrap}>
-            <Select
-              value={selectedMuscleGroup}
-              onChange={setSelectedMuscleGroup}
-              options={FILTER_GROUPS.map((g) => ({ value: g, label: g }))}
-            />
-          </View>
+        <View style={styles.filterWrap}>
+          <Select
+            value={selectedMuscleGroup}
+            onChange={setSelectedMuscleGroup}
+            options={FILTER_GROUPS.map((g) => ({ value: g, label: g }))}
+          />
         </View>
       </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, paddingBottom: 120, flexGrow: 1 }}
+        {...hideScroll}
+      >
       {(searchQuery.trim() || selectedMuscleGroup !== 'All') && (
         <Text style={styles.results}>●  {filteredExercises.length} Results</Text>
       )}
@@ -396,15 +396,12 @@ export default function CustomExercises() {
         ))
       )}
     </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
-    sticky: { backgroundColor: colors.background, paddingBottom: 8 },
-    formHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24, flexShrink: 1 },
-    sub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
     plusBtn: {
       width: HIT,
       height: HIT,
@@ -416,7 +413,17 @@ function makeStyles(colors) {
       justifyContent: 'center',
       flexShrink: 0,
     },
-    searchRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    searchBar: {
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 10,
+      paddingBottom: 8,
+      backgroundColor: colors.background,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
     searchWrap: {
       flex: 1,
       minWidth: 0,
