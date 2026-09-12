@@ -191,7 +191,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, position: 'relative' }}>
       <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: activeInput ? 320 : 120 }}>
         <View style={styles.head}>
           <Text style={styles.title}>{initialRoutine ? 'Edit Routine' : 'New Routine'}</Text>

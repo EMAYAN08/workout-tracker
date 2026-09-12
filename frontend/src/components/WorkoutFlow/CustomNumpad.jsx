@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
@@ -8,10 +8,16 @@ import { haptic } from '../../haptics';
 
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, setTabBarHidden } = useTheme();
   const styles = makeStyles(colors);
   const freshRef = useRef(true);
   const fieldRef = useRef(null);
+
+  useEffect(() => {
+    setTabBarHidden(!!activeInput);
+    return () => setTabBarHidden(false);
+  }, [activeInput, setTabBarHidden]);
+
   if (!activeInput) return null;
 
   if (fieldRef.current !== activeInput.field) {
@@ -75,7 +81,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   ];
 
   return (
-    <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View style={[styles.sheet, { paddingBottom: 4 }]}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
@@ -122,7 +128,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
               <Key label="8" onPress={() => handleKeyPress('8')} />
               <Key label="9" onPress={() => handleKeyPress('9')} />
             </View>
-            <View style={styles.row}>
+            <View style={[styles.row, { marginBottom: 0 }]}>
               <Key label="." onPress={() => handleKeyPress('.')} />
               <Key label="0" onPress={() => handleKeyPress('0')} />
               <Key onPress={() => handleKeyPress('delete')}>
@@ -138,6 +144,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           </Pressable>
         </View>
       </View>
+      <View style={{ height: Math.max(insets.bottom, 16) }} />
     </View>
   );
 }
@@ -149,7 +156,8 @@ function makeStyles(colors) {
       left: 0,
       right: 0,
       bottom: 0,
-      zIndex: 100,
+      zIndex: 200,
+      elevation: 24,
       backgroundColor: colors.surface,
       borderTopLeftRadius: radius.xl,
       borderTopRightRadius: radius.xl,

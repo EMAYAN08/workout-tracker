@@ -135,7 +135,7 @@ export default function CustomExercises() {
 
   if (isCreating) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, position: 'relative' }}>
         <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: activeInput ? 320 : 120 }}>
           <View style={styles.formHead}>
             <Text style={styles.pageTitle}>{editingId ? 'Edit Exercise' : 'New Exercise'}</Text>

@@ -51,7 +51,7 @@ export default function AppContent() {
     setCompletedWorkout,
     refreshAll,
   } = useWorkout();
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark, toggleTheme, tabBarHidden } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = makeStyles(colors);
   const fade = useRef(new Animated.Value(1)).current;
@@ -246,7 +246,7 @@ export default function AppContent() {
         <Animated.View style={[styles.main, { opacity: fade }]}>{renderBody()}</Animated.View>
       </GestureDetector>
 
-      {!activeWorkout && (
+      {!activeWorkout && !tabBarHidden && (
         <View style={styles.navWrap}>
           <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={styles.navBlur}>
             <View style={[styles.navRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -361,7 +361,7 @@ function makeStyles(colors) {
       justifyContent: 'center',
     },
     finishText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
-    main: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center' },
+    main: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center', overflow: 'visible' },
     home: {
       flex: 1,
       justifyContent: 'center',

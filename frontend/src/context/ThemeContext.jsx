@@ -8,6 +8,7 @@ const STORAGE_KEY = 'trackit_theme';
 
 export function ThemeProvider({ children }) {
   const [scheme, setScheme] = useState('light');
+  const [tabBarHidden, setTabBarHidden] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -32,8 +33,10 @@ export function ThemeProvider({ children }) {
       spacing,
       muscleColors: muscleTones[scheme],
       toggleTheme,
+      tabBarHidden,
+      setTabBarHidden,
     };
-  }, [scheme]);
+  }, [scheme, tabBarHidden]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -50,6 +53,8 @@ export function useTheme() {
       spacing,
       muscleColors: muscleTones.light,
       toggleTheme: () => {},
+      tabBarHidden: false,
+      setTabBarHidden: () => {},
     };
   }
   return ctx;

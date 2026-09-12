@@ -119,7 +119,7 @@ export default function ActiveWorkout() {
     );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, position: 'relative' }}>
       <View style={styles.timerBar}>
         <View>
           <Text style={styles.timerLabel}>Workout</Text>
