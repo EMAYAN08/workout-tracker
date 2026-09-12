@@ -76,7 +76,7 @@ export default function ActiveWorkout() {
 
   React.useEffect(() => {
     const t = setTimeout(async () => {
-      if (searchQuery.length > 2) {
+      if (searchQuery.length > 0) {
         try {
           const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
           if (!res.ok) throw new Error('Network response was not ok');
@@ -130,7 +130,7 @@ export default function ActiveWorkout() {
         </View>
         {playingSet ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.timerLabel, { color: 'rgba(52,211,153,0.8)' }]}>Set Time</Text>
+            <Text style={[styles.timerLabel, { color: colors.accent }]}>Set Time</Text>
             <View style={styles.timerRow}>
               <Timer size={14} color={colors.accent} />
               <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(setTimer)}</Text>
@@ -138,7 +138,7 @@ export default function ActiveWorkout() {
           </View>
         ) : restTimer > 0 ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.timerLabel, { color: 'rgba(96,165,250,0.8)' }]}>Resting</Text>
+            <Text style={[styles.timerLabel, { color: colors.accent }]}>Since last set</Text>
             <View style={styles.timerRow}>
               <Timer size={14} color={colors.accent} />
               <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restTimer)}</Text>
@@ -257,7 +257,7 @@ export default function ActiveWorkout() {
               {ex.sets.map((set, sIdx) => {
                 if (set.completedAt) {
                   return (
-                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.accentSoft }]}>
+                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.successSoft }]}>
                       <Text style={styles.setIdx}>{sIdx + 1}</Text>
                       <Text style={styles.setVal}>{String(set.weight)}</Text>
                       <Text style={styles.setVal}>{String(set.reps)}</Text>
@@ -373,7 +373,7 @@ export default function ActiveWorkout() {
                   <Text style={styles.searchName} numberOfLines={1}>
                     {ex.name}
                   </Text>
-                  <Text style={styles.searchMeta}>Dumbbell</Text>
+                  <Text style={styles.searchMeta}>{ex.muscleGroup || 'Exercise'}</Text>
                 </View>
                 <View style={styles.mgBadge}>
                   <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
@@ -459,7 +459,7 @@ function makeStyles(colors) {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: colors.border,
     backgroundColor: colors.background,
   },
   timerLabel: {
@@ -476,7 +476,7 @@ function makeStyles(colors) {
     marginLeft: 4,
     padding: 4,
     borderRadius: 99,
-    backgroundColor: 'rgba(59,130,246,0.12)',
+    backgroundColor: colors.accentSoft,
   },
   restCard: {
     backgroundColor: colors.accentSoft,
@@ -500,14 +500,14 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 12,
   },
-  cardExpanded: { borderColor: 'rgba(59,130,246,0.25)' },
-  thumb: { width: 48, height: 48, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)' },
+  cardExpanded: { borderColor: colors.accentBorder },
+  thumb: { width: 48, height: 48, borderRadius: 10, backgroundColor: colors.surface2 },
   thumbFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceLight },
   exName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
   exMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 2 },
   exHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 8 },
   rowBtns: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  iconHit: { padding: 6 },
+  iconHit: { padding: 10, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   setHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8 },
   setHeadText: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.bold, textTransform: 'uppercase' },
   setRow: {
@@ -517,14 +517,14 @@ function makeStyles(colors) {
     paddingVertical: 6,
     marginBottom: 4,
     borderRadius: 8,
-    backgroundColor: 'rgba(38,38,38,0.35)',
+    backgroundColor: colors.surface2,
   },
   setIdx: { width: 36, textAlign: 'center', color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
   setVal: { flex: 1, textAlign: 'center', color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
   cell: {
     flex: 1,
     marginHorizontal: 4,
-    height: 40,
+    height: 44,
     borderRadius: 8,
     backgroundColor: colors.surfaceLight,
     borderWidth: 1,
@@ -532,7 +532,7 @@ function makeStyles(colors) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cellActive: { borderColor: colors.primary, backgroundColor: 'rgba(59,130,246,0.1)' },
+  cellActive: { borderColor: colors.primary, backgroundColor: colors.accentSoft },
   cellText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
   setActions: { width: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
   doneMark: {
@@ -547,7 +547,7 @@ function makeStyles(colors) {
     width: 32,
     height: 32,
     borderRadius: 6,
-    backgroundColor: 'rgba(59,130,246,0.2)',
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -558,9 +558,9 @@ function makeStyles(colors) {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
+    borderColor: colors.accentBorder,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -571,9 +571,9 @@ function makeStyles(colors) {
     marginTop: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
+    borderColor: colors.accentBorder,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -618,7 +618,7 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    backgroundColor: 'rgba(38,38,38,0.4)',
+    backgroundColor: colors.surface2,
     borderRadius: 20,
     marginBottom: 10,
     borderWidth: 1,
@@ -628,7 +628,7 @@ function makeStyles(colors) {
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

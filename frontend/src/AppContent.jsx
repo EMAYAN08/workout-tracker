@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -16,7 +17,6 @@ import {
   Database,
   ClipboardList,
   RefreshCw,
-  Menu,
   Sun,
   Moon,
 } from 'lucide-react-native';
@@ -30,8 +30,9 @@ import CustomExercises from './components/CustomExercises/CustomExercises';
 import RoutinesMain from './components/Routines/RoutinesMain';
 import CalendarView from './components/Calendar/CalendarView';
 import WorkoutDetailView from './components/Calendar/WorkoutDetailView';
-import { fonts, radius } from './theme';
+import { fonts, radius, HIT } from './theme';
 import { LOGO } from './config';
+import { haptic } from './haptics';
 
 const TAB_ORDER = ['home', 'routines', 'custom_exercises', 'dashboard'];
 
@@ -52,13 +53,12 @@ export default function AppContent() {
   } = useWorkout();
   const { colors, isDark, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const styles = makeStyles(colors, isDark);
+  const styles = makeStyles(colors);
+  const fade = useRef(new Animated.Value(1)).current;
 
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);
-  const [isNavVisible, setIsNavVisible] = useState(true);
-  const lastScrollY = useRef(0);
 
   if (!hydrated) {
     return (
@@ -73,8 +73,12 @@ export default function AppContent() {
   }
 
   const navigateTab = (newTab) => {
-    setCurrentTab(newTab);
-    setIsNavVisible(true);
+    if (newTab === currentTab) return;
+    haptic('selection');
+    Animated.timing(fade, { toValue: 0, duration: 90, useNativeDriver: true }).start(() => {
+      setCurrentTab(newTab);
+      Animated.timing(fade, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+    });
   };
 
   const swipe = Gesture.Pan()
@@ -92,12 +96,6 @@ export default function AppContent() {
       }
     });
 
-  const handleScroll = (e) => {
-    const y = e.nativeEvent.contentOffset.y;
-    if (Math.abs(y - lastScrollY.current) > 15) setIsNavVisible(false);
-    lastScrollY.current = y;
-  };
-
   const renderBody = () => {
     if (activeWorkout) return <ActiveWorkout />;
     if (currentTab === 'home') {
@@ -105,14 +103,21 @@ export default function AppContent() {
         <View style={styles.home}>
           <Text style={styles.kicker}>Session</Text>
           <Text style={styles.homeTitle}>Ready{'\n'}to lift.</Text>
-          <Text style={styles.homeSub}>Log sets with quiet precision. No noise, just work.</Text>
+          <Text style={styles.homeSub}>Log every set with quiet precision.</Text>
           <Pressable
-            onPress={startWorkout}
+            onPress={() => {
+              haptic('medium');
+              startWorkout();
+            }}
             style={({ pressed }) => [styles.startBtn, pressed && { transform: [{ scale: 0.96 }] }]}
           >
-            <Text style={styles.startBtnText}>Start empty workout</Text>
+            <Text style={styles.startBtnText}>Start Empty Workout</Text>
           </Pressable>
-          <Pressable onPress={() => navigateTab('routines')} style={{ marginTop: 20, padding: 8 }}>
+          <Pressable
+            onPress={() => navigateTab('routines')}
+            hitSlop={8}
+            style={{ marginTop: 16, minHeight: HIT, justifyContent: 'center' }}
+          >
             <Text style={styles.link}>Or start from a routine</Text>
           </Pressable>
         </View>
@@ -147,8 +152,8 @@ export default function AppContent() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) }]}>
-        <Pressable onPress={() => navigateTab('home')} style={styles.brand}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
+        <Pressable onPress={() => navigateTab('home')} style={styles.brand} hitSlop={8}>
           <Image source={LOGO} style={styles.logo} />
           <Text style={styles.brandText}>
             Track<Text style={{ color: colors.accent }}>It</Text>
@@ -156,47 +161,67 @@ export default function AppContent() {
         </Pressable>
 
         <View style={styles.headerRight}>
-          <Pressable onPress={refreshAll} style={styles.iconCircle}>
-            <RefreshCw size={16} color={colors.text} strokeWidth={2} />
+          <Pressable
+            onPress={() => {
+              haptic('light');
+              refreshAll();
+            }}
+            style={({ pressed }) => [styles.iconCircle, pressed && { opacity: 0.55 }]}
+          >
+            <RefreshCw size={18} color={colors.text} strokeWidth={2} />
           </Pressable>
 
-          <Pressable onPress={toggleTheme} style={styles.iconCircle}>
+          <Pressable
+            onPress={() => {
+              haptic('selection');
+              toggleTheme();
+            }}
+            style={({ pressed }) => [styles.iconCircle, pressed && { opacity: 0.55 }]}
+          >
             {isDark ? (
-              <Sun size={16} color={colors.text} strokeWidth={2} />
+              <Sun size={18} color={colors.text} strokeWidth={2} />
             ) : (
-              <Moon size={16} color={colors.text} strokeWidth={2} />
+              <Moon size={18} color={colors.text} strokeWidth={2} />
             )}
           </Pressable>
 
-          <Pressable onPress={toggleUnit} style={styles.unitToggle}>
-            <View
-              style={[
-                styles.unitPill,
-                { left: unit === 'lbs' ? 2 : 38 },
-              ]}
-            />
-            <Text style={[styles.unitLabel, unit === 'lbs' && styles.unitLabelOn]}>LBS</Text>
-            <Text style={[styles.unitLabel, unit === 'kgs' && styles.unitLabelOn]}>KGS</Text>
+          <Pressable
+            onPress={() => {
+              haptic('selection');
+              toggleUnit();
+            }}
+            style={styles.unitToggle}
+          >
+            <View style={[styles.unitPill, { left: unit === 'lbs' ? 2 : 40 }]} />
+            <Text style={[styles.unitLabel, unit === 'lbs' && styles.unitLabelOn]}>LB</Text>
+            <Text style={[styles.unitLabel, unit === 'kgs' && styles.unitLabelOn]}>KG</Text>
           </Pressable>
         </View>
       </View>
 
       {activeWorkout && (
         <View style={styles.workoutBar}>
-          <Pressable onPress={cancelWorkout} style={styles.cancelBtn}>
+          <Pressable
+            onPress={() => {
+              haptic('warning');
+              cancelWorkout();
+            }}
+            style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
+          >
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
           <Pressable
             disabled={isFinishing}
             onPress={async () => {
+              haptic('success');
               setIsFinishing(true);
               await finishWorkout();
               setIsFinishing(false);
             }}
-            style={[styles.finishBtn, { flex: 1 }, isFinishing && { opacity: 0.5 }]}
+            style={({ pressed }) => [styles.finishBtn, isFinishing && { opacity: 0.5 }, pressed && { opacity: 0.88 }]}
           >
             {isFinishing && (
-              <ActivityIndicator size={12} color={colors.accentFg} style={{ marginRight: 6 }} />
+              <ActivityIndicator size={14} color={colors.accentFg} style={{ marginRight: 6 }} />
             )}
             <Text style={styles.finishText}>
               {isFinishing
@@ -218,48 +243,34 @@ export default function AppContent() {
       )}
 
       <GestureDetector gesture={swipe}>
-        <View style={styles.main}>{renderBody()}</View>
+        <Animated.View style={[styles.main, { opacity: fade }]}>{renderBody()}</Animated.View>
       </GestureDetector>
 
       {!activeWorkout && (
-        <View style={[styles.navWrap, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-          <Pressable
-            onPress={() => !isNavVisible && setIsNavVisible(true)}
-            style={[styles.navOuter, !isNavVisible && styles.navOuterMin]}
-          >
-            <BlurView
-              intensity={48}
-              tint={isDark ? 'dark' : 'light'}
-              style={[styles.navPill, !isNavVisible && styles.navPillMin]}
-            >
-              {isNavVisible ? (
-                <View style={styles.navRow}>
-                  {tabs.map((t) => {
-                    const active =
-                      currentTab === t.id ||
-                      ((currentTab === 'calendar' || currentTab === 'workout-detail') &&
-                        t.id === 'dashboard');
-                    return (
-                      <Pressable key={t.id} onPress={() => navigateTab(t.id)} style={styles.navItem}>
-                        <View style={[styles.navIconWrap, active && styles.navIconActive]}>
-                          <t.Icon
-                            size={18}
-                            color={active ? colors.accentFg : colors.textMuted}
-                            strokeWidth={active ? 2.4 : 1.8}
-                          />
-                        </View>
-                        <Text style={[styles.navLabel, active && { color: colors.text }]}>
-                          {t.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : (
-                <Menu size={20} color={colors.text} strokeWidth={2} />
-              )}
-            </BlurView>
-          </Pressable>
+        <View style={styles.navWrap}>
+          <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={styles.navBlur}>
+            <View style={[styles.navRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+              {tabs.map((t) => {
+                const active =
+                  currentTab === t.id ||
+                  ((currentTab === 'calendar' || currentTab === 'workout-detail') && t.id === 'dashboard');
+                return (
+                  <Pressable
+                    key={t.id}
+                    onPress={() => navigateTab(t.id)}
+                    style={({ pressed }) => [styles.navItem, pressed && { opacity: 0.6 }]}
+                  >
+                    <t.Icon
+                      size={22}
+                      color={active ? colors.accent : colors.textSubtle}
+                      strokeWidth={active ? 2.4 : 1.8}
+                    />
+                    <Text style={[styles.navLabel, active && { color: colors.accent }]}>{t.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BlurView>
         </View>
       )}
     </View>
@@ -275,38 +286,31 @@ function makeStyles(colors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingBottom: 12,
+      paddingBottom: 8,
       backgroundColor: colors.background,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
       zIndex: 40,
     },
-    brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    logo: { width: 28, height: 28, borderRadius: 4, borderWidth: 1, borderColor: colors.border },
+    brand: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: HIT },
+    logo: { width: 28, height: 28, borderRadius: 7 },
     brandText: {
       color: colors.text,
       fontFamily: fonts.bold,
-      fontSize: 18,
-      letterSpacing: -0.4,
+      fontSize: 20,
+      letterSpacing: -0.5,
     },
-    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     iconCircle: {
-      width: 36,
-      height: 36,
+      width: HIT,
+      height: HIT,
       borderRadius: radius.md,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
     unitToggle: {
-      width: 76,
+      width: 80,
       height: 32,
-      borderRadius: radius.md,
+      borderRadius: 8,
       backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.border,
       overflow: 'hidden',
       flexDirection: 'row',
       alignItems: 'center',
@@ -314,142 +318,115 @@ function makeStyles(colors) {
     unitPill: {
       position: 'absolute',
       top: 2,
-      width: 36,
-      height: 26,
-      borderRadius: radius.sm,
-      backgroundColor: colors.accent,
+      width: 38,
+      height: 28,
+      borderRadius: 6,
+      backgroundColor: colors.surface,
     },
     unitLabel: {
-      width: 38,
+      width: 40,
       textAlign: 'center',
-      fontSize: 10,
-      fontFamily: fonts.bold,
-      letterSpacing: 0.6,
+      fontSize: 12,
+      fontFamily: fonts.semibold,
+      letterSpacing: 0.3,
       color: colors.textMuted,
       zIndex: 1,
     },
-    unitLabelOn: { color: colors.accentFg },
+    unitLabelOn: { color: colors.text },
     workoutBar: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
       paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      paddingBottom: 10,
       backgroundColor: colors.background,
     },
     cancelBtn: {
+      minHeight: HIT,
+      paddingHorizontal: 16,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: colors.dangerSoft,
-      borderWidth: 1,
-      borderColor: colors.danger + '33',
-      paddingHorizontal: 10,
-      paddingVertical: 7,
-      borderRadius: radius.sm,
     },
-    cancelText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 12 },
+    cancelText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 17 },
     finishBtn: {
+      flex: 1,
       backgroundColor: colors.accent,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: radius.sm,
+      paddingHorizontal: 16,
+      minHeight: HIT,
+      borderRadius: radius.md,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 40,
     },
-    finishText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 12 },
+    finishText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
     main: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center' },
     home: {
       flex: 1,
       justifyContent: 'center',
       paddingHorizontal: 28,
-      paddingBottom: 96,
+      paddingBottom: 120,
     },
     kicker: {
       color: colors.accent,
       fontFamily: fonts.semibold,
-      fontSize: 11,
-      letterSpacing: 1.6,
+      fontSize: 13,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
-      marginBottom: 12,
+      marginBottom: 10,
     },
     homeTitle: {
       color: colors.text,
       fontFamily: fonts.bold,
       fontSize: 48,
       lineHeight: 50,
-      letterSpacing: -1.6,
-      marginBottom: 12,
+      letterSpacing: 0.35,
+      marginBottom: 10,
     },
     homeSub: {
       color: colors.textMuted,
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: 17,
+      lineHeight: 22,
       fontFamily: fonts.regular,
-      marginBottom: 36,
+      marginBottom: 32,
       maxWidth: 280,
     },
     startBtn: {
       backgroundColor: colors.accent,
-      paddingVertical: 16,
+      minHeight: 52,
       paddingHorizontal: 24,
-      borderRadius: radius.md,
+      borderRadius: 14,
       width: '100%',
       maxWidth: 360,
       alignItems: 'center',
+      justifyContent: 'center',
     },
-    startBtnText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 16, letterSpacing: -0.2 },
+    startBtnText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17, letterSpacing: -0.4 },
     link: {
-      color: colors.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 14,
-      textDecorationLine: 'underline',
-      textDecorationColor: colors.borderStrong,
+      color: colors.accent,
+      fontFamily: fonts.regular,
+      fontSize: 16,
     },
     navWrap: {
       position: 'absolute',
       left: 0,
       right: 0,
       bottom: 0,
-      alignItems: 'center',
-      paddingHorizontal: 16,
     },
-    navOuter: {
-      width: '100%',
-      maxWidth: 400,
-      borderRadius: radius.xl,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.borderStrong,
+    navBlur: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      backgroundColor: colors.nav,
     },
-    navOuterMin: { width: 52, height: 52, borderRadius: radius.lg, maxWidth: 52 },
-    navPill: {
-      width: '100%',
-      height: 68,
-      overflow: 'hidden',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.glass,
-    },
-    navPillMin: { width: 52, height: 52 },
     navRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      alignItems: 'center',
-      width: '100%',
-      height: '100%',
-      paddingHorizontal: 6,
+      alignItems: 'flex-start',
+      paddingTop: 6,
+      minHeight: 49,
     },
-    navItem: { alignItems: 'center', justifyContent: 'center', flex: 1, height: '100%', gap: 4 },
-    navIconWrap: {
-      width: 28,
-      height: 28,
-      borderRadius: radius.sm,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    navIconActive: { backgroundColor: colors.accent },
-    navLabel: { color: colors.textMuted, fontFamily: fonts.medium, fontSize: 10, letterSpacing: 0.2 },
+    navItem: { alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: 49, gap: 2 },
+    navLabel: { color: colors.textSubtle, fontFamily: fonts.medium, fontSize: 10, letterSpacing: 0.12 },
   });
 }

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
@@ -9,24 +9,24 @@ export default function AreaChart({
   data = [],
   color,
   unit = '',
-  height = 260,
+  height = 220,
   emptyTitle = 'Not enough data',
   emptySubtitle = 'Log this more than once to see progression.',
   averageLine,
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const stroke = color || colors.accent;
   const styles = makeStyles(colors);
-  const { width: screenW } = useWindowDimensions();
-  const width = Math.max(280, screenW - 48);
+  const [boxW, setBoxW] = useState(0);
   const [activeIdx, setActiveIdx] = useState(null);
+  const width = Math.max(200, boxW || 0);
 
   const chart = useMemo(() => {
-    if (!data || data.length < 2) return null;
-    const padL = 42;
-    const padR = 12;
-    const padT = 16;
-    const padB = 28;
+    if (!data || data.length < 2 || width < 40) return null;
+    const padL = 40;
+    const padR = 10;
+    const padT = 14;
+    const padB = 26;
     const innerW = width - padL - padR;
     const innerH = height - padT - padB;
     const values = data.map((d) => Number(d.value) || 0);
@@ -49,102 +49,125 @@ export default function AreaChart({
       const step = Math.ceil(points.length / 5);
       return i % step === 0 || i === points.length - 1;
     });
-    return { padL, padT, innerH, innerW, points, line, area, yTicks, xTicks };
+    return { padL, padT, innerH, innerW, points, line, area, yTicks, xTicks, min, span };
   }, [data, width, height]);
 
-  if (!chart) {
-    return (
-      <View style={[styles.empty, { height }]}>
-        <Activity size={28} color={colors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
-        <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-        <Text style={styles.emptySub}>{emptySubtitle}</Text>
-      </View>
-    );
-  }
-
-  const tooltip = activeIdx != null ? chart.points[activeIdx] : null;
+  const gradId = `area-${scheme}-${stroke.replace('#', '')}`;
 
   return (
-    <View>
-      <Svg
-        width={width}
-        height={height}
-        onPress={(e) => {
-          const x = e.nativeEvent.locationX;
-          let nearest = 0;
-          let best = Infinity;
-          chart.points.forEach((p, i) => {
-            const d = Math.abs(p.x - x);
-            if (d < best) {
-              best = d;
-              nearest = i;
-            }
-          });
-          setActiveIdx(nearest);
-        }}
-      >
-        <Defs>
-          <LinearGradient id={`grad-${stroke}`} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="5%" stopColor={stroke} stopOpacity="0.22" />
-            <Stop offset="95%" stopColor={stroke} stopOpacity="0" />
-          </LinearGradient>
-        </Defs>
-        {chart.yTicks.map((t, i) => (
-          <React.Fragment key={i}>
-            <Line
-              x1={chart.padL}
-              x2={chart.padL + chart.innerW}
-              y1={t.y}
-              y2={t.y}
-              stroke={colors.chartGrid}
-              strokeDasharray="3 3"
-            />
-            <SvgText x={chart.padL - 6} y={t.y + 4} fill={colors.textMuted} fontSize="10" textAnchor="end">
-              {t.value}
-            </SvgText>
-          </React.Fragment>
-        ))}
-        {averageLine != null && data.length > 1 && (
-          <Line
-            x1={chart.padL}
-            x2={chart.padL + chart.innerW}
-            y1={
-              chart.padT +
-              chart.innerH -
-              ((averageLine - Math.min(...data.map((d) => d.value))) /
-                ((Math.max(...data.map((d) => d.value)) - Math.min(...data.map((d) => d.value))) || 1)) *
-                chart.innerH
-            }
-            y2={
-              chart.padT +
-              chart.innerH -
-              ((averageLine - Math.min(...data.map((d) => d.value))) /
-                ((Math.max(...data.map((d) => d.value)) - Math.min(...data.map((d) => d.value))) || 1)) *
-                chart.innerH
-            }
-            stroke={stroke}
-            strokeDasharray="3 3"
-            strokeWidth={1.5}
-            opacity={0.5}
-          />
-        )}
-        <Path d={chart.area} fill={`url(#grad-${stroke})`} />
-        <Path d={chart.line} fill="none" stroke={stroke} strokeWidth={2} />
-        {chart.xTicks.map((p, i) => (
-          <SvgText key={i} x={p.x} y={height - 8} fill={colors.textMuted} fontSize="10" textAnchor="middle">
-            {p.date}
-          </SvgText>
-        ))}
-        {tooltip && (
-          <Circle cx={tooltip.x} cy={tooltip.y} r={5} fill={stroke} stroke={colors.surface} strokeWidth={3} />
-        )}
-      </Svg>
-      {tooltip && (
-        <View style={styles.tooltip}>
-          <Text style={styles.tooltipLabel}>{tooltip.date}</Text>
-          <Text style={[styles.tooltipValue, { color: stroke }]}>
-            {tooltip.value} <Text style={styles.tooltipUnit}>{unit}</Text>
-          </Text>
+    <View
+      style={{ width: '100%' }}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w && Math.abs(w - boxW) > 1) setBoxW(w);
+      }}
+    >
+      {!chart ? (
+        <View style={[styles.empty, { height }]}>
+          <Activity size={22} color={colors.textSubtle} style={{ marginBottom: 8 }} />
+          <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+          <Text style={styles.emptySub}>{emptySubtitle}</Text>
+        </View>
+      ) : (
+        <View>
+          <Svg
+            width={width}
+            height={height}
+            onPress={(e) => {
+              const x = e.nativeEvent.locationX;
+              let nearest = 0;
+              let best = Infinity;
+              chart.points.forEach((p, i) => {
+                const d = Math.abs(p.x - x);
+                if (d < best) {
+                  best = d;
+                  nearest = i;
+                }
+              });
+              setActiveIdx(nearest);
+            }}
+          >
+            <Defs>
+              <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={stroke} stopOpacity={scheme === 'dark' ? '0.32' : '0.2'} />
+                <Stop offset="100%" stopColor={stroke} stopOpacity="0" />
+              </LinearGradient>
+            </Defs>
+            {chart.yTicks.map((t, i) => (
+              <React.Fragment key={i}>
+                <Line
+                  x1={chart.padL}
+                  x2={chart.padL + chart.innerW}
+                  y1={t.y}
+                  y2={t.y}
+                  stroke={colors.chartGrid}
+                  strokeDasharray="4 4"
+                />
+                <SvgText
+                  x={chart.padL - 6}
+                  y={t.y + 4}
+                  fill={colors.chartAxis}
+                  fontSize="11"
+                  textAnchor="end"
+                >
+                  {t.value}
+                </SvgText>
+              </React.Fragment>
+            ))}
+            {averageLine != null && data.length > 1 && (
+              <Line
+                x1={chart.padL}
+                x2={chart.padL + chart.innerW}
+                y1={
+                  chart.padT +
+                  chart.innerH -
+                  ((averageLine - chart.min) / chart.span) * chart.innerH
+                }
+                y2={
+                  chart.padT +
+                  chart.innerH -
+                  ((averageLine - chart.min) / chart.span) * chart.innerH
+                }
+                stroke={stroke}
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                opacity={0.45}
+              />
+            )}
+            <Path d={chart.area} fill={`url(#${gradId})`} />
+            <Path d={chart.line} fill="none" stroke={stroke} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            {chart.xTicks.map((p, i) => (
+              <SvgText key={i} x={p.x} y={height - 8} fill={colors.chartAxis} fontSize="11" textAnchor="middle">
+                {p.date}
+              </SvgText>
+            ))}
+            {activeIdx != null && chart.points[activeIdx] && (
+              <Circle
+                cx={chart.points[activeIdx].x}
+                cy={chart.points[activeIdx].y}
+                r={5}
+                fill={stroke}
+                stroke={colors.chartDotStroke}
+                strokeWidth={3}
+              />
+            )}
+          </Svg>
+          {activeIdx != null && chart.points[activeIdx] && (
+            <View
+              style={[
+                styles.tooltip,
+                {
+                  left: Math.min(Math.max(chart.points[activeIdx].x - 44, 8), width - 100),
+                },
+              ]}
+            >
+              <Text style={styles.tooltipLabel}>{chart.points[activeIdx].date}</Text>
+              <Text style={[styles.tooltipValue, { color: stroke }]}>
+                {chart.points[activeIdx].value}
+                <Text style={styles.tooltipUnit}> {unit}</Text>
+              </Text>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -154,33 +177,32 @@ export default function AreaChart({
 function makeStyles(colors) {
   return StyleSheet.create({
     empty: { alignItems: 'center', justifyContent: 'center' },
-    emptyTitle: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 14 },
+    emptyTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
     emptySub: {
-      color: colors.textSubtle,
+      color: colors.textMuted,
       fontFamily: fonts.regular,
-      fontSize: 12,
+      fontSize: 13,
       marginTop: 4,
       textAlign: 'center',
       paddingHorizontal: 16,
     },
     tooltip: {
       position: 'absolute',
-      top: 8,
-      right: 12,
+      top: 6,
       backgroundColor: colors.surface,
-      padding: 10,
-      borderRadius: radius.md,
-      borderWidth: 1,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: radius.sm,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
     },
     tooltipLabel: {
       color: colors.textMuted,
-      fontSize: 10,
-      fontFamily: fonts.semibold,
-      textTransform: 'uppercase',
-      marginBottom: 2,
+      fontSize: 11,
+      fontFamily: fonts.medium,
+      marginBottom: 1,
     },
-    tooltipValue: { fontFamily: fonts.monoBold, fontSize: 18 },
-    tooltipUnit: { fontSize: 12, color: colors.textMuted },
+    tooltipValue: { fontFamily: fonts.monoBold, fontSize: 16 },
+    tooltipUnit: { fontSize: 12, color: colors.textMuted, fontFamily: fonts.regular },
   });
 }

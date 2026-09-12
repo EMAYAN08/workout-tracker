@@ -9,10 +9,10 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { ChevronDown } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
+import { haptic } from '../../haptics';
 
 export function Panel({ children, style, onPress }) {
   const { colors } = useTheme();
@@ -20,14 +20,20 @@ export function Panel({ children, style, onPress }) {
     {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
     },
     style,
   ];
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [panelStyle, pressed && { opacity: 0.92 }]}>
+      <Pressable
+        onPress={() => {
+          haptic('light');
+          onPress();
+        }}
+        style={({ pressed }) => [panelStyle, pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
+      >
         {children}
       </Pressable>
     );
@@ -59,7 +65,7 @@ export function Button({
   const variants = {
     primary: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
     solid: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
-    ghost: { bg: 'transparent', border: 'transparent', fg: colors.textMuted },
+    ghost: { bg: 'transparent', border: 'transparent', fg: colors.accent },
     outline: { bg: 'transparent', border: colors.borderStrong, fg: colors.text },
     danger: { bg: colors.dangerSoft, border: colors.danger + '33', fg: colors.danger },
     soft: { bg: colors.accentSoft, border: colors.accentBorder, fg: colors.accent },
@@ -68,31 +74,35 @@ export function Button({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (disabled || loading) return;
+        haptic(variant === 'danger' ? 'warning' : 'light');
+        onPress?.();
+      }}
       disabled={disabled || loading}
       style={({ pressed }) => [
         {
           borderRadius: radius.md,
-          paddingVertical: 14,
+          paddingVertical: 12,
           paddingHorizontal: 16,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
           gap: 8,
-          minHeight: 48,
+          minHeight: HIT,
           backgroundColor: v.bg,
-          borderWidth: 1,
+          borderWidth: variant === 'ghost' ? 0 : 1,
           borderColor: v.border,
         },
-        pressed && { transform: [{ scale: 0.96 }], opacity: 0.9 },
-        (disabled || loading) && { opacity: 0.45 },
+        pressed && { transform: [{ scale: 0.96 }], opacity: 0.88 },
+        (disabled || loading) && { opacity: 0.4 },
         style,
       ]}
     >
       {loading ? (
         <ActivityIndicator color={v.fg} />
       ) : typeof children === 'string' ? (
-        <Text style={[{ fontFamily: fonts.semibold, fontSize: 15, color: v.fg, letterSpacing: -0.2 }, textStyle]}>
+        <Text style={[{ fontFamily: fonts.semibold, fontSize: 17, color: v.fg, letterSpacing: -0.4 }, textStyle]}>
           {children}
         </Text>
       ) : (
@@ -110,15 +120,15 @@ export function Input({ style, ...props }) {
       style={[
         {
           backgroundColor: colors.surface2,
-          borderWidth: 1,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
           borderRadius: radius.md,
           paddingHorizontal: 14,
-          paddingVertical: 14,
-          minHeight: 48,
+          paddingVertical: 12,
+          minHeight: HIT,
           color: colors.text,
-          fontFamily: fonts.medium,
-          fontSize: 16,
+          fontFamily: fonts.regular,
+          fontSize: 17,
         },
         style,
       ]}
@@ -142,21 +152,18 @@ export function Badge({ children, color, style }) {
       style={[
         {
           paddingHorizontal: 8,
-          paddingVertical: 4,
+          paddingVertical: 3,
           borderRadius: radius.xs,
           backgroundColor: colors.accentSoft,
-          borderWidth: 1,
-          borderColor: colors.accentBorder,
         },
         style,
       ]}
     >
       <Text
         style={{
-          fontSize: 10,
+          fontSize: 11,
           fontFamily: fonts.semibold,
-          textTransform: 'uppercase',
-          letterSpacing: 0.8,
+          letterSpacing: 0.2,
           color: c,
         }}
       >
@@ -170,21 +177,22 @@ export function IconBtn({ onPress, children, style, disabled }) {
   const { colors } = useTheme();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (disabled) return;
+        haptic('light');
+        onPress?.();
+      }}
       disabled={disabled}
-      hitSlop={8}
+      hitSlop={4}
       style={({ pressed }) => [
         {
-          width: 40,
-          height: 40,
+          width: HIT,
+          height: HIT,
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: radius.md,
-          borderWidth: 1,
-          borderColor: colors.border,
-          backgroundColor: colors.surface,
         },
-        pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] },
+        pressed && { opacity: 0.55, transform: [{ scale: 0.96 }] },
         disabled && { opacity: 0.3 },
         style,
       ]}
@@ -195,26 +203,27 @@ export function IconBtn({ onPress, children, style, disabled }) {
 }
 
 export function Select({ value, options, onChange, style }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [open, setOpen] = React.useState(false);
   const selected = options.find((o) => o.value === value);
 
   return (
     <>
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          haptic('selection');
+          setOpen(true);
+        }}
         style={[
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surface2,
             borderRadius: radius.md,
             paddingHorizontal: 12,
-            paddingVertical: 12,
-            minHeight: 48,
+            paddingVertical: 10,
+            minHeight: HIT,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderWidth: 1,
-            borderColor: colors.border,
           },
           style,
         ]}
@@ -223,7 +232,7 @@ export function Select({ value, options, onChange, style }) {
           style={{
             color: colors.text,
             fontFamily: fonts.medium,
-            fontSize: 14,
+            fontSize: 16,
             flex: 1,
             marginRight: 8,
             textTransform: 'capitalize',
@@ -232,9 +241,9 @@ export function Select({ value, options, onChange, style }) {
         >
           {selected?.label || 'Select'}
         </Text>
-        <ChevronDown size={16} color={colors.textMuted} />
+        <ChevronDown size={18} color={colors.textMuted} />
       </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <Pressable
           style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
           onPress={() => setOpen(false)}
@@ -244,22 +253,19 @@ export function Select({ value, options, onChange, style }) {
               backgroundColor: colors.surface,
               borderTopLeftRadius: radius.xl,
               borderTopRightRadius: radius.xl,
-              maxHeight: '50%',
-              borderWidth: 1,
-              borderColor: colors.borderStrong,
-              paddingVertical: 8,
-              overflow: 'hidden',
+              maxHeight: '52%',
+              paddingBottom: 20,
+              paddingTop: 8,
             }}
           >
             <View
               style={{
                 width: 36,
-                height: 4,
-                borderRadius: 2,
+                height: 5,
+                borderRadius: 3,
                 backgroundColor: colors.borderStrong,
                 alignSelf: 'center',
                 marginBottom: 8,
-                marginTop: 4,
               }}
             />
             <ScrollView>
@@ -267,22 +273,25 @@ export function Select({ value, options, onChange, style }) {
                 <Pressable
                   key={String(opt.value)}
                   onPress={() => {
+                    haptic('selection');
                     onChange(opt.value);
                     setOpen(false);
                   }}
                   style={{
+                    minHeight: HIT,
                     paddingHorizontal: 20,
-                    paddingVertical: 14,
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: colors.border,
+                    paddingVertical: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     backgroundColor: opt.value === value ? colors.accentSoft : 'transparent',
                   }}
                 >
                   <Text
                     style={{
                       color: opt.value === value ? colors.accent : colors.text,
-                      fontFamily: fonts.medium,
-                      fontSize: 15,
+                      fontFamily: opt.value === value ? fonts.semibold : fonts.regular,
+                      fontSize: 17,
                       textTransform: 'capitalize',
                     }}
                   >
@@ -295,14 +304,5 @@ export function Select({ value, options, onChange, style }) {
         </Pressable>
       </Modal>
     </>
-  );
-}
-
-export function Glass({ children, style, intensity = 40 }) {
-  const { isDark } = useTheme();
-  return (
-    <BlurView intensity={intensity} tint={isDark ? 'dark' : 'light'} style={style}>
-      {children}
-    </BlurView>
   );
 }

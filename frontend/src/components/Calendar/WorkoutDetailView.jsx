@@ -58,7 +58,13 @@ export default function WorkoutDetailView({ date, onBack }) {
 
   const totalDuration = dayWorkouts.reduce((acc, wk) => acc + (wk.duration || 0), 0);
   const totalVolume = dayWorkouts.reduce(
-    (acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0),
+    (acc, wk) =>
+      acc +
+      convertWeight(
+        wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0,
+        wk.unitSaved || 'lbs',
+        unit
+      ),
     0
   );
   const displayDate = format(parseISO(date), 'EEEE, MMMM do, yyyy');
@@ -78,7 +84,7 @@ export default function WorkoutDetailView({ date, onBack }) {
         <View style={styles.metaItem}>
           <Activity size={16} color={colors.primary} />
           <Text style={styles.metaText}>
-            {convertWeight(totalVolume, 'lbs', unit).toLocaleString()} {unit}
+            {Math.round(totalVolume).toLocaleString()} {unit}
           </Text>
         </View>
         <View style={styles.metaItem}>
@@ -237,7 +243,7 @@ function makeStyles(colors) {
   tRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.border,
     paddingVertical: 8,
   },
   td: { color: colors.text, fontFamily: fonts.bold, textAlign: 'center' },

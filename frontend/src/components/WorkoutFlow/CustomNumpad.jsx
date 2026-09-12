@@ -1,35 +1,58 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { haptic } from '../../haptics';
 
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  const freshRef = useRef(true);
+  const fieldRef = useRef(null);
   if (!activeInput) return null;
 
+  if (fieldRef.current !== activeInput.field) {
+    fieldRef.current = activeInput.field;
+    freshRef.current = true;
+  }
+
   const handleKeyPress = (key) => {
-    let currentVal = String(value || '');
+    haptic('selection');
+    let currentVal = String(value ?? '');
     if (key === 'delete') {
+      freshRef.current = false;
       onUpdate(currentVal.slice(0, -1));
-    } else if (key === '.') {
-      if (!currentVal.includes('.')) {
-        onUpdate(currentVal + (currentVal.length === 0 ? '0.' : '.'));
+      return;
+    }
+    if (key === '.') {
+      if (activeInput.field === 'reps') return;
+      if (freshRef.current) {
+        freshRef.current = false;
+        onUpdate('0.');
+        return;
       }
-    } else if (key === '+' || key === '-') {
+      if (!currentVal.includes('.')) onUpdate(currentVal + (currentVal.length === 0 ? '0.' : '.'));
+      return;
+    }
+    if (key === '+' || key === '-') {
+      freshRef.current = false;
       let num = parseFloat(currentVal) || 0;
       const step = activeInput.field === 'weight' ? 2.5 : 1;
       if (key === '+') num += step;
       if (key === '-') num = Math.max(0, num - step);
       onUpdate(String(Math.round(num * 100) / 100));
-    } else if (currentVal === '0' && key !== '.') {
-      onUpdate(key);
-    } else {
-      onUpdate(currentVal + key);
+      return;
     }
+    if (freshRef.current) {
+      freshRef.current = false;
+      onUpdate(key);
+      return;
+    }
+    if (currentVal === '0' && key !== '.') onUpdate(key);
+    else onUpdate(currentVal + key);
   };
 
   const Key = ({ label, onPress, style, children, flex }) => (
@@ -168,26 +191,22 @@ function makeStyles(colors) {
     rowBottom: { flexDirection: 'row', gap: 6 },
     key: {
       flex: 1,
-      height: 48,
+      height: 52,
       borderRadius: radius.md,
       backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    keyText: { color: colors.text, fontSize: 20, fontFamily: fonts.medium, fontVariant: ['tabular-nums'] },
+    keyText: { color: colors.text, fontSize: 22, fontFamily: fonts.medium, fontVariant: ['tabular-nums'] },
     split: {
       flex: 1,
       flexDirection: 'row',
-      height: 48,
+      height: 52,
       borderRadius: radius.md,
       overflow: 'hidden',
       backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
-    splitKey: { borderRadius: 0, height: 48, borderWidth: 0 },
+    splitKey: { borderRadius: 0, height: 52, borderWidth: 0 },
     nextKey: {
       flex: 1,
       borderRadius: radius.md,

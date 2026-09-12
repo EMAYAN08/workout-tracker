@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "scheme": "trackit",
     "splash": {
       "image": "./assets/splash.png",
@@ -29,8 +29,8 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "backgroundColor": "#0A0A0A",
-      "themeColor": "#0A0A0A"
+      "backgroundColor": "#F2F2F7",
+      "themeColor": "#007AFF"
     },
     "plugins": [
       "expo-font",

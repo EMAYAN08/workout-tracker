@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Svg, { Path, Defs, RadialGradient, Stop, Text as SvgText, TSpan, Filter, FeGaussianBlur, FeComposite } from 'react-native-svg';
-import { RefreshCw, Activity, Dumbbell, ChevronDown, Calendar as CalendarIcon } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Path, Text as SvgText, TSpan } from 'react-native-svg';
 import { subMonths, subYears, isAfter } from 'date-fns';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { useWorkout } from '../../context/WorkoutContext';
@@ -53,9 +52,13 @@ function describeArc(x, y, innerRadius, outerRadius, startAngle, endAngle) {
 
 export default function StrengthChart() {
   const { workoutHistory, unit } = useWorkout();
-  const { colors, muscleColors } = useTheme();
+  const { colors, muscleColors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const CATEGORIES = CATEGORY_META.map((c) => ({ ...c, color: muscleColors[c.id] }));
+  const emptyFill = colors.chartEmpty;
+  const ringFills = isDark
+    ? ['#1E3A5F', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA']
+    : ['#D6E9FF', '#A8D1FF', '#6BB3FF', '#007AFF', '#0055D4'];
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');
 
@@ -158,17 +161,8 @@ export default function StrengthChart() {
             <Select value={timeRange} onChange={setTimeRange} options={timeOptions} />
           </View>
         </View>
-        <View style={{ height: 340, alignItems: 'center' }}>
+        <View style={{ height: 320, alignItems: 'center' }}>
           <Svg width="100%" height="100%" viewBox="0 0 400 400">
-            <Defs>
-              {CATEGORIES.map((cat) => (
-                <RadialGradient key={cat.id} id={`grad-${cat.id}`} cx="200" cy="200" r="115" gradientUnits="userSpaceOnUse">
-                  <Stop offset="20%" stopColor={cat.color} stopOpacity="0.4" />
-                  <Stop offset="70%" stopColor={cat.color} stopOpacity="0.9" />
-                  <Stop offset="100%" stopColor={cat.color} stopOpacity="1" />
-                </RadialGradient>
-              ))}
-            </Defs>
             {chartValues.map((cat, i) => {
               const angleSpan = 360 / 6;
               const centerAngle = i * angleSpan;
@@ -178,16 +172,16 @@ export default function StrengthChart() {
                 <React.Fragment key={cat.id}>
                   {[...Array(5)].map((_, ringIndex) => {
                     const rLevel = ringIndex + 1;
-                    const iRadius = 25 + ringIndex * 18;
-                    const oRadius = iRadius + 18;
+                    const iRadius = 28 + ringIndex * 18;
+                    const oRadius = iRadius + 16;
                     const isFilled = rLevel <= cat.level;
                     return (
                       <Path
                         key={ringIndex}
                         d={describeArc(200, 200, iRadius, oRadius, startAngle, endAngle)}
-                        fill={isFilled ? `url(#grad-${cat.id})` : colors.chartEmpty}
+                        fill={isFilled ? ringFills[ringIndex] : emptyFill}
                         stroke={colors.border}
-                        strokeWidth="2"
+                        strokeWidth="1.25"
                       />
                     );
                   })}
@@ -197,7 +191,7 @@ export default function StrengthChart() {
             {chartValues.map((cat, i) => {
               const angleSpan = 360 / 6;
               const centerAngle = i * angleSpan;
-              const textRadius = 155;
+              const textRadius = 150;
               const angleInRads = ((centerAngle - 90) * Math.PI) / 180;
               const tx = 200 + Math.cos(angleInRads) * textRadius;
               const ty = 200 + Math.sin(angleInRads) * textRadius;
@@ -206,19 +200,19 @@ export default function StrengthChart() {
                 if (centerAngle < 180 && centerAngle > 0) textAnchor = 'start';
                 if (centerAngle > 180) textAnchor = 'end';
               }
-              const adjustedTx = textAnchor === 'start' ? tx + 5 : textAnchor === 'end' ? tx - 5 : tx;
+              const adjustedTx = textAnchor === 'start' ? tx + 4 : textAnchor === 'end' ? tx - 4 : tx;
               return (
                 <SvgText key={`label-${cat.id}`} x={adjustedTx} y={ty} textAnchor={textAnchor}>
                   <TSpan
                     x={adjustedTx}
-                    dy="-0.5em"
-                    fill={cat.level > 0 ? cat.color : colors.textMuted}
-                    fontSize="14"
-                    fontWeight="800"
+                    dy="-0.4em"
+                    fill={cat.level > 0 ? colors.accent : colors.textMuted}
+                    fontSize="12"
+                    fontWeight="600"
                   >
                     {cat.displayStr}
                   </TSpan>
-                  <TSpan x={adjustedTx} dy="1.4em" fill={colors.text} fontSize="12" fontWeight="600">
+                  <TSpan x={adjustedTx} dy="1.35em" fill={colors.text} fontSize="12" fontWeight="500">
                     {cat.label}
                   </TSpan>
                 </SvgText>

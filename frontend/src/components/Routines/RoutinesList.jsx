@@ -103,13 +103,13 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 8, paddingBottom: 120 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { color: colors.accentFg, fontFamily: fonts.black, fontSize: 24 },
+  title: { color: colors.text, fontFamily: fonts.bold, fontSize: 28, letterSpacing: 0.36 },
   sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
   plus: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.2)',
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -145,9 +145,9 @@ function makeStyles(colors) {
   actEdit: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
+    borderColor: colors.accentBorder,
   },
   actDel: {
     padding: 8,

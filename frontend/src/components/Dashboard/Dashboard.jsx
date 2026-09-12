@@ -22,7 +22,19 @@ const StatCard = ({ icon: Icon, title, value, unit, description, colors, styles 
       </View>
       <Text style={styles.statTitle}>{title}</Text>
       {open ? (
-        <Text style={styles.statDesc}>{description}</Text>
+        <>
+          <View style={styles.statValRow}>
+            <Text style={styles.statVal} numberOfLines={1}>
+              {typeof value === 'number'
+                ? value % 1 !== 0
+                  ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+                  : Math.floor(value).toLocaleString()
+                : value}
+            </Text>
+            {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
+          </View>
+          <Text style={styles.statDesc}>{description}</Text>
+        </>
       ) : (
         <View style={styles.statValRow}>
           <Text style={styles.statVal} numberOfLines={1}>
@@ -74,10 +86,10 @@ export default function Dashboard({ onMapClick }) {
         const date = format(parseISO(wk.timestamp), 'MMM d');
         if (metric === '1rm') {
           const rm = getBest1RM(ex.sets);
-          data.push({ date, value: Number(convertWeight(rm, 'lbs', unit).toFixed(1)) });
+          data.push({ date, value: Number(convertWeight(rm, wk.unitSaved || 'lbs', unit).toFixed(1)) });
         } else {
           const vol = calculateVolume(ex.sets);
-          data.push({ date, value: Number(convertWeight(vol, 'lbs', unit).toFixed(1)) });
+          data.push({ date, value: Number(convertWeight(vol, wk.unitSaved || 'lbs', unit).toFixed(1)) });
         }
       }
     });
@@ -92,20 +104,16 @@ export default function Dashboard({ onMapClick }) {
       if (ex && ex.sets && ex.sets.length > 0) {
         const date = format(parseISO(wk.timestamp), 'MMM d');
         const maxWeight = Math.max(...ex.sets.map((s) => s.weight || 0));
-        data.push({ date, value: Number(convertWeight(maxWeight, 'lbs', unit).toFixed(1)) });
+        data.push({ date, value: Number(convertWeight(maxWeight, wk.unitSaved || 'lbs', unit).toFixed(1)) });
       }
     });
     return data.reverse();
   }, [workoutHistory, weightExerciseId, unit]);
 
-  const totalVolume = convertWeight(
-    workoutHistory.reduce(
-      (acc, wk) => acc + (wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0),
-      0
-    ),
-    'lbs',
-    unit
-  );
+  const totalVolume = workoutHistory.reduce((acc, wk) => {
+    const vol = wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0;
+    return acc + convertWeight(vol, wk.unitSaved || 'lbs', unit);
+  }, 0);
 
   return (
     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>

@@ -405,13 +405,13 @@ export function WorkoutProvider({ children }) {
       }
       await fetchHistory();
       setCompletedWorkout(savedWorkout.workout || payload);
+      setActiveWorkout(null);
+      setWorkoutDuration(0);
+      setLastSetCompletedAt(null);
+      await removeItem('workout_active');
     } catch (e) {
       console.error('Failed to save workout', e);
     }
-    setActiveWorkout(null);
-    setWorkoutDuration(0);
-    setLastSetCompletedAt(null);
-    await removeItem('workout_active');
   };
 
   const cancelWorkout = async () => {

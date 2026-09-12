@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert, Platform, Share as RNShare } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert, Platform, Share as RNShare, Modal } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import {
@@ -78,6 +78,7 @@ export default function WorkoutSummary({ data, onClose, unit }) {
   const muscles = [...new Set(exercises.map((ex) => ex.muscleGroup).filter(Boolean))];
 
   return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
     <View style={styles.overlay}>
       <View ref={cardRef} collapsable={false} style={styles.card}>
         <Pressable onPress={onClose} style={[styles.cornerBtn, { left: 12 }]}>
@@ -157,11 +158,15 @@ export default function WorkoutSummary({ data, onClose, unit }) {
             <Text style={styles.brand}>TrackIt</Text>
           </View>
           <Text style={styles.date}>
-            {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            {new Date(data.endTime || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
           </Text>
         </View>
+        <Pressable onPress={onClose} style={styles.doneBtn}>
+          <Text style={styles.doneText}>Done</Text>
+        </Pressable>
       </View>
     </View>
+    </Modal>
   );
 }
 
@@ -170,7 +175,7 @@ function makeStyles(colors) {
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
-    backgroundColor: 'rgba(10,10,10,0.95)',
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
@@ -178,7 +183,7 @@ function makeStyles(colors) {
   card: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: 'rgba(23,23,23,0.95)',
+    backgroundColor: colors.surface,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -192,7 +197,7 @@ function makeStyles(colors) {
     zIndex: 2,
     padding: 8,
     borderRadius: 99,
-    backgroundColor: 'rgba(38,38,38,0.85)',
+    backgroundColor: colors.surface2,
   },
   iconBox: {
     width: 64,
@@ -205,9 +210,9 @@ function makeStyles(colors) {
   },
   title: {
     color: colors.text,
-    fontFamily: fonts.black,
+    fontFamily: fonts.bold,
     fontSize: 22,
-    textTransform: 'uppercase',
+    letterSpacing: -0.4,
     textAlign: 'center',
   },
   routine: {
@@ -221,9 +226,9 @@ function makeStyles(colors) {
   stats: { flexDirection: 'row', gap: 10, width: '100%', marginTop: 8 },
   stat: {
     flex: 1,
-    backgroundColor: 'rgba(38,38,38,0.4)',
+    backgroundColor: colors.surface2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 12,
     alignItems: 'center',
@@ -243,9 +248,9 @@ function makeStyles(colors) {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
+    borderColor: colors.accentBorder,
     borderRadius: 16,
     padding: 12,
   },
@@ -263,9 +268,9 @@ function makeStyles(colors) {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: 'rgba(38,38,38,0.6)',
+    backgroundColor: colors.surface2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: colors.border,
   },
   chipText: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, textTransform: 'capitalize' },
   footer: {
@@ -279,7 +284,17 @@ function makeStyles(colors) {
     alignItems: 'center',
   },
   brand: { color: colors.text, fontFamily: fonts.black, fontSize: 12, textTransform: 'uppercase' },
-  date: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
+  date: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.medium },
+  doneBtn: {
+    marginTop: 8,
+    width: '100%',
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
 });
 }
 

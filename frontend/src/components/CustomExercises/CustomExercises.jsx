@@ -1,13 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { Dumbbell, Plus, Trash2, Search, Settings, ChevronDown } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
@@ -48,7 +40,15 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
             <Pressable onPress={() => onEdit(ex)} style={styles.editBtn}>
               <Text style={styles.editText}>Edit</Text>
             </Pressable>
-            <Pressable onPress={() => onDelete(ex.id)} style={styles.delBtn}>
+            <Pressable
+              onPress={() =>
+                Alert.alert('Delete exercise', 'Delete this exercise?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: () => onDelete(ex.id) },
+                ])
+              }
+              style={styles.delBtn}
+            >
               <Text style={styles.delText}>Delete</Text>
             </Pressable>
           </View>
@@ -258,7 +258,7 @@ export default function CustomExercises() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search exercises..."
-              placeholderTextColor="rgba(161,161,170,0.7)"
+              placeholderTextColor={colors.textSubtle}
               style={styles.searchInput}
             />
           </View>
@@ -306,7 +306,7 @@ function makeStyles(colors) {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.2)',
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -323,7 +323,7 @@ function makeStyles(colors) {
   searchInput: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 15, paddingVertical: 12 },
   results: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, marginBottom: 8 },
   card: {
-    backgroundColor: 'rgba(38,38,38,0.4)',
+    backgroundColor: colors.surface2,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
@@ -357,7 +357,7 @@ function makeStyles(colors) {
   },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   tinyLbl: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, textTransform: 'uppercase' },
-  editBtn: { backgroundColor: 'rgba(59,130,246,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  editBtn: { backgroundColor: colors.accentSoft, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   editText: { color: colors.accent, fontFamily: fonts.bold, fontSize: 12 },
   delBtn: { backgroundColor: 'rgba(239,68,68,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   delText: { color: colors.danger, fontFamily: fonts.bold, fontSize: 12 },
@@ -419,7 +419,7 @@ function makeStyles(colors) {
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  setCellOn: { borderColor: colors.primary, backgroundColor: 'rgba(59,130,246,0.1)' },
+  setCellOn: { borderColor: colors.primary, backgroundColor: colors.accentSoft },
   cellVal: { color: colors.text, fontFamily: fonts.bold },
   addSet: {
     borderWidth: 2,

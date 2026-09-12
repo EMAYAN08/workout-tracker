@@ -80,20 +80,25 @@ export default function Login({ onLogin }) {
         <View style={styles.card}>
           <Text style={styles.fieldLbl}>Username</Text>
           <Input
-            placeholder="your name"
+            placeholder="Username"
             value={username}
             onChangeText={setUsername}
             editable={!loading}
             autoComplete="username"
+            textContentType="username"
+            returnKeyType="next"
           />
           <Text style={[styles.fieldLbl, { marginTop: 14 }]}>Password</Text>
           <Input
-            placeholder="••••••••"
+            placeholder="Password"
             value={password}
             onChangeText={setPassword}
             editable={!loading}
             secureTextEntry
             autoComplete="password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={handleSubmit}
           />
 
           {!!error && (

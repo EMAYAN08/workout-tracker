@@ -80,7 +80,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   useEffect(() => {
     const t = setTimeout(async () => {
-      if (searchQuery.length > 2) {
+      if (searchQuery.length > 0) {
         try {
           const query = searchQuery.toLowerCase();
           const localMatches = (customExercises || []).filter(
@@ -355,7 +355,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   <Text style={styles.searchName} numberOfLines={1}>
                     {ex.name}
                   </Text>
-                  <Text style={styles.searchMeta}>Dumbbell</Text>
+                  <Text style={styles.searchMeta}>{ex.muscleGroup || 'Exercise'}</Text>
                 </View>
                 <View style={styles.mgBadge}>
                   <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
@@ -450,9 +450,9 @@ function makeStyles(colors) {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.25)',
+    borderColor: colors.accentBorder,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -507,7 +507,7 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 10,
     padding: 12,
-    backgroundColor: 'rgba(38,38,38,0.4)',
+    backgroundColor: colors.surface2,
   },
   thumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface },
   thumbFallback: {
@@ -553,7 +553,7 @@ function makeStyles(colors) {
     paddingVertical: 10,
     alignItems: 'center',
   },
-  cellOn: { borderColor: colors.primary, backgroundColor: 'rgba(59,130,246,0.1)' },
+  cellOn: { borderColor: colors.primary, backgroundColor: colors.accentSoft },
   cellText: { color: colors.text, fontFamily: fonts.bold },
   delSet: {
     width: 32,
@@ -565,7 +565,7 @@ function makeStyles(colors) {
   addSet: {
     marginTop: 6,
     paddingVertical: 8,
-    backgroundColor: 'rgba(59,130,246,0.05)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
     borderColor: 'rgba(59,130,246,0.1)',
     borderRadius: 8,
@@ -579,9 +579,9 @@ function makeStyles(colors) {
     marginTop: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
+    borderColor: colors.accentBorder,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -621,7 +621,7 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    backgroundColor: 'rgba(38,38,38,0.4)',
+    backgroundColor: colors.surface2,
     borderRadius: 20,
     marginBottom: 10,
     borderWidth: 1,
@@ -631,7 +631,7 @@ function makeStyles(colors) {
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: colors.accentSoft,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

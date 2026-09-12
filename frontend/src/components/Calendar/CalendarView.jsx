@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { ChevronLeft, Calendar as CalendarIcon } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react-native';
 import {
   format,
   addMonths,
@@ -73,7 +73,7 @@ export default function CalendarView({ onDayClick, onBack }) {
               <ChevronLeft size={20} color={colors.textMuted} />
             </Pressable>
             <Pressable onPress={() => setCurrentMonth(addMonths(currentMonth, 1))} style={styles.navBtn}>
-              <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fonts.bold }}>›</Text>
+              <ChevronRight size={22} color={colors.textMuted} />
             </Pressable>
           </View>
         </View>
@@ -151,7 +151,7 @@ function makeStyles(colors) {
   weekLbl: {
     flex: 1,
     textAlign: 'center',
-    color: 'rgba(161,161,170,0.6)',
+    color: colors.textMuted,
     fontSize: 11,
     fontFamily: fonts.bold,
     textTransform: 'uppercase',
