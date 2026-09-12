@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
 import { Info } from 'lucide-react-native';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function InfoPopover({ title, description, size = 16 }) {
@@ -11,7 +11,10 @@ export default function InfoPopover({ title, description, size = 16 }) {
 
   return (
     <View>
-      <Pressable onPress={() => setOpen(true)} hitSlop={8}>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' }}
+      >
         <Info size={size} color={open ? colors.accent : colors.textMuted} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>

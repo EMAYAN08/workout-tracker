@@ -132,7 +132,7 @@ export default function CustomExercises() {
   if (isCreating) {
     return (
       <View style={{ flex: 1, position: 'relative' }}>
-        <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: activeInput ? 320 : 120 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 120 }}>
           <View style={styles.formHead}>
             <Text style={styles.pageTitle}>{editingId ? 'Edit Exercise' : 'New Exercise'}</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -189,7 +189,7 @@ export default function CustomExercises() {
               <Pressable
                 onPress={() => removeSet(i)}
                 disabled={defaultSets.length === 1}
-                style={{ padding: 8, opacity: defaultSets.length === 1 ? 0.3 : 1 }}
+                style={{ padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center', opacity: defaultSets.length === 1 ? 0.3 : 1 }}
               >
                 <Trash2 size={16} color={colors.textMuted} />
               </Pressable>
@@ -225,7 +225,7 @@ export default function CustomExercises() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: 120 }} stickyHeaderIndices={[0]}>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} stickyHeaderIndices={[0]}>
       <View style={styles.sticky}>
         <View style={styles.formHead}>
           <View>
@@ -366,7 +366,7 @@ function makeStyles(colors) {
     borderColor: colors.borderStrong,
     justifyContent: 'center',
   },
-  editText: { color: colors.text, fontFamily: fonts.bold, fontSize: 12 },
+  editText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
   delBtn: {
     backgroundColor: 'transparent',
     paddingHorizontal: 12,
@@ -377,7 +377,7 @@ function makeStyles(colors) {
     borderColor: colors.danger,
     justifyContent: 'center',
   },
-  delText: { color: colors.danger, fontFamily: fonts.bold, fontSize: 12 },
+  delText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 13 },
   setLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -412,8 +412,15 @@ function makeStyles(colors) {
     fontFamily: fonts.bold,
     fontSize: 16,
   },
-  cancel: { paddingHorizontal: 14, paddingVertical: 8, minHeight: HIT, justifyContent: 'center' },
-  cancelText: { color: colors.text, fontFamily: fonts.bold },
+  cancel: {
+    paddingHorizontal: 14,
+    minHeight: HIT,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.sm,
+  },
+  cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
   save: {
     backgroundColor: colors.accent,
     paddingHorizontal: 16,
@@ -423,7 +430,7 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 6,
   },
-  saveText: { color: colors.accentFg, fontFamily: fonts.bold },
+  saveText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
   setEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   setCell: {
     flex: 1,

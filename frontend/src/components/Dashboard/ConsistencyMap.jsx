@@ -14,7 +14,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Flame, Share2 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const generateMonthGrid = (date, countsMap) => {
@@ -147,17 +147,14 @@ export default function ConsistencyMap({ onMapClick }) {
 
   return (
     <View style={{ marginTop: 16 }}>
-      <Pressable ref={mapRef} collapsable={false} onPress={onMapClick} style={styles.panel}>
+      <View ref={mapRef} collapsable={false} style={styles.panel}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>Consistency</Text>
               <Pressable
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  handleShare();
-                }}
-                hitSlop={8}
+                onPress={handleShare}
+                style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' }}
               >
                 <Share2 size={16} color={colors.textMuted} />
               </Pressable>
@@ -168,13 +165,22 @@ export default function ConsistencyMap({ onMapClick }) {
                 <Text style={styles.scoreText}>Score: {score}%</Text>
               </View>
               <Text style={styles.daysText}>{activeDaysInChunk} Days</Text>
+              <Pressable onPress={onMapClick} style={styles.historyBtn}>
+                <Text style={styles.historyText}>History</Text>
+              </Pressable>
             </View>
           </View>
           <View style={styles.nav}>
             <Pressable
               onPress={() => setChunkOffset((p) => Math.min(p + 1, monthPairs.length - 1))}
               disabled={chunkOffset >= monthPairs.length - 1}
-              style={{ padding: 6, opacity: chunkOffset >= monthPairs.length - 1 ? 0.3 : 1 }}
+              style={{
+                width: HIT,
+                height: HIT,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: chunkOffset >= monthPairs.length - 1 ? 0.3 : 1,
+              }}
             >
               <ChevronLeft size={16} color={colors.textMuted} />
             </Pressable>
@@ -182,7 +188,13 @@ export default function ConsistencyMap({ onMapClick }) {
             <Pressable
               onPress={() => setChunkOffset((p) => Math.max(p - 1, 0))}
               disabled={chunkOffset <= 0}
-              style={{ padding: 6, opacity: chunkOffset <= 0 ? 0.3 : 1 }}
+              style={{
+                width: HIT,
+                height: HIT,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: chunkOffset <= 0 ? 0.3 : 1,
+              }}
             >
               <ChevronRight size={16} color={colors.textMuted} />
             </Pressable>
@@ -217,7 +229,7 @@ export default function ConsistencyMap({ onMapClick }) {
             ))}
           </View>
         </View>
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -254,6 +266,16 @@ function makeStyles(colors) {
     },
     scoreText: { fontFamily: fonts.semibold, fontSize: 11, textTransform: 'uppercase', color: colors.textMuted },
     daysText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.medium },
+    historyBtn: {
+      minHeight: HIT,
+      paddingHorizontal: 12,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    historyText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
     nav: {
       flexDirection: 'row',
       alignItems: 'center',

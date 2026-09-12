@@ -97,7 +97,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
 
 function makeStyles(colors) {
   return StyleSheet.create({
-  scroll: { padding: 8, paddingBottom: 120 },
+  scroll: { padding: 16, paddingBottom: 120 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { color: colors.text, fontFamily: fonts.bold, fontSize: 28, letterSpacing: 0.36 },
   sub: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
@@ -157,7 +157,7 @@ function makeStyles(colors) {
     borderRadius: radius.sm,
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },

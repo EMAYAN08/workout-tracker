@@ -277,7 +277,7 @@ export default function Dashboard({ onMapClick }) {
           ]}
         />
         <Text style={styles.hint}>
-          Completing a set starts a rest countdown. You’ll get a lock-screen notification when time’s up.
+          Completing a set starts a rest countdown. Lock-screen notification shows the next exercise and lets you pause, resume, or start the next set.
         </Text>
       </View>
 

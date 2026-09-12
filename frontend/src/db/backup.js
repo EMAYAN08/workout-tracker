@@ -71,9 +71,14 @@ export async function pickBackupFile() {
 export function confirmImportMode() {
   return new Promise((resolve) => {
     if (Platform.OS === 'web') {
-      const replace = typeof window !== 'undefined' && window.confirm
-        ? window.confirm('Replace all data on this phone with the backup? Cancel = merge (keep both, overwrite matching IDs).')
+      const ok = typeof window !== 'undefined' && window.confirm
+        ? window.confirm('Import this backup into TrackIt?')
         : false;
+      if (!ok) {
+        resolve(null);
+        return;
+      }
+      const replace = window.confirm('Replace all data on this phone? Cancel = merge (keep both, overwrite matching IDs).');
       resolve(replace ? 'replace' : 'merge');
       return;
     }

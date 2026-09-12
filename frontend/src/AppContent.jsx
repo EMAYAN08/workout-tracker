@@ -51,6 +51,7 @@ export default function AppContent() {
     completedWorkout,
     setCompletedWorkout,
     restTimer,
+    restPaused,
     playingSet,
     restTargetSec,
     workoutHistory,
@@ -82,11 +83,20 @@ export default function AppContent() {
   };
 
   const swipe = Gesture.Pan()
+    .enabled(!activeWorkout && !tabBarHidden)
     .runOnJS(true)
     .activeOffsetX([-50, 50])
     .failOffsetY([-20, 20])
     .onEnd((e) => {
       if (activeWorkout) return;
+      if (currentTab === 'workout-detail' && e.translationX > 50) {
+        navigateTab('calendar');
+        return;
+      }
+      if (currentTab === 'calendar' && e.translationX > 50) {
+        navigateTab('dashboard');
+        return;
+      }
       const idx = TAB_ORDER.indexOf(currentTab);
       if (idx === -1) return;
       if (e.translationX < -50 && idx < TAB_ORDER.length - 1) {
@@ -198,19 +208,31 @@ export default function AppContent() {
         </View>
       </View>
 
-      {activeWorkout && restTimer > 0 && !playingSet && (
-        <View style={styles.islandWrap} pointerEvents="none">
+      {activeWorkout && (restTimer > 0 || restPaused) && !playingSet && (
+        <View
+          style={styles.islandWrap}
+          pointerEvents="none"
+          accessible
+          accessibilityRole="timer"
+          accessibilityLabel={
+            restPaused
+              ? `Rest paused, ${formatTime(restRemaining)} remaining`
+              : restReady
+                ? `Go, rest ${formatTime(restTimer)}`
+                : `Rest ${formatTime(restRemaining)} remaining`
+          }
+        >
           <View style={styles.island}>
             <View
               style={[
                 styles.islandDot,
-                { backgroundColor: restReady ? colors.accent : colors.textMuted },
+                { backgroundColor: restPaused ? colors.textMuted : restReady ? colors.accent : colors.textMuted },
               ]}
             />
-            <Text style={[styles.islandKicker, restReady && { color: colors.accent }]}>
-              {restReady ? 'GO' : 'REST'}
+            <Text style={[styles.islandKicker, restReady && !restPaused && { color: colors.accent }]}>
+              {restPaused ? 'PAUSE' : restReady ? 'GO' : 'REST'}
             </Text>
-            <Text style={styles.islandTime}>{formatTime(restReady ? restTimer : restRemaining)}</Text>
+            <Text style={styles.islandTime}>{formatTime(restReady && !restPaused ? restTimer : restRemaining)}</Text>
           </View>
         </View>
       )}
@@ -258,9 +280,13 @@ export default function AppContent() {
         />
       )}
 
-      <GestureDetector gesture={swipe}>
+      {activeWorkout || tabBarHidden ? (
         <Animated.View style={[styles.main, { opacity: fade }]}>{renderBody()}</Animated.View>
-      </GestureDetector>
+      ) : (
+        <GestureDetector gesture={swipe}>
+          <Animated.View style={[styles.main, { opacity: fade }]}>{renderBody()}</Animated.View>
+        </GestureDetector>
+      )}
 
       {!activeWorkout && !tabBarHidden && (
         <View style={styles.navWrap}>
@@ -402,6 +428,8 @@ function makeStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
     },
     cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 17 },
     finishBtn: {
@@ -450,7 +478,7 @@ function makeStyles(colors) {
       width: '100%',
       maxWidth: 360,
       borderRadius: radius.sm,
-      minHeight: 52,
+      minHeight: HIT,
       backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -12,11 +13,94 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   const styles = makeStyles(colors);
   const freshRef = useRef(true);
   const fieldRef = useRef(null);
+  const translateY = useRef(new Animated.Value(0)).current;
+  const originY = useRef(0);
+  const tracking = useRef(false);
 
-  useEffect(() => {
+  const close = useCallback(() => {
+    haptic('selection');
+    translateY.setValue(0);
+    onClose?.();
+  }, [onClose, translateY]);
+
+  const settle = useCallback(
+    (dy, vy = 0) => {
+      tracking.current = false;
+      if (dy > 48 || vy > 700) {
+        close();
+        return;
+      }
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: false,
+        speed: 24,
+        bounciness: 0,
+      }).start();
+    },
+    [close, translateY]
+  );
+
+  const settleRef = useRef(settle);
+  settleRef.current = settle;
+
+  useLayoutEffect(() => {
     setTabBarHidden(!!activeInput);
     return () => setTabBarHidden(false);
   }, [activeInput, setTabBarHidden]);
+
+  const keypadOpen = !!activeInput;
+  useEffect(() => {
+    if (keypadOpen) translateY.setValue(0);
+  }, [keypadOpen, translateY]);
+
+  useEffect(() => {
+    if (!keypadOpen || typeof document === 'undefined') return undefined;
+    const onDown = (e) => {
+      const sheet = document.getElementById('keypad-sheet');
+      if (!sheet) return;
+      const r = sheet.getBoundingClientRect();
+      if (e.clientY < r.top - 8 || e.clientY > r.bottom + 8) return;
+      tracking.current = true;
+      originY.current = e.clientY;
+      translateY.stopAnimation();
+    };
+    const onMove = (e) => {
+      if (!tracking.current) return;
+      const dy = Math.max(0, e.clientY - originY.current);
+      if (dy > 4) translateY.setValue(dy);
+    };
+    const onUp = (e) => {
+      if (!tracking.current) return;
+      const dy = Math.max(0, (e.clientY ?? originY.current) - originY.current);
+      settleRef.current(dy, 0);
+    };
+    const opts = { capture: true };
+    document.addEventListener('pointerdown', onDown, opts);
+    document.addEventListener('pointermove', onMove, opts);
+    document.addEventListener('pointerup', onUp, opts);
+    document.addEventListener('pointercancel', onUp, opts);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, opts);
+      document.removeEventListener('pointermove', onMove, opts);
+      document.removeEventListener('pointerup', onUp, opts);
+      document.removeEventListener('pointercancel', onUp, opts);
+    };
+  }, [keypadOpen, translateY]);
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetY(10)
+        .failOffsetX([-32, 32])
+        .onUpdate((e) => {
+          translateY.setValue(Math.max(0, e.translationY));
+        })
+        .onEnd((e) => {
+          settle(e.translationY, e.velocityY);
+        }),
+    [settle, translateY]
+  );
 
   if (!activeInput) return null;
 
@@ -61,9 +145,10 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     else onUpdate(currentVal + key);
   };
 
-  const Key = ({ label, onPress, style, children, flex }) => (
+  const Key = ({ label, onPress, style, children, flex, accessibilityLabel }) => (
     <Pressable
       onPress={onPress}
+      accessibilityLabel={accessibilityLabel || label}
       style={({ pressed }) => [
         styles.key,
         flex && { flex },
@@ -81,71 +166,77 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   ];
 
   return (
-    <View style={[styles.sheet, { paddingBottom: 4 }]}>
-      <View style={styles.handleWrap}>
-        <View style={styles.handle} />
-      </View>
-      <View style={styles.tabs}>
-        {tabs.map((tab) => {
-          const active = activeInput.field === tab.id;
-          return (
-            <Pressable key={tab.id} onPress={() => activeInput.onChangeField(tab.id)} style={styles.tab}>
-              <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
-              {active ? (
-                <View style={styles.checkOn}>
-                  <Text style={styles.checkOnText}>✓</Text>
-                </View>
-              ) : (
-                <View style={styles.checkOff} />
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
+    <GestureDetector gesture={pan}>
+      <Animated.View
+        nativeID="keypad-sheet"
+        collapsable={false}
+        style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
+      >
+        <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
+          <View style={styles.handle} />
+        </View>
+        <View style={styles.tabs}>
+          {tabs.map((tab) => {
+            const active = activeInput.field === tab.id;
+            return (
+              <Pressable key={tab.id} onPress={() => activeInput.onChangeField(tab.id)} style={styles.tab}>
+                <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
+                {active ? (
+                  <View style={styles.checkOn}>
+                    <Text style={styles.checkOnText}>✓</Text>
+                  </View>
+                ) : (
+                  <View style={styles.checkOff} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
 
-      <View style={styles.grid}>
-        <View style={styles.row}>
-          <Key label="1" onPress={() => handleKeyPress('1')} />
-          <Key label="2" onPress={() => handleKeyPress('2')} />
-          <Key label="3" onPress={() => handleKeyPress('3')} />
-          <Key onPress={onClose}>
-            <ChevronDown size={22} color={colors.text} />
-          </Key>
-        </View>
-        <View style={styles.row}>
-          <Key label="4" onPress={() => handleKeyPress('4')} />
-          <Key label="5" onPress={() => handleKeyPress('5')} />
-          <Key label="6" onPress={() => handleKeyPress('6')} />
-          <View style={styles.split}>
-            <Key label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} />
-            <Key label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} />
+        <View style={styles.grid}>
+          <View style={styles.row}>
+            <Key label="1" onPress={() => handleKeyPress('1')} />
+            <Key label="2" onPress={() => handleKeyPress('2')} />
+            <Key label="3" onPress={() => handleKeyPress('3')} />
+            <Key onPress={close} accessibilityLabel="Dismiss keypad">
+              <ChevronDown size={22} color={colors.text} />
+            </Key>
           </View>
-        </View>
-        <View style={styles.rowBottom}>
-          <View style={{ flex: 3 }}>
-            <View style={styles.row}>
-              <Key label="7" onPress={() => handleKeyPress('7')} />
-              <Key label="8" onPress={() => handleKeyPress('8')} />
-              <Key label="9" onPress={() => handleKeyPress('9')} />
-            </View>
-            <View style={[styles.row, { marginBottom: 0 }]}>
-              <Key label="." onPress={() => handleKeyPress('.')} />
-              <Key label="0" onPress={() => handleKeyPress('0')} />
-              <Key onPress={() => handleKeyPress('delete')}>
-                <Delete size={22} color={colors.text} />
-              </Key>
+          <View style={styles.row}>
+            <Key label="4" onPress={() => handleKeyPress('4')} />
+            <Key label="5" onPress={() => handleKeyPress('5')} />
+            <Key label="6" onPress={() => handleKeyPress('6')} />
+            <View style={styles.split}>
+              <Key label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} />
+              <Key label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} />
             </View>
           </View>
-          <Pressable
-            onPress={() => activeInput.onNext()}
-            style={({ pressed }) => [styles.nextKey, pressed && { opacity: 0.82 }]}
-          >
-            <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
-          </Pressable>
+          <View style={styles.rowBottom}>
+            <View style={{ flex: 3 }}>
+              <View style={styles.row}>
+                <Key label="7" onPress={() => handleKeyPress('7')} />
+                <Key label="8" onPress={() => handleKeyPress('8')} />
+                <Key label="9" onPress={() => handleKeyPress('9')} />
+              </View>
+              <View style={[styles.row, { marginBottom: 0 }]}>
+                <Key label="." onPress={() => handleKeyPress('.')} />
+                <Key label="0" onPress={() => handleKeyPress('0')} />
+                <Key onPress={() => handleKeyPress('delete')}>
+                  <Delete size={22} color={colors.text} />
+                </Key>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => activeInput.onNext()}
+              style={({ pressed }) => [styles.nextKey, pressed && { opacity: 0.82 }]}
+            >
+              <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
+            </Pressable>
+          </View>
         </View>
-      </View>
-      <View style={{ height: Math.max(insets.bottom, 16) }} />
-    </View>
+        <View style={{ height: Math.max(insets.bottom, 16) }} />
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
@@ -163,10 +254,16 @@ function makeStyles(colors) {
       borderTopRightRadius: radius.lg,
       borderTopWidth: 1,
       borderColor: colors.borderStrong,
-      paddingTop: 8,
+      paddingTop: 4,
     },
-    handleWrap: { alignItems: 'center', paddingBottom: 8 },
-    handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
+    handleWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 10,
+      paddingBottom: 12,
+      minHeight: 36,
+    },
+    handle: { width: 44, height: 5, borderRadius: 2, backgroundColor: colors.borderStrong },
     tabs: {
       flexDirection: 'row',
       justifyContent: 'center',

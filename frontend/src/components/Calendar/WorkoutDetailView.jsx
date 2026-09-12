@@ -5,7 +5,7 @@ import { ChevronLeft, Clock, Activity, Dumbbell, Moon } from 'lucide-react-nativ
 import { format, parseISO } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const ExerciseImage = ({ src }) => {
@@ -157,7 +157,7 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   emptyWrap: { flex: 1, padding: 16 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, paddingVertical: 8 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, minHeight: HIT, paddingRight: 8 },
   backText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
   title: { color: colors.text, fontFamily: fonts.black, fontSize: 24, marginBottom: 10 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 20 },

@@ -16,7 +16,7 @@ import {
   isAfter,
 } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
-import { fonts, radius } from '../../theme';
+import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function CalendarView({ onDayClick, onBack }) {
@@ -133,7 +133,12 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  back: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingRight: 8 },
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: HIT,
+    paddingRight: 8,
+  },
   backText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 14 },
   pageTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
   panel: {
@@ -145,7 +150,7 @@ function makeStyles(colors) {
   },
   monthRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   monthTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 20 },
-  navBtn: { padding: 8 },
+  navBtn: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
   weekRow: { flexDirection: 'row', marginBottom: 8 },
   weekLbl: {
     flex: 1,
@@ -156,10 +161,10 @@ function makeStyles(colors) {
     textTransform: 'uppercase',
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  daySlot: { width: '14.285%', alignItems: 'center', paddingVertical: 6 },
+  daySlot: { width: '14.285%', alignItems: 'center', paddingVertical: 4 },
   day: {
-    width: 36,
-    height: 36,
+    width: HIT,
+    height: HIT,
     borderRadius: radius.xs,
     alignItems: 'center',
     justifyContent: 'center',

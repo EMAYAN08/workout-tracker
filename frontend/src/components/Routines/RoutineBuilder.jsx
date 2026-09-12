@@ -166,7 +166,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
-      <ScrollView contentContainerStyle={{ padding: 8, paddingBottom: activeInput ? 320 : 120 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 120 }}>
         <View style={styles.head}>
           <Text style={styles.title}>{initialRoutine ? 'Edit Routine' : 'New Routine'}</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -220,12 +220,12 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   {exIdx > 0 && (
-                    <Pressable onPress={() => moveExercise(exIdx, 'up')} style={{ padding: 6 }}>
+                    <Pressable onPress={() => moveExercise(exIdx, 'up')} style={{ padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center' }}>
                       <ArrowUp size={16} color={colors.textMuted} />
                     </Pressable>
                   )}
                   {exIdx < exercises.length - 1 && (
-                    <Pressable onPress={() => moveExercise(exIdx, 'down')} style={{ padding: 6 }}>
+                    <Pressable onPress={() => moveExercise(exIdx, 'down')} style={{ padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center' }}>
                       <ArrowDown size={16} color={colors.textMuted} />
                     </Pressable>
                   )}
@@ -363,7 +363,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   ) : (
                     <>
                       <Plus size={18} color={colors.accentFg} />
-                      <Text style={{ color: colors.accentFg, fontFamily: fonts.bold, fontSize: 13 }}>Add Custom Exercise</Text>
+                      <Text style={{ color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 }}>Add Custom Exercise</Text>
                     </>
                   )}
                 </Pressable>
@@ -418,8 +418,15 @@ function makeStyles(colors) {
   return StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
-  cancel: { paddingHorizontal: 12, paddingVertical: 8, minHeight: HIT, justifyContent: 'center' },
-  cancelText: { color: colors.text, fontFamily: fonts.bold },
+  cancel: {
+    paddingHorizontal: 14,
+    minHeight: HIT,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.sm,
+  },
+  cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
   save: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -429,7 +436,7 @@ function makeStyles(colors) {
     minHeight: HIT,
     borderRadius: radius.sm,
   },
-  saveText: { color: colors.accentFg, fontFamily: fonts.black },
+  saveText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
   panel: {
     backgroundColor: colors.surface,
     borderRadius: radius.sm,
@@ -532,7 +539,7 @@ function makeStyles(colors) {
     justifyContent: 'center',
   },
   cellOn: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
-  cellText: { color: colors.text, fontFamily: fonts.bold },
+  cellText: { color: colors.text, fontFamily: fonts.monoBold },
   delSet: {
     width: HIT,
     height: HIT,
@@ -557,7 +564,6 @@ function makeStyles(colors) {
   addSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
   addEx: {
     marginTop: 8,
-    paddingVertical: 16,
     minHeight: HIT,
     borderRadius: radius.sm,
     backgroundColor: 'transparent',

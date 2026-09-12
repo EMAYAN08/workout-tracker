@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
+import { BlurView } from 'expo-blur';
+import { Check, ChevronDown, Search } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { fonts, radius, HIT } from '../../theme';
 import { haptic } from '../../haptics';
@@ -65,7 +67,7 @@ export function Button({
   const variants = {
     primary: { bg: colors.accent, border: colors.accent, fg: colors.accentFg },
     solid: { bg: colors.text, border: colors.text, fg: colors.background },
-    ghost: { bg: 'transparent', border: 'transparent', fg: colors.text },
+    ghost: { bg: 'transparent', border: colors.borderStrong, fg: colors.text },
     outline: { bg: 'transparent', border: colors.borderStrong, fg: colors.text },
     danger: { bg: 'transparent', border: colors.danger, fg: colors.danger },
     soft: { bg: colors.surface2, border: colors.border, fg: colors.text },
@@ -91,7 +93,7 @@ export function Button({
           gap: 8,
           minHeight: HIT,
           backgroundColor: v.bg,
-          borderWidth: variant === 'ghost' ? 0 : 1,
+          borderWidth: 1,
           borderColor: v.border,
         },
         pressed && { opacity: 0.82 },
@@ -203,108 +205,230 @@ export function IconBtn({ onPress, children, style, disabled }) {
   );
 }
 
-export function Select({ value, options, onChange, style }) {
-  const { colors } = useTheme();
-  const [open, setOpen] = React.useState(false);
+export function Select({ value, options = [], onChange, style, searchable = true }) {
+  const { colors, isDark } = useTheme();
+  const triggerRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [anchor, setAnchor] = useState({ x: 16, y: 80, w: 240, h: 44, winH: 800, winW: 390 });
   const selected = options.find((o) => o.value === value);
+
+  const openMenu = () => {
+    haptic('selection');
+    const win = Dimensions.get('window');
+    const apply = (x, y, w, h) => {
+      setAnchor({
+        x: Number.isFinite(x) ? x : 16,
+        y: Number.isFinite(y) ? y : 80,
+        w: w || 240,
+        h: h || HIT,
+        winH: win.height,
+        winW: win.width,
+      });
+      setQuery('');
+      setOpen(true);
+    };
+    const node = triggerRef.current;
+    if (node?.getBoundingClientRect) {
+      const r = node.getBoundingClientRect();
+      apply(r.left, r.top, r.width, r.height);
+      return;
+    }
+    if (node?.measureInWindow) {
+      node.measureInWindow((x, y, w, h) => apply(x, y, w, h));
+      return;
+    }
+    apply(16, 80, 240, HIT);
+  };
+
+  const closeMenu = () => {
+    setOpen(false);
+    setQuery('');
+  };
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => String(o.label || '').toLowerCase().includes(q));
+  }, [options, query]);
+
+  const menuW = Math.min(anchor.winW - 24, Math.max(anchor.w, 220));
+  const spaceBelow = anchor.winH - (anchor.y + anchor.h) - 16;
+  const spaceAbove = anchor.y - 16;
+  const placeBelow = spaceBelow >= 148 || spaceBelow >= spaceAbove;
+  const maxH = Math.min(280, Math.max(132, placeBelow ? spaceBelow : spaceAbove));
+  const left = Math.max(12, Math.min(anchor.x, anchor.winW - menuW - 12));
+  const top = placeBelow ? anchor.y + anchor.h + 6 : Math.max(8, anchor.y - maxH - 6);
 
   return (
     <>
+      <View ref={triggerRef} collapsable={false}>
       <Pressable
-        onPress={() => {
-          haptic('selection');
-          setOpen(true);
-        }}
-        style={[
+        collapsable={false}
+        onPress={openMenu}
+        accessibilityLabel={`Select ${selected?.label || 'option'}`}
+        style={({ pressed }) => [
           {
             backgroundColor: colors.surface2,
             borderRadius: radius.sm,
             borderWidth: 1,
             borderColor: colors.border,
             paddingHorizontal: 12,
-            paddingVertical: 10,
             minHeight: HIT,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            opacity: pressed ? 0.82 : 1,
           },
           style,
         ]}
       >
         <Text
           style={{
-            color: colors.text,
+            color: selected ? colors.text : colors.textMuted,
             fontFamily: fonts.medium,
-            fontSize: 16,
+            fontSize: 15,
             flex: 1,
             marginRight: 8,
-            textTransform: 'capitalize',
           }}
           numberOfLines={1}
         >
           {selected?.label || 'Select'}
         </Text>
-        <ChevronDown size={18} color={colors.textMuted} />
+        <ChevronDown size={16} color={colors.textMuted} />
       </Pressable>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
-          onPress={() => setOpen(false)}
-        >
+      </View>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={closeMenu}>
+        <View style={{ flex: 1 }} pointerEvents="box-none">
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={closeMenu} />
           <View
             style={{
-              backgroundColor: colors.surface,
-              borderTopWidth: 1,
-              borderColor: colors.borderStrong,
-              maxHeight: '52%',
-              paddingBottom: 20,
-              paddingTop: 8,
+              position: 'absolute',
+              top,
+              left,
+              width: menuW,
+              maxHeight: maxH,
+              borderRadius: radius.lg,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,20,20,0.12)',
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.45 : 0.12,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 16,
             }}
           >
-            <View
+            <BlurView
+              intensity={isDark ? 42 : 56}
+              tint={isDark ? 'dark' : 'light'}
               style={{
-                width: 36,
-                height: 3,
-                backgroundColor: colors.borderStrong,
-                alignSelf: 'center',
-                marginBottom: 8,
+                backgroundColor: isDark ? 'rgba(18,18,18,0.62)' : 'rgba(255,255,255,0.58)',
+                maxHeight: maxH,
               }}
-            />
-            <ScrollView>
-              {options.map((opt) => (
-                <Pressable
-                  key={String(opt.value)}
-                  onPress={() => {
-                    haptic('selection');
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
+            >
+              {searchable ? (
+                <View
                   style={{
-                    minHeight: HIT,
-                    paddingHorizontal: 20,
-                    paddingVertical: 12,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: opt.value === value ? colors.surface2 : 'transparent',
+                    gap: 8,
+                    margin: 8,
+                    paddingHorizontal: 10,
+                    minHeight: 40,
+                    borderRadius: radius.sm,
+                    backgroundColor: isDark ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.55)',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,20,20,0.08)',
                   }}
                 >
+                  <Search size={14} color={colors.textMuted} />
+                  <TextInput
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder="Search"
+                    placeholderTextColor={colors.textSubtle}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    style={{
+                      flex: 1,
+                      color: colors.text,
+                      fontFamily: fonts.medium,
+                      fontSize: 14,
+                      paddingVertical: 8,
+                    }}
+                  />
+                </View>
+              ) : null}
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                style={{ maxHeight: searchable ? maxH - 56 : maxH }}
+              >
+                {filtered.length === 0 ? (
                   <Text
                     style={{
-                      color: colors.text,
-                      fontFamily: opt.value === value ? fonts.semibold : fonts.regular,
-                      fontSize: 17,
-                      textTransform: 'capitalize',
+                      color: colors.textMuted,
+                      fontFamily: fonts.medium,
+                      fontSize: 13,
+                      padding: 16,
+                      textAlign: 'center',
                     }}
                   >
-                    {opt.label}
+                    No matches
                   </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+                ) : (
+                  filtered.map((opt) => {
+                    const on = opt.value === value;
+                    return (
+                      <Pressable
+                        key={String(opt.value)}
+                        onPress={() => {
+                          haptic('selection');
+                          onChange(opt.value);
+                          closeMenu();
+                        }}
+                        style={({ pressed }) => ({
+                          minHeight: 40,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          backgroundColor: on
+                            ? isDark
+                              ? 'rgba(74,124,155,0.28)'
+                              : 'rgba(47,92,122,0.12)'
+                            : pressed
+                              ? isDark
+                                ? 'rgba(255,255,255,0.06)'
+                                : 'rgba(0,0,0,0.04)'
+                              : 'transparent',
+                        })}
+                      >
+                        <Text
+                          style={{
+                            color: colors.text,
+                            fontFamily: on ? fonts.semibold : fonts.regular,
+                            fontSize: 14,
+                            flex: 1,
+                            marginRight: 8,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {opt.label}
+                        </Text>
+                        {on ? <Check size={14} color={colors.accent} strokeWidth={2.6} /> : null}
+                      </Pressable>
+                    );
+                  })
+                )}
+              </ScrollView>
+            </BlurView>
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </>
   );
 }
+

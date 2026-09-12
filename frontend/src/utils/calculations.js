@@ -3,10 +3,13 @@ const LBS_TO_KGS = 0.453592;
 
 // Display conversion utility
 export const convertWeight = (weight, fromUnit, toUnit) => {
-  if (fromUnit === toUnit) return Math.round(weight * 10) / 10;
-  if (fromUnit === 'lbs' && toUnit === 'kgs') return Math.round(weight * LBS_TO_KGS * 10) / 10;
-  if (fromUnit === 'kgs' && toUnit === 'lbs') return Math.round(weight / LBS_TO_KGS * 10) / 10;
-  return weight;
+  const n = Number(weight) || 0;
+  if (fromUnit === toUnit) {
+    return toUnit === 'kgs' ? Math.round(n * 100) / 100 : Math.round(n * 10) / 10;
+  }
+  if (fromUnit === 'lbs' && toUnit === 'kgs') return Math.round(n * LBS_TO_KGS * 100) / 100;
+  if (fromUnit === 'kgs' && toUnit === 'lbs') return Math.round((n / LBS_TO_KGS) * 10) / 10;
+  return n;
 };
 
 // Calculate 1 Rep Max using the Brzycki Formula

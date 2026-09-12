@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Play,
+  Pause,
   Plus,
   Timer,
   Trash2,
@@ -52,7 +53,12 @@ export default function ActiveWorkout() {
     removeSet,
     removeActiveExercise,
     restTimer,
+    restPaused,
+    restTargetSec,
     stopRestTimer,
+    pauseRest,
+    resumeRest,
+    startNextSet,
     unit,
     workoutHistory,
     playingSet,
@@ -124,13 +130,29 @@ export default function ActiveWorkout() {
               <Text style={styles.timerValue}>{formatTime(setTimer)}</Text>
             </View>
           </View>
-        ) : restTimer > 0 ? (
+        ) : restTimer > 0 || restPaused ? (
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.timerLabel}>Rest</Text>
+            <Text style={styles.timerLabel}>{restPaused ? 'Paused' : 'Rest'}</Text>
             <View style={styles.timerRow}>
               <Timer size={14} color={colors.textMuted} />
-              <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restTimer)}</Text>
-              <Pressable onPress={stopRestTimer} style={styles.stopRest}>
+              <Text style={[styles.timerValue, { color: restPaused ? colors.textMuted : colors.accent }]}>
+                {formatTime(Math.max(0, restTargetSec - restTimer))}
+              </Text>
+              <Pressable
+                onPress={restPaused ? resumeRest : pauseRest}
+                style={styles.stopRest}
+                accessibilityLabel={restPaused ? 'Resume rest' : 'Pause rest'}
+              >
+                {restPaused ? (
+                  <Play size={14} color={colors.text} fill={colors.text} />
+                ) : (
+                  <Pause size={14} color={colors.text} fill={colors.text} />
+                )}
+              </Pressable>
+              <Pressable onPress={startNextSet} style={styles.stopRest} accessibilityLabel="Start next set">
+                <Play size={14} color={colors.accent} />
+              </Pressable>
+              <Pressable onPress={stopRestTimer} style={styles.stopRest} accessibilityLabel="Skip rest">
                 <X size={12} color={colors.textMuted} strokeWidth={3} />
               </Pressable>
             </View>
@@ -283,12 +305,13 @@ export default function ActiveWorkout() {
                           onPress={() => {
                             if (set.reps) completeSet(idx, sIdx);
                           }}
+                          accessibilityLabel="Complete set"
                           style={[styles.playBtn, set.reps ? styles.playReady : styles.playDisabled]}
                         >
                           <Check size={18} color={set.reps ? colors.accent : colors.textSubtle} strokeWidth={3} />
                         </Pressable>
                       ) : (
-                        <Pressable onPress={() => startSet(idx, sIdx)} style={styles.playBtn}>
+                        <Pressable onPress={() => startSet(idx, sIdx)} style={styles.playBtn} accessibilityLabel="Start set">
                           <Play size={16} color={colors.text} strokeWidth={3} />
                         </Pressable>
                       )}
@@ -451,10 +474,13 @@ function makeStyles(colors) {
     marginBottom: 2,
   },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  timerValue: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
+  timerValue: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
   stopRest: {
     marginLeft: 4,
-    padding: 4,
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radius.sm,
     backgroundColor: colors.surface2,
   },
@@ -500,7 +526,7 @@ function makeStyles(colors) {
     backgroundColor: colors.surface2,
   },
   setIdx: { width: 36, textAlign: 'center', color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
-  setVal: { flex: 1, textAlign: 'center', color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
+  setVal: { flex: 1, textAlign: 'center', color: colors.text, fontFamily: fonts.monoBold, fontSize: 15 },
   cell: {
     flex: 1,
     marginHorizontal: 4,
@@ -513,7 +539,7 @@ function makeStyles(colors) {
     justifyContent: 'center',
   },
   cellActive: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
-  cellText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
+  cellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
   setActions: { width: 88, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
   doneMark: {
     width: HIT,
@@ -538,7 +564,6 @@ function makeStyles(colors) {
   addRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 8, marginTop: 12, marginBottom: 4 },
   addSetBtn: {
     flex: 1,
-    paddingVertical: 12,
     minHeight: HIT,
     borderRadius: radius.sm,
     backgroundColor: 'transparent',
@@ -552,7 +577,6 @@ function makeStyles(colors) {
   addSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
   addExBtn: {
     marginTop: 8,
-    paddingVertical: 16,
     minHeight: HIT,
     borderRadius: radius.sm,
     backgroundColor: 'transparent',
@@ -662,6 +686,6 @@ function makeStyles(colors) {
     justifyContent: 'center',
     gap: 6,
   },
-  customAddText: { color: colors.accentFg, fontFamily: fonts.bold, fontSize: 13 },
+  customAddText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
 });
 }

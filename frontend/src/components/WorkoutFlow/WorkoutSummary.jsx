@@ -232,7 +232,7 @@ function makeStyles(colors) {
     alignItems: 'center',
     gap: 6,
   },
-  statVal: { color: colors.text, fontFamily: fonts.black, fontSize: 18 },
+  statVal: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 18 },
   statLbl: {
     color: colors.textMuted,
     fontSize: 9,
