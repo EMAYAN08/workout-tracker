@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Activity, TrendingUp, Flame, Trophy } from 'lucide-react-native';
-import { format } from 'date-fns';
+import { Select, ScreenHeader, CountUp, hideScroll } from '../ui/primitives';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getBest1RM, calculateVolume, convertWeight } from '../../utils/calculations';
@@ -10,8 +10,9 @@ import InfoPopover from './InfoPopover';
 import WorkoutDurationChart from './WorkoutDurationChart';
 import StrengthChart from './StrengthChart';
 import AreaChart from '../charts/AreaChart';
-import { Select, ScreenHeader, CountUp, hideScroll } from '../ui/primitives';
+import RangePills from '../charts/RangePills';
 import { fonts, radius } from '../../theme';
+import { seriesFromWorkouts } from '../../utils/chartRange';
 
 const StatCard = ({ icon: Icon, iconColor, title, value, unit, description, colors, styles, fractionDigits, play }) => {
   const [open, setOpen] = useState(false);
@@ -45,6 +46,8 @@ export default function Dashboard({ onMapClick, visible = true }) {
   const [metric, setMetric] = useState('1rm');
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [weightExerciseId, setWeightExerciseId] = useState('');
+  const [progressRange, setProgressRange] = useState('3m');
+  const [weightRange, setWeightRange] = useState('3m');
 
   const uniqueExercises = useMemo(() => {
     const exercisesMap = new Map();
@@ -65,36 +68,36 @@ export default function Dashboard({ onMapClick, visible = true }) {
 
   const chartData = useMemo(() => {
     if (!selectedExerciseId || workoutHistory.length === 0) return [];
-    const data = [];
+    const points = [];
     workoutHistory.forEach((wk) => {
       const ex = wk.exercises?.find((e) => e.id === selectedExerciseId);
       if (ex && ex.sets && ex.sets.length > 0) {
-        const date = format(new Date(wk.timestamp), 'MMM d');
+        const date = new Date(wk.timestamp);
         if (metric === '1rm') {
           const rm = getBest1RM(ex.sets);
-          data.push({ date, value: Number(convertWeight(rm, wk.unitSaved || 'lbs', unit).toFixed(1)) });
+          points.push({ date, value: Number(convertWeight(rm, wk.unitSaved || 'lbs', unit).toFixed(1)) });
         } else {
           const vol = calculateVolume(ex.sets);
-          data.push({ date, value: Number(convertWeight(vol, wk.unitSaved || 'lbs', unit).toFixed(1)) });
+          points.push({ date, value: Number(convertWeight(vol, wk.unitSaved || 'lbs', unit).toFixed(1)) });
         }
       }
     });
-    return data.reverse();
-  }, [workoutHistory, selectedExerciseId, metric, unit]);
+    return seriesFromWorkouts(points, progressRange, metric === 'volume' ? 'sum' : 'max');
+  }, [workoutHistory, selectedExerciseId, metric, unit, progressRange]);
 
   const weightChartData = useMemo(() => {
     if (!weightExerciseId || workoutHistory.length === 0) return [];
-    const data = [];
+    const points = [];
     workoutHistory.forEach((wk) => {
       const ex = wk.exercises?.find((e) => e.id === weightExerciseId);
       if (ex && ex.sets && ex.sets.length > 0) {
-        const date = format(new Date(wk.timestamp), 'MMM d');
+        const date = new Date(wk.timestamp);
         const maxWeight = Math.max(...ex.sets.map((s) => s.weight || 0));
-        data.push({ date, value: Number(convertWeight(maxWeight, wk.unitSaved || 'lbs', unit).toFixed(1)) });
+        points.push({ date, value: Number(convertWeight(maxWeight, wk.unitSaved || 'lbs', unit).toFixed(1)) });
       }
     });
-    return data.reverse();
-  }, [workoutHistory, weightExerciseId, unit]);
+    return seriesFromWorkouts(points, weightRange, 'max');
+  }, [workoutHistory, weightExerciseId, unit, weightRange]);
 
   const totalVolume = workoutHistory.reduce((acc, wk) => {
     const vol = wk.exercises?.reduce((sum, ex) => sum + calculateVolume(ex.sets), 0) || 0;
@@ -182,6 +185,8 @@ export default function Dashboard({ onMapClick, visible = true }) {
               { value: 'volume', label: 'Volume' },
             ]}
           />
+          <Text style={[styles.label, { marginTop: 12 }]}>Range</Text>
+          <RangePills value={progressRange} onChange={setProgressRange} />
         </View>
         <View style={[styles.panel, { marginTop: 10 }]}>
           <AreaChart data={chartData} unit={unit} />
@@ -198,6 +203,8 @@ export default function Dashboard({ onMapClick, visible = true }) {
             onChange={setWeightExerciseId}
             options={uniqueExercises.length > 0 ? uniqueExercises : [{ value: 'none', label: 'No Exercises' }]}
           />
+          <Text style={[styles.label, { marginTop: 12 }]}>Range</Text>
+          <RangePills value={weightRange} onChange={setWeightRange} />
         </View>
         <View style={[styles.panel, { marginTop: 10 }]}>
           <AreaChart data={weightChartData} unit={unit} />

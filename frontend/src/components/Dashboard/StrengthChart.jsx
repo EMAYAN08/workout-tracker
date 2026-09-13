@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Text as SvgText, TSpan } from 'react-native-svg';
-import { subMonths, subYears, isAfter } from 'date-fns';
+import Svg, { Path } from 'react-native-svg';
+import { subDays, subMonths, subYears, isAfter } from 'date-fns';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Select } from '../ui/primitives';
+import RangePills from '../charts/RangePills';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -15,6 +16,13 @@ const CATEGORY_META = [
   { id: 'shoulders', label: 'Shoulders' },
   { id: 'core', label: 'Core' },
   { id: 'arms', label: 'Arms' },
+];
+
+const STRENGTH_RANGES = [
+  { value: '1m', label: '1M' },
+  { value: '3m', label: '3M' },
+  { value: '6m', label: '6M' },
+  { value: '1y', label: '1Y' },
 ];
 
 const mapMuscleGroup = (rawGroup) => {
@@ -65,13 +73,8 @@ export default function StrengthChart() {
   ];
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');
+  const [box, setBox] = useState({ w: 0, h: 320 });
 
-  const timeOptions = [
-    { value: '3m', label: 'Last 3 Months' },
-    { value: '6m', label: 'Last 6 Months' },
-    { value: '1y', label: 'Last 1 Year' },
-    { value: 'lifetime', label: 'Lifetime' },
-  ];
   const metricOptions = [
     { value: 'frequency', label: 'Workout Frequency' },
     { value: 'load', label: 'Muscular Load' },
@@ -90,6 +93,7 @@ export default function StrengthChart() {
     if (!workoutHistory) return data;
     const now = new Date();
     let cutoffDate = null;
+    if (timeRange === '1m') cutoffDate = subDays(now, 30);
     if (timeRange === '3m') cutoffDate = subMonths(now, 3);
     if (timeRange === '6m') cutoffDate = subMonths(now, 6);
     if (timeRange === '1y') cutoffDate = subYears(now, 1);
@@ -130,17 +134,17 @@ export default function StrengthChart() {
   const chartValues = useMemo(() => {
     return CATEGORIES.map((cat) => {
       let rawVal = 0;
-      let displayStr = '';
+      let valueLine = '0';
       if (metric === 'volume') {
         rawVal = stats[cat.id].volume;
         const converted = convertWeight(rawVal, 'lbs', unit);
-        displayStr = converted > 1000 ? `${(converted / 1000).toFixed(2)}K ${unit}` : `${converted} ${unit}`;
+        valueLine = converted > 1000 ? `${(converted / 1000).toFixed(1)}K` : `${Math.round(converted)}`;
       } else if (metric === 'frequency') {
         rawVal = stats[cat.id].frequency.size;
-        displayStr = `${rawVal} session${rawVal !== 1 ? 's' : ''}`;
+        valueLine = `${rawVal}`;
       } else {
         rawVal = stats[cat.id].load;
-        displayStr = `${rawVal}%`;
+        valueLine = `${rawVal}%`;
       }
       const max = maxValues[metric];
       let level = 0;
@@ -149,81 +153,100 @@ export default function StrengthChart() {
         if (level === 0 && rawVal > 0) level = 1;
         if (level > 5) level = 5;
       }
-      return { ...cat, value: rawVal, displayStr, level };
+      return { ...cat, value: rawVal, valueLine, level };
     });
   }, [stats, metric, unit, maxValues]);
+
+  const unitCaption = metric === 'frequency' ? 'sessions' : metric === 'volume' ? unit : 'share of volume';
 
   return (
     <View style={{ marginTop: 8 }}>
       <Text style={styles.heading}>Strength</Text>
       <View style={styles.panel}>
-        <View style={styles.controls}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Select value={metric} onChange={setMetric} options={metricOptions} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Select value={timeRange} onChange={setTimeRange} options={timeOptions} />
-          </View>
+        <Select value={metric} onChange={setMetric} options={metricOptions} />
+        <View style={{ marginTop: 10, marginBottom: 8 }}>
+          <RangePills value={timeRange} onChange={setTimeRange} ranges={STRENGTH_RANGES} />
         </View>
-        <View style={{ height: 300, alignItems: 'center' }}>
-          <Svg width="100%" height="100%" viewBox="0 0 400 400">
-            {chartValues.map((cat, i) => {
-              const angleSpan = 360 / 6;
-              const centerAngle = i * angleSpan;
-              const startAngle = centerAngle - angleSpan / 2;
-              const endAngle = centerAngle + angleSpan / 2;
-              return (
-                <React.Fragment key={cat.id}>
-                  {[...Array(5)].map((_, ringIndex) => {
-                    const rLevel = ringIndex + 1;
-                    const iRadius = 36 + ringIndex * 22;
-                    const oRadius = iRadius + 20;
-                    const isFilled = rLevel <= cat.level;
-                    return (
-                      <Path
-                        key={ringIndex}
-                        d={describeArc(200, 200, iRadius, oRadius, startAngle, endAngle)}
-                        fill={isFilled ? ringFills[ringIndex] : emptyFill}
-                        stroke={colors.border}
-                        strokeWidth="1.25"
-                      />
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
-            {chartValues.map((cat, i) => {
-              const angleSpan = 360 / 6;
-              const centerAngle = i * angleSpan;
-              const textRadius = 172;
-              const angleInRads = ((centerAngle - 90) * Math.PI) / 180;
-              const tx = 200 + Math.cos(angleInRads) * textRadius;
-              const ty = 200 + Math.sin(angleInRads) * textRadius;
-              let textAnchor = 'middle';
-              if (Math.abs(centerAngle) % 180 !== 0) {
-                if (centerAngle < 180 && centerAngle > 0) textAnchor = 'start';
-                if (centerAngle > 180) textAnchor = 'end';
-              }
-              const adjustedTx = textAnchor === 'start' ? tx + 4 : textAnchor === 'end' ? tx - 4 : tx;
-              return (
-                <SvgText key={`label-${cat.id}`} x={adjustedTx} y={ty} textAnchor={textAnchor}>
-                  <TSpan
-                    x={adjustedTx}
-                    dy="-0.4em"
-                    fill={colors.textMuted}
-                    fontSize="15"
-                    fontWeight="600"
-                  >
-                    {cat.displayStr}
-                  </TSpan>
-                  <TSpan x={adjustedTx} dy="1.4em" fill={colors.text} fontSize="16" fontWeight="600">
-                    {cat.label}
-                  </TSpan>
-                </SvgText>
-              );
-            })}
-          </Svg>
+        <View
+          style={styles.radarWrap}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            if (width && height) setBox({ w: width, h: height });
+          }}
+        >
+          <View style={styles.radarInner}>
+            <Svg width="100%" height="100%" viewBox="0 0 200 200">
+              {chartValues.map((cat, i) => {
+                const angleSpan = 360 / 6;
+                const centerAngle = i * angleSpan;
+                const startAngle = centerAngle - angleSpan / 2;
+                const endAngle = centerAngle + angleSpan / 2;
+                return (
+                  <React.Fragment key={cat.id}>
+                    {[...Array(5)].map((_, ringIndex) => {
+                      const rLevel = ringIndex + 1;
+                      const iRadius = 22 + ringIndex * 15.2;
+                      const oRadius = iRadius + 13.6;
+                      const isFilled = rLevel <= cat.level;
+                      return (
+                        <Path
+                          key={ringIndex}
+                          d={describeArc(100, 100, iRadius, oRadius, startAngle, endAngle)}
+                          fill={isFilled ? ringFills[ringIndex] : emptyFill}
+                          stroke={colors.border}
+                          strokeWidth="1.1"
+                        />
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </Svg>
+          </View>
+          {chartValues.map((cat, i) => {
+            const angle = ((i * 60 - 90) * Math.PI) / 180;
+            const r = Math.min(box.w, box.h) * 0.38;
+            const lx = (box.w || 0) / 2 + Math.cos(angle) * r;
+            const ly = (box.h || 0) / 2 + Math.sin(angle) * r;
+            const side = i === 0 || i === 3 ? 'center' : i < 3 ? 'left' : 'right';
+            let left = lx - 36;
+            if (side === 'left') left = Math.min(lx + 6, (box.w || 80) - 76);
+            if (side === 'right') left = Math.max(lx - 78, 4);
+            left = Math.max(4, Math.min(left, (box.w || 80) - 76));
+            const top = Math.max(2, Math.min(ly - 18, (box.h || 40) - 40));
+            return (
+              <View
+                key={`label-${cat.id}`}
+                pointerEvents="none"
+                style={[
+                  styles.labelBox,
+                  {
+                    left,
+                    top,
+                    alignItems: side === 'left' ? 'flex-start' : side === 'right' ? 'flex-end' : 'center',
+                  },
+                ]}
+              >
+                <Text style={styles.valueLine} numberOfLines={1}>
+                  {cat.valueLine}
+                </Text>
+                <Text style={styles.nameLine} numberOfLines={1}>
+                  {cat.label}
+                </Text>
+              </View>
+            );
+          })}
+                <Text style={styles.valueLine} numberOfLines={1}>
+                  {cat.valueLine}
+                </Text>
+                <Text style={styles.nameLine} numberOfLines={1}>
+                  {cat.label}
+                </Text>
+              </View>
+            );
+          })}
         </View>
+        <Text style={styles.caption}>{unitCaption}</Text>
       </View>
     </View>
   );
@@ -246,6 +269,41 @@ function makeStyles(colors) {
       borderColor: colors.border,
       padding: 16,
     },
-    controls: { flexDirection: 'row', marginBottom: 12 },
+    radarWrap: {
+      height: 320,
+      marginTop: 4,
+      position: 'relative',
+    },
+    radarInner: {
+      position: 'absolute',
+      left: 56,
+      right: 56,
+      top: 40,
+      bottom: 40,
+    },
+    labelBox: {
+      position: 'absolute',
+      width: 72,
+    },
+    valueLine: {
+      color: colors.textMuted,
+      fontSize: 12,
+      fontFamily: fonts.semibold,
+    },
+    nameLine: {
+      color: colors.text,
+      fontSize: 14,
+      fontFamily: fonts.semibold,
+      marginTop: 1,
+    },
+    caption: {
+      color: colors.textSubtle,
+      fontSize: 11,
+      fontFamily: fonts.medium,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginTop: 4,
+    },
   });
 }

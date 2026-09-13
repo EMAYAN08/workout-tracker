@@ -1,41 +1,39 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { format, parseISO } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTheme } from '../../context/ThemeContext';
 import InfoPopover from './InfoPopover';
 import AreaChart from '../charts/AreaChart';
+import RangePills from '../charts/RangePills';
 import { fonts, radius } from '../../theme';
+import { seriesFromWorkouts } from '../../utils/chartRange';
 
 export default function WorkoutDurationChart() {
   const { workoutHistory } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [displayUnit, setDisplayUnit] = useState('mins');
+  const [range, setRange] = useState('3m');
 
   const chartData = useMemo(() => {
     if (!workoutHistory || workoutHistory.length === 0) return [];
-    const grouped = {};
+    const points = [];
     workoutHistory.forEach((wk) => {
-      const timeStr = wk.timestamp || new Date(wk.startTime).toISOString();
-      const dateKey = format(parseISO(timeStr), 'yyyy-MM-dd');
-      if (!grouped[dateKey]) grouped[dateKey] = { date: dateKey, durationSec: 0 };
-      grouped[dateKey].durationSec += wk.duration || 0;
+      const date = new Date(wk.timestamp || wk.startTime);
+      const secs = wk.duration || 0;
+      if (!secs) return;
+      points.push({
+        date,
+        value: displayUnit === 'mins' ? secs / 60 : secs / 3600,
+      });
     });
-    return Object.keys(grouped)
-      .sort((a, b) => new Date(a) - new Date(b))
-      .map((dateKey) => {
-        const d = grouped[dateKey];
-        return {
-          date: format(parseISO(dateKey), 'MMM dd'),
-          value:
-            displayUnit === 'mins'
-              ? Math.round(d.durationSec / 60)
-              : Number((d.durationSec / 3600).toFixed(1)),
-        };
-      })
-      .filter((d) => d.value > 0);
-  }, [workoutHistory, displayUnit]);
+    const reduce = range === '1m' || range === '3m' ? 'sum' : 'sum';
+    const series = seriesFromWorkouts(points, range, reduce);
+    return series.map((d) => ({
+      ...d,
+      value: displayUnit === 'mins' ? Math.round(d.value) : Number(d.value.toFixed(1)),
+    }));
+  }, [workoutHistory, displayUnit, range]);
 
   const averageValue = useMemo(() => {
     if (chartData.length === 0) return 0;
@@ -77,6 +75,8 @@ export default function WorkoutDurationChart() {
             </View>
           )}
         </View>
+        <Text style={[styles.label, { marginTop: 12 }]}>Range</Text>
+        <RangePills value={range} onChange={setRange} />
       </View>
 
       <View style={[styles.panel, { marginTop: 10, paddingVertical: 8 }]}>
