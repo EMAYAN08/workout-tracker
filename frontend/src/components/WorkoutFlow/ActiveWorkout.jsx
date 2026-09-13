@@ -28,11 +28,14 @@ import {
 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { getPreviousPerformance } from '../../utils/calculations';
+import { detectPersonalRecord } from '../../utils/pr';
 import CustomNumpad from './CustomNumpad';
+import PrCelebration from './PrCelebration';
 import { fonts, radius, HIT } from '../../theme';
 import { Select, MuscleTag } from '../ui/primitives';
 import { useTheme } from '../../context/ThemeContext';
 import { titleCase } from '../../utils/format';
+import { haptic } from '../../haptics';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -75,7 +78,28 @@ export default function ActiveWorkout() {
   const [searchResults, setSearchResults] = useState([]);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
+  const [prEvent, setPrEvent] = useState(null);
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
+
+  const markSetComplete = (idx, sIdx) => {
+    const ex = activeWorkout?.exercises?.[idx];
+    const set = ex?.sets?.[sIdx];
+    if (!ex || !set || !set.reps) return;
+    const pr = detectPersonalRecord({
+      exercise: ex,
+      set,
+      setIndex: sIdx,
+      history: workoutHistory,
+      currentExercises: activeWorkout.exercises,
+      unit,
+    });
+    setActiveInput(null);
+    completeSet(idx, sIdx);
+    if (pr) {
+      haptic('success');
+      setPrEvent({ ...pr, id: Date.now() });
+    }
+  };
 
   React.useEffect(() => {
     const t = setTimeout(() => {
@@ -287,12 +311,7 @@ export default function ActiveWorkout() {
                       </Pressable>
                       {isPlaying ? (
                         <Pressable
-                          onPress={() => {
-                            if (set.reps) {
-                              setActiveInput(null);
-                              completeSet(idx, sIdx);
-                            }
-                          }}
+                          onPress={() => markSetComplete(idx, sIdx)}
                           accessibilityLabel="Complete set"
                           style={[styles.playBtn, set.reps ? styles.playReady : styles.playDisabled]}
                         >
@@ -407,6 +426,8 @@ export default function ActiveWorkout() {
           </ScrollView>
         </View>
       </Modal>
+
+      <PrCelebration pr={prEvent} onClose={() => setPrEvent(null)} />
 
       <CustomNumpad
         activeInput={
