@@ -21,6 +21,8 @@ const CELL = 11;
 const GUTTER = 2;
 const MONTH_GAP = 16;
 const MONTH_LABEL = 16;
+
+const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
