@@ -2,18 +2,38 @@ export const ACCENT_SWATCHES = [
   { id: 'steel', label: 'Steel', dark: '#4A7C9B', light: '#2F5C7A' },
   { id: 'navy', label: 'Navy', dark: '#3E5F8A', light: '#2A466C' },
   { id: 'cobalt', label: 'Cobalt', dark: '#3A6EA8', light: '#24548A' },
+  { id: 'azure', label: 'Azure', dark: '#4A90C8', light: '#2A6A9A' },
+  { id: 'ice', label: 'Ice', dark: '#7EB6D4', light: '#3A7A98' },
   { id: 'slate', label: 'Slate', dark: '#6A7B8C', light: '#4A5B6C' },
   { id: 'ink', label: 'Ink', dark: '#5A6E8A', light: '#3A4E6A' },
   { id: 'glacier', label: 'Glacier', dark: '#6A8A9A', light: '#4A6A7A' },
+  { id: 'indigo', label: 'Indigo', dark: '#5B6AA8', light: '#3C4A86' },
+  { id: 'violet', label: 'Violet', dark: '#7A6AA8', light: '#564A86' },
+  { id: 'teal', label: 'Teal', dark: '#3E8A86', light: '#2A6460' },
+  { id: 'pine', label: 'Pine', dark: '#4A7A62', light: '#2E5846' },
+  { id: 'forest', label: 'Forest', dark: '#5A8A4A', light: '#3A6230' },
+  { id: 'wine', label: 'Wine', dark: '#8A4A5A', light: '#623038' },
+  { id: 'brick', label: 'Brick', dark: '#A05A4A', light: '#784034' },
+  { id: 'gold', label: 'Gold', dark: '#C4A04A', light: '#8A6E28' },
 ];
 
 export const CHART_SWATCHES = [
   { id: 'olive', label: 'Olive', dark: '#9AAA78', light: '#6E7C4E' },
   { id: 'sage', label: 'Sage', dark: '#86A48C', light: '#5C7A62' },
   { id: 'moss', label: 'Moss', dark: '#7A946C', light: '#54704A' },
+  { id: 'fern', label: 'Fern', dark: '#6AAA78', light: '#3E7A4E' },
+  { id: 'mint', label: 'Mint', dark: '#7ABAAA', light: '#4A7A70' },
   { id: 'sand', label: 'Sand', dark: '#C4A878', light: '#8A7048' },
   { id: 'clay', label: 'Clay', dark: '#B08A78', light: '#7A5C4E' },
+  { id: 'terracotta', label: 'Terra', dark: '#C48468', light: '#8A5840' },
   { id: 'mist', label: 'Mist', dark: '#8A9A9A', light: '#5A6A6A' },
+  { id: 'sky', label: 'Sky', dark: '#7AA8C4', light: '#4A708C' },
+  { id: 'lilac', label: 'Lilac', dark: '#A090B8', light: '#6E6088' },
+  { id: 'rose', label: 'Rose', dark: '#C490A0', light: '#8A5C6A' },
+  { id: 'amber', label: 'Amber', dark: '#D4B060', light: '#8A7028' },
+  { id: 'copper', label: 'Copper', dark: '#C48A58', light: '#8A5A30' },
+  { id: 'graphite', label: 'Graphite', dark: '#8A8A86', light: '#5A5A56' },
+  { id: 'ivory', label: 'Ivory', dark: '#C8C4B0', light: '#7A7664' },
 ];
 
 export const DEFAULT_ACCENT_ID = 'steel';
@@ -68,6 +88,7 @@ export function resolvePalette(scheme = 'dark', accentId = DEFAULT_ACCENT_ID, ch
     chartFg,
     heatmapWork: chartAccent,
     heatmapRest: mixHex(chartAccent, bg, restMix),
+    accentSoftFill: mixHex(accent, base.surface, scheme === 'dark' ? 0.78 : 0.72),
     chartRings: [
       mixHex(chartAccent, bg, 0.78),
       mixHex(chartAccent, bg, 0.6),

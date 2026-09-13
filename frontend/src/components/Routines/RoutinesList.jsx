@@ -5,7 +5,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
-import { ScreenHeader, hideScroll } from '../ui/primitives';
+import { ScreenHeader, hideScroll, MuscleTag } from '../ui/primitives';
 
 export default function RoutinesList({ onCreateNew, onEdit }) {
   const { routines, deleteRoutine, startWorkoutFromRoutine, startWorkout, activeWorkout } = useWorkout();
@@ -106,9 +106,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
             {getRoutineCategories(routine.exercises).length > 0 && (
               <View style={styles.chips}>
                 {getRoutineCategories(routine.exercises).map((cat) => (
-                  <View key={cat} style={styles.chip}>
-                    <Text style={styles.chipText}>{cat}</Text>
-                  </View>
+                  <MuscleTag key={cat} group={cat} />
                 ))}
               </View>
             )}

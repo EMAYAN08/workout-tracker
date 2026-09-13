@@ -203,6 +203,7 @@ function makeStyles(colors) {
       backgroundColor: colors.background,
     },
     cancelBtn: {
+      flex: 1,
       minHeight: HIT,
       paddingHorizontal: 16,
       borderRadius: radius.sm,

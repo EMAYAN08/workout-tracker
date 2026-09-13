@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator, Keyboard } from 'react-native';
-import { Dumbbell, Plus, Trash2, Search, Settings, ChevronDown } from 'lucide-react-native';
+import { Dumbbell, Plus, Trash2, Search, ChevronDown } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { convertWeight } from '../../utils/calculations';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
-import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
+import { Select, ScreenHeader, hideScroll, MuscleTag } from '../ui/primitives';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
-import { confirmAction } from '../../dialog';
+import { titleCase } from '../../utils/format';
 
 const MUSCLE_GROUPS = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 const FILTER_GROUPS = ['All', ...MUSCLE_GROUPS];
@@ -61,7 +61,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
     <View style={styles.card}>
       <Pressable onPress={onToggle} style={styles.cardHead} accessibilityLabel={`Toggle ${ex.name}`}>
         <View style={styles.cardIcon}>
-          <Settings size={22} color={colors.textMuted} />
+          <Dumbbell size={22} color={colors.textMuted} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.cardName} numberOfLines={1}>
@@ -69,9 +69,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
           </Text>
           <Text style={styles.cardMeta}>Custom</Text>
         </View>
-        <View style={styles.mgBadge}>
-          <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
-        </View>
+        <MuscleTag group={ex.muscleGroup} />
         <ChevronDown
           size={18}
           color={colors.textMuted}
@@ -87,7 +85,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
                 <Text style={styles.editText}>Edit</Text>
               </Pressable>
               <Pressable
-                onPress={() => confirmAction('Delete exercise', 'Delete this exercise?', () => onDelete(ex.id))}
+                onPress={() => onDelete(ex.id)}
                 style={styles.delBtn}
                 accessibilityLabel="Delete exercise"
               >
@@ -255,7 +253,7 @@ export default function CustomExercises() {
           <Select
             value={newMuscleGroup}
             onChange={setNewMuscleGroup}
-            options={MUSCLE_GROUPS.map((mg) => ({ value: mg, label: mg }))}
+            options={MUSCLE_GROUPS.map((mg) => ({ value: mg, label: titleCase(mg) }))}
           />
           <Text style={[styles.label, { marginTop: 16 }]}>Default Sets</Text>
           {defaultSets.map((s, i) => (
@@ -364,7 +362,7 @@ export default function CustomExercises() {
           <Select
             value={selectedMuscleGroup}
             onChange={setSelectedMuscleGroup}
-            options={FILTER_GROUPS.map((g) => ({ value: g, label: g }))}
+            options={FILTER_GROUPS.map((g) => ({ value: g, label: g === 'All' ? 'All' : titleCase(g) }))}
           />
         </View>
       </View>

@@ -15,6 +15,7 @@ import { Check, ChevronDown, ChevronLeft, Search } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { fonts, radius, HIT } from '../../theme';
 import { haptic } from '../../haptics';
+import { titleCase, muscleTagColors } from '../../utils/format';
 
 export const hideScroll = {
   showsVerticalScrollIndicator: false,
@@ -55,10 +56,11 @@ export function ScreenHeader({ title, subtitle, right, onBack, style }) {
           style={{
             color: colors.text,
             fontFamily: fonts.bold,
-            fontSize: 28,
-            letterSpacing: -0.8,
+            fontSize: String(title || '').length > 16 ? 22 : 28,
+            letterSpacing: -0.6,
+            lineHeight: String(title || '').length > 16 ? 26 : 32,
           }}
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {title}
         </Text>
@@ -538,6 +540,28 @@ export function Select({ value, options = [], onChange, style, searchable = true
         </Pressable>
       </Modal>
     </>
+  );
+}
+
+export function MuscleTag({ group, style }) {
+  const { isDark } = useTheme();
+  const tone = muscleTagColors(group, isDark);
+  if (!group) return null;
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: tone.bg,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: radius.xs,
+          flexShrink: 0,
+        },
+        style,
+      ]}
+    >
+      <Text style={{ color: tone.fg, fontSize: 11, fontFamily: fonts.semibold }}>{titleCase(group)}</Text>
+    </View>
   );
 }
 

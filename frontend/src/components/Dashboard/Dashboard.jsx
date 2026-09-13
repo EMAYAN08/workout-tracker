@@ -18,10 +18,10 @@ const StatCard = ({ icon: Icon, iconColor, title, value, unit, description, colo
   const numeric = typeof value === 'number';
   return (
     <Pressable onPress={() => setOpen(!open)} style={styles.statCard}>
-      <View style={styles.statIcon}>
+      <View style={styles.statHead}>
         <Icon size={16} color={iconColor} strokeWidth={2.2} />
+        <Text style={styles.statTitle}>{title}</Text>
       </View>
-      <Text style={styles.statTitle}>{title}</Text>
       <View style={styles.statValRow}>
         {numeric ? (
           <CountUp value={value} style={styles.statVal} fractionDigits={fractionDigits || 0} play={play} />
@@ -38,7 +38,7 @@ const StatCard = ({ icon: Icon, iconColor, title, value, unit, description, colo
 };
 
 export default function Dashboard({ onMapClick, visible = true }) {
-  const { workoutHistory, unit, getStreaks } = useWorkout();
+  const { workoutHistory, unit, getStreaks, useMock } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { current, best } = getStreaks();
@@ -106,7 +106,7 @@ export default function Dashboard({ onMapClick, visible = true }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader title="Profile" subtitle="On this phone. Yours alone." />
+      <ScreenHeader title="Profile" subtitle={useMock ? 'Demo data — toggle off in Settings.' : 'On this phone. Yours alone.'} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
@@ -162,13 +162,10 @@ export default function Dashboard({ onMapClick, visible = true }) {
         <ConsistencyMap onMapClick={onMapClick} />
         <StrengthChart />
 
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Exercise progression</Text>
-          <InfoPopover
-            title="Exercise Progression"
-            description="Track your performance over time. 'Total Volume' shows the total weight lifted across all sets. 'Est. 1RM' calculates your theoretical 1-rep maximum based on your heaviest sets."
-          />
-        </View>
+        <InfoPopover
+          title="Exercise progression"
+          description="Track your performance over time. 'Total Volume' shows the total weight lifted across all sets. 'Est. 1RM' calculates your theoretical 1-rep maximum based on your heaviest sets."
+        />
         <View style={styles.panel}>
           <Text style={styles.label}>Exercise</Text>
           <Select
@@ -190,13 +187,10 @@ export default function Dashboard({ onMapClick, visible = true }) {
           <AreaChart data={chartData} unit={unit} />
         </View>
 
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Max weight</Text>
-          <InfoPopover
-            title="Max Weight Progression"
-            description="Focus purely on strength. This chart plots the absolute heaviest single set you lifted during each workout for the selected exercise."
-          />
-        </View>
+        <InfoPopover
+          title="Max weight"
+          description="Focus purely on strength. This chart plots the absolute heaviest single set you lifted during each workout for the selected exercise."
+        />
         <View style={styles.panel}>
           <Text style={styles.label}>Exercise</Text>
           <Select
@@ -229,9 +223,7 @@ function makeStyles(colors) {
       padding: 14,
       minHeight: 104,
     },
-    statIcon: {
-      marginBottom: 10,
-    },
+    statHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
     statTitle: {
       color: colors.textMuted,
       fontSize: 10,

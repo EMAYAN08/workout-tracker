@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
-import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload } from 'lucide-react-native';
+import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, Trash2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
 import { ACCENT_SWATCHES, CHART_SWATCHES, fonts, radius, HIT } from '../../theme';
 import { haptic } from '../../haptics';
+import { confirmAction } from '../../dialog';
 
 export default function Settings() {
   const {
@@ -18,7 +19,7 @@ export default function Settings() {
     setAccentId,
     setChartId,
   } = useTheme();
-  const { unit, toggleUnit, restTargetSec, setRestTargetSec, exportData, importData } = useWorkout();
+  const { unit, toggleUnit, restTargetSec, setRestTargetSec, exportData, importData, useMock, toggleMock, wipeAllData } = useWorkout();
   const styles = makeStyles(colors);
   const [busy, setBusy] = useState(false);
 
@@ -64,6 +65,33 @@ export default function Settings() {
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Settings" subtitle="Looks, units, rest, and backup." />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
+      <Text style={styles.section}>Demo</Text>
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <Beaker size={16} color={colors.textMuted} />
+          <Text style={styles.rowLabel}>Mock data</Text>
+        </View>
+        <Text style={styles.hint}>
+          Preview a full training log without touching your real workouts. Turn it off anytime — nothing is saved.
+        </Text>
+        <View style={styles.seg}>
+          {[false, true].map((on) => (
+            <Pressable
+              key={String(on)}
+              onPress={() => {
+                haptic('selection');
+                toggleMock(on);
+              }}
+              style={[styles.segBtn, useMock === on && { backgroundColor: colors.text }]}
+            >
+              <Text style={[styles.segText, useMock === on && { color: colors.background }]}>
+                {on ? 'On' : 'Off'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       <Text style={styles.section}>Appearance</Text>
       <View style={styles.card}>
         <View style={styles.row}>
@@ -129,8 +157,8 @@ export default function Settings() {
             {ACCENT_SWATCHES.find((s) => s.id === accentId)?.label || 'Steel'}
           </Text>
         </View>
-        <Text style={styles.hint}>Buttons, active tabs, and rest timer.</Text>
-        <View style={styles.swatches}>
+        <Text style={styles.hint}>Buttons, active tabs, and rest timer. Swipe to see more.</Text>
+        <ScrollView horizontal nestedScrollEnabled {...hideScroll} contentContainerStyle={styles.swatchRow}>
           {ACCENT_SWATCHES.map((s) => {
             const hex = isDark ? s.dark : s.light;
             const on = accentId === s.id;
@@ -142,15 +170,20 @@ export default function Settings() {
                   setAccentId(s.id);
                 }}
                 accessibilityLabel={`Accent ${s.label}`}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: hex },
-                  on && styles.swatchOn,
-                ]}
-              />
+                style={styles.swatchItem}
+              >
+                <View
+                  style={[
+                    styles.swatch,
+                    { backgroundColor: hex },
+                    on && styles.swatchOn,
+                  ]}
+                />
+                <Text style={[styles.swatchLbl, on && { color: colors.text }]}>{s.label}</Text>
+              </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       <Text style={styles.section}>Charts</Text>
@@ -162,8 +195,8 @@ export default function Settings() {
             {CHART_SWATCHES.find((s) => s.id === chartId)?.label || 'Olive'}
           </Text>
         </View>
-        <Text style={styles.hint}>Profile charts only. Kept separate from the app accent.</Text>
-        <View style={styles.swatches}>
+        <Text style={styles.hint}>Profile charts only. Kept separate from the app accent. Swipe to see more.</Text>
+        <ScrollView horizontal nestedScrollEnabled {...hideScroll} contentContainerStyle={styles.swatchRow}>
           {CHART_SWATCHES.map((s) => {
             const hex = isDark ? s.dark : s.light;
             const on = chartId === s.id;
@@ -175,15 +208,20 @@ export default function Settings() {
                   setChartId(s.id);
                 }}
                 accessibilityLabel={`Chart ${s.label}`}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: hex },
-                  on && styles.swatchOn,
-                ]}
-              />
+                style={styles.swatchItem}
+              >
+                <View
+                  style={[
+                    styles.swatch,
+                    { backgroundColor: hex },
+                    on && styles.swatchOn,
+                  ]}
+                />
+                <Text style={[styles.swatchLbl, on && { color: colors.text }]}>{s.label}</Text>
+              </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       <Text style={styles.section}>Rest timer</Text>
@@ -202,7 +240,9 @@ export default function Settings() {
             { value: '180', label: '3 minutes' },
           ]}
         />
-        <Text style={styles.hint}>Completing a set starts this countdown. A live lock-screen notice tracks the remaining time.</Text>
+        <Text style={styles.hint}>
+          Completing a set starts this countdown. The remaining time ticks in a lock-screen notification (Uber-style Live Activities need a native iOS build — Expo Go updates the same notice every second instead).
+        </Text>
       </View>
 
       <Text style={styles.section}>Backup</Text>
@@ -220,6 +260,41 @@ export default function Settings() {
             <Text style={styles.backupGhostText}>Import</Text>
           </Pressable>
         </View>
+      </View>
+
+      <Text style={styles.section}>Danger</Text>
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <Trash2 size={16} color={colors.danger} />
+          <Text style={styles.rowLabel}>Wipe workout data</Text>
+        </View>
+        <Text style={styles.hint}>
+          Deletes every workout, routine, and custom exercise stored on this phone. Theme and units stay. This cannot be undone.
+        </Text>
+        <Pressable
+          disabled={busy}
+          onPress={() =>
+            confirmAction(
+              'Wipe all data?',
+              'This permanently deletes your workouts, routines, and custom exercises on this device.',
+              async () => {
+                setBusy(true);
+                try {
+                  await wipeAllData();
+                  toast('Wiped', 'This device is a clean slate.');
+                } catch (err) {
+                  toast('Wipe failed', err.message || 'Could not clear data.');
+                } finally {
+                  setBusy(false);
+                }
+              },
+              { confirmLabel: 'Wipe', destructive: true }
+            )
+          }
+          style={[styles.wipeBtn, busy && { opacity: 0.5 }]}
+        >
+          <Text style={styles.wipeText}>Delete all data</Text>
+        </Pressable>
       </View>
       </ScrollView>
     </View>
@@ -266,7 +341,8 @@ function makeStyles(colors) {
     },
     segBtn: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     segText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 14, letterSpacing: 0.4 },
-    swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: '100%' },
+    swatchRow: { gap: 12, paddingVertical: 4, paddingRight: 8 },
+    swatchItem: { alignItems: 'center', gap: 6, width: 52 },
     swatch: {
       width: 36,
       height: 36,
@@ -275,6 +351,12 @@ function makeStyles(colors) {
       borderColor: colors.borderStrong,
     },
     swatchOn: { borderColor: colors.text, borderWidth: 2 },
+    swatchLbl: {
+      color: colors.textSubtle,
+      fontFamily: fonts.medium,
+      fontSize: 10,
+      textAlign: 'center',
+    },
     backupRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
     backupBtn: {
       flex: 1,
@@ -300,5 +382,14 @@ function makeStyles(colors) {
       gap: 8,
     },
     backupGhostText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    wipeBtn: {
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    wipeText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 15 },
   });
 }

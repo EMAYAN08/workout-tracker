@@ -165,7 +165,7 @@ export default function StrengthChart() {
             <Select value={timeRange} onChange={setTimeRange} options={timeOptions} />
           </View>
         </View>
-        <View style={{ height: 220, alignItems: 'center' }}>
+        <View style={{ height: 300, alignItems: 'center' }}>
           <Svg width="100%" height="100%" viewBox="0 0 400 400">
             {chartValues.map((cat, i) => {
               const angleSpan = 360 / 6;
@@ -176,8 +176,8 @@ export default function StrengthChart() {
                 <React.Fragment key={cat.id}>
                   {[...Array(5)].map((_, ringIndex) => {
                     const rLevel = ringIndex + 1;
-                    const iRadius = 28 + ringIndex * 18;
-                    const oRadius = iRadius + 16;
+                    const iRadius = 36 + ringIndex * 22;
+                    const oRadius = iRadius + 20;
                     const isFilled = rLevel <= cat.level;
                     return (
                       <Path
@@ -195,7 +195,7 @@ export default function StrengthChart() {
             {chartValues.map((cat, i) => {
               const angleSpan = 360 / 6;
               const centerAngle = i * angleSpan;
-              const textRadius = 150;
+              const textRadius = 172;
               const angleInRads = ((centerAngle - 90) * Math.PI) / 180;
               const tx = 200 + Math.cos(angleInRads) * textRadius;
               const ty = 200 + Math.sin(angleInRads) * textRadius;
@@ -211,12 +211,12 @@ export default function StrengthChart() {
                     x={adjustedTx}
                     dy="-0.4em"
                     fill={colors.textMuted}
-                    fontSize="12"
+                    fontSize="15"
                     fontWeight="600"
                   >
                     {cat.displayStr}
                   </TSpan>
-                  <TSpan x={adjustedTx} dy="1.35em" fill={colors.text} fontSize="12" fontWeight="500">
+                  <TSpan x={adjustedTx} dy="1.4em" fill={colors.text} fontSize="16" fontWeight="600">
                     {cat.label}
                   </TSpan>
                 </SvgText>

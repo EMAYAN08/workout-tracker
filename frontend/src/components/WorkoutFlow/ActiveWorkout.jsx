@@ -30,8 +30,9 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { getPreviousPerformance } from '../../utils/calculations';
 import CustomNumpad from './CustomNumpad';
 import { fonts, radius, HIT } from '../../theme';
-import { Select } from '../ui/primitives';
+import { Select, MuscleTag } from '../ui/primitives';
 import { useTheme } from '../../context/ThemeContext';
+import { titleCase } from '../../utils/format';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -225,7 +226,7 @@ export default function ActiveWorkout() {
                       {'  |  '}Est 1RM: {prevPerformance.allTime1RM} {unit}
                     </Text>
                   ) : (
-                    <Text style={[styles.exMeta, { textTransform: 'capitalize' }]}>{ex.muscleGroup}</Text>
+                    <Text style={styles.exMeta}>{titleCase(ex.muscleGroup)}</Text>
                   )}
                 </View>
                 {reorderBtns}
@@ -243,7 +244,7 @@ export default function ActiveWorkout() {
               {ex.sets.map((set, sIdx) => {
                 if (set.completedAt) {
                   return (
-                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.surface2 }]}>
+                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.accentSoftFill || colors.surface2 }]}>
                       <Text style={styles.setIdx}>{sIdx + 1}</Text>
                       <Text style={styles.setVal}>{String(set.weight)}</Text>
                       <Text style={styles.setVal}>{String(set.reps)}</Text>
@@ -367,11 +368,9 @@ export default function ActiveWorkout() {
                   <Text style={styles.searchName} numberOfLines={1}>
                     {ex.name}
                   </Text>
-                  <Text style={styles.searchMeta}>{ex.muscleGroup || 'Exercise'}</Text>
+                  <Text style={styles.searchMeta}>{titleCase(ex.muscleGroup) || 'Exercise'}</Text>
                 </View>
-                <View style={styles.mgBadge}>
-                  <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
-                </View>
+                <MuscleTag group={ex.muscleGroup} />
               </Pressable>
             ))}
             {searchResults.length === 0 && searchQuery.length === 0 && (

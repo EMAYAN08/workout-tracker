@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import {
   format,
@@ -47,12 +48,26 @@ export default function CalendarView({ onDayClick, onBack }) {
 
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+  const monthSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetX([-28, 28])
+        .failOffsetY([-18, 18])
+        .onEnd((e) => {
+          if (e.translationX < -40) setCurrentMonth((m) => addMonths(m, 1));
+          else if (e.translationX > 40) setCurrentMonth((m) => subMonths(m, 1));
+        }),
+    []
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title="History" onBack={onBack} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
 
-      <View style={styles.panel}>
+      <GestureDetector gesture={monthSwipe}>
+      <View style={styles.panel} collapsable={false}>
         <View style={styles.monthRow}>
           <Text style={styles.monthTitle}>
             {format(currentMonth, 'MMMM')}{' '}
@@ -117,6 +132,7 @@ export default function CalendarView({ onDayClick, onBack }) {
           })}
         </View>
       </View>
+      </GestureDetector>
       </ScrollView>
     </View>
   );

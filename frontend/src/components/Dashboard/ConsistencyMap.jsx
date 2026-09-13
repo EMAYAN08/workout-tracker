@@ -311,16 +311,16 @@ function makeStyles(colors) {
       marginBottom: 14,
     },
     calRow: { flexDirection: 'row', gap: 10 },
-    yAxis: { paddingTop: 22, gap: 4, width: 14 },
+    yAxis: { paddingTop: 18, gap: 2, width: 14 },
     yLabel: {
-      height: 14,
+      height: 10,
       color: colors.textMuted,
       fontSize: 9,
       fontFamily: fonts.bold,
       textAlign: 'center',
     },
-    months: { flexDirection: 'row', gap: 16, flex: 1 },
-    month: { flex: 1, gap: 8 },
+    months: { flexDirection: 'row', gap: 18, flex: 1 },
+    month: { flex: 1, gap: 6 },
     monthName: {
       color: colors.textMuted,
       fontSize: 11,
@@ -329,7 +329,7 @@ function makeStyles(colors) {
       letterSpacing: 1,
     },
     grid: { flexDirection: 'row', gap: 3, justifyContent: 'space-between' },
-    weekCol: { gap: 3, flex: 1, alignItems: 'center' },
-    cell: { width: 12, height: 12, borderRadius: 0, alignSelf: 'stretch', maxWidth: 16, aspectRatio: 1 },
+    weekCol: { gap: 1.5, flex: 1, alignItems: 'center' },
+    cell: { width: 11, height: 9, borderRadius: 0, alignSelf: 'stretch', maxWidth: 16 },
   });
 }

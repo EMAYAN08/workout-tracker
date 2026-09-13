@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { getItem, setItem, removeItem } from '../storage';
 import { localStore } from '../db/store';
 import { searchCatalog } from '../data/catalog';
+import { buildMockSnapshot } from '../data/mockData';
 import { exportBackup, pickBackupFile, confirmImportMode } from '../db/backup';
 import {
   scheduleRestNotification,
@@ -51,6 +52,12 @@ export function WorkoutProvider({ children }) {
   const [customExercises, setCustomExercises] = useState([]);
   const newlyCreatedCustomExIds = useRef([]);
   const [routines, setRoutines] = useState([]);
+  const [useMock, setUseMock] = useState(false);
+
+  const mockSnap = useMemo(() => buildMockSnapshot(unit), [unit]);
+  const shownHistory = useMock ? mockSnap.workouts : workoutHistory;
+  const shownRoutines = useMock ? mockSnap.routines : routines;
+  const shownExercises = useMock ? mockSnap.customExercises : customExercises;
 
   const syncFromStore = () => {
     const snap = snapshotFromStore();
@@ -64,7 +71,7 @@ export function WorkoutProvider({ children }) {
       try {
         await localStore.init();
         syncFromStore();
-        const [savedUnit, savedActive, savedDuration, savedLastSet, savedPlaying, savedRest] =
+        const [savedUnit, savedActive, savedDuration, savedLastSet, savedPlaying, savedRest, savedMock] =
           await Promise.all([
             getItem('workout_unit'),
             getItem('workout_active'),
@@ -72,6 +79,7 @@ export function WorkoutProvider({ children }) {
             getItem('workout_last_set_time'),
             getItem('workout_playing_set'),
             getItem('workout_rest_target'),
+            getItem('workout_mock_on'),
           ]);
         if (savedUnit) setUnit(savedUnit);
         if (savedActive) setActiveWorkout(JSON.parse(savedActive));
@@ -79,6 +87,7 @@ export function WorkoutProvider({ children }) {
         if (savedLastSet) setLastSetCompletedAt(parseInt(savedLastSet, 10));
         if (savedPlaying) setPlayingSet(JSON.parse(savedPlaying));
         if (savedRest) setRestTargetSec(parseInt(savedRest, 10) || 90);
+        if (savedMock === '1') setUseMock(true);
       } catch (err) {
         console.error('hydrate failed', err);
       } finally {
@@ -499,10 +508,10 @@ export function WorkoutProvider({ children }) {
   };
 
   const getStreaks = () => {
-    if (workoutHistory.length === 0) return { current: 0, best: 0 };
+    if (shownHistory.length === 0) return { current: 0, best: 0 };
     const dates = [
       ...new Set(
-        workoutHistory.map((w) => {
+        shownHistory.map((w) => {
           try {
             return startOfDay(parseISO(w.timestamp)).getTime();
           } catch {
@@ -551,7 +560,32 @@ export function WorkoutProvider({ children }) {
     setLastSetCompletedAt(null);
   };
 
-  const searchExercises = (query) => searchCatalog(query, customExercises);
+  const searchExercises = (query) => searchCatalog(query, shownExercises);
+
+  const toggleMock = async (on) => {
+    setUseMock(!!on);
+    await setItem('workout_mock_on', on ? '1' : '0');
+  };
+
+  const wipeAllData = async () => {
+    await cancelRestNotification();
+    setActiveWorkout(null);
+    setCompletedWorkout(null);
+    setPlayingSet(null);
+    setLastSetCompletedAt(null);
+    setWorkoutDuration(0);
+    await localStore.replaceAll({ workouts: [], routines: [], customExercises: [] });
+    setUseMock(false);
+    await setItem('workout_mock_on', '0');
+    syncFromStore();
+    await Promise.all([
+      removeItem('workout_active'),
+      removeItem('workout_duration'),
+      removeItem('workout_last_set_time'),
+      removeItem('workout_playing_set'),
+    ]);
+    return { ok: true };
+  };
 
   const exportData = async () =>
     exportBackup({
@@ -604,6 +638,7 @@ export function WorkoutProvider({ children }) {
       }
       tickRestNotification({
         remainingSec: remaining,
+        totalSec: restTargetSec,
         exerciseName: meta.exerciseName,
         setLabel: meta.setLabel,
       });
@@ -642,12 +677,12 @@ export function WorkoutProvider({ children }) {
         setTimer,
         startSet,
         cancelSet,
-        workoutHistory,
-        customExercises,
+        workoutHistory: shownHistory,
+        customExercises: shownExercises,
         createCustomExercise,
         deleteCustomExercise,
         updateCustomExercise,
-        routines,
+        routines: shownRoutines,
         createRoutine,
         updateRoutine,
         deleteRoutine,
@@ -658,6 +693,9 @@ export function WorkoutProvider({ children }) {
         searchExercises,
         exportData,
         importData,
+        useMock,
+        toggleMock,
+        wipeAllData,
       }}
     >
       {children}

@@ -91,10 +91,11 @@ async function presentLive(content) {
   });
 }
 
-export async function tickRestNotification({ remainingSec, exerciseName, setLabel } = {}) {
+export async function tickRestNotification({ remainingSec, totalSec, exerciseName, setLabel } = {}) {
   const N = await mod();
   if (!N || Platform.OS === 'web') return;
   const remaining = Math.max(0, Math.floor(Number(remainingSec) || 0));
+  const total = Math.max(remaining, Math.floor(Number(totalSec) || remaining) || 1);
   const name = exerciseName || 'TrackIt';
   const set = setLabel || 'Next set';
   const clock = formatRestClock(remaining);
@@ -106,6 +107,17 @@ export async function tickRestNotification({ remainingSec, exerciseName, setLabe
       title: `${clock} rest`,
       subtitle: name,
       body: `${name} · ${set}`,
+      android: {
+        channelId: CH_LIVE,
+        ongoing: true,
+        sticky: true,
+        visibility: N.AndroidNotificationVisibility?.PUBLIC,
+        progress: {
+          max: total,
+          current: remaining,
+          indeterminate: false,
+        },
+      },
     });
   } catch (err) {
     console.warn('live rest tick', err?.message || err);
@@ -125,7 +137,7 @@ export async function scheduleRestNotification({
     const ok = await ensureNotificationPermission();
     if (!ok) return;
     await registerNotificationCategories();
-    await tickRestNotification({ remainingSec: remaining, exerciseName, setLabel });
+    await tickRestNotification({ remainingSec: remaining, totalSec: remaining, exerciseName, setLabel });
     if (remaining > 0) {
       await N.scheduleNotificationAsync({
         identifier: DONE_ID,

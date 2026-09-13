@@ -8,6 +8,7 @@ import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { ScreenHeader, hideScroll } from '../ui/primitives';
+import { titleCase } from '../../utils/format';
 
 const ExerciseImage = ({ src }) => {
   const { colors } = useTheme();
@@ -65,7 +66,7 @@ export default function WorkoutDetailView({ date, onBack }) {
       ),
     0
   );
-  const displayDate = format(parseISO(date), 'EEEE, MMMM do, yyyy');
+  const displayDate = format(parseISO(date), 'MMM d, yyyy');
 
   return (
     <View style={{ flex: 1 }}>
@@ -116,7 +117,7 @@ export default function WorkoutDetailView({ date, onBack }) {
                     <ExerciseImage src={exercise.gifUrl} />
                     <View>
                       <Text style={styles.exName}>{exercise.name}</Text>
-                      <Text style={styles.exMg}>{exercise.muscleGroup}</Text>
+                      <Text style={styles.exMg}>{titleCase(exercise.muscleGroup)}</Text>
                     </View>
                   </View>
                   <View style={styles.table}>

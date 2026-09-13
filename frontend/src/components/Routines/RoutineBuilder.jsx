@@ -27,10 +27,11 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
-import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
+import { Select, ScreenHeader, hideScroll, MuscleTag } from '../ui/primitives';
 import { alertMessage } from '../../dialog';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { titleCase } from '../../utils/format';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
   const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, unit, searchExercises } =
@@ -256,7 +257,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                     <Text style={styles.exName} numberOfLines={1}>
                       {ex.name}
                     </Text>
-                    <Text style={styles.exMg}>{ex.muscleGroup}</Text>
+                    <Text style={styles.exMg}>{titleCase(ex.muscleGroup)}</Text>
                   </View>
                   {isExpanded ? (
                     <ChevronUp size={18} color={colors.textMuted} />
@@ -412,11 +413,9 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                   <Text style={styles.searchName} numberOfLines={1}>
                     {ex.name}
                   </Text>
-                  <Text style={styles.searchMeta}>{ex.muscleGroup || 'Exercise'}</Text>
+                  <Text style={styles.searchMeta}>{titleCase(ex.muscleGroup) || 'Exercise'}</Text>
                 </View>
-                <View style={styles.mgBadge}>
-                  <Text style={styles.mgBadgeText}>{ex.muscleGroup}</Text>
-                </View>
+                <MuscleTag group={ex.muscleGroup} />
               </Pressable>
             ))}
             {searchResults.length === 0 && queryEmpty && (
@@ -442,7 +441,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
               <Select
                 value={newMuscleGroup}
                 onChange={setNewMuscleGroup}
-                options={muscleGroups.map((mg) => ({ value: mg, label: mg }))}
+                options={muscleGroups.map((mg) => ({ value: mg, label: titleCase(mg) }))}
                 style={{ width: 120 }}
               />
               <Pressable

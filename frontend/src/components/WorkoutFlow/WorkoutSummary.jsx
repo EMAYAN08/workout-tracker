@@ -27,6 +27,7 @@ import {
 import { convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { MuscleTag } from '../ui/primitives';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -153,11 +154,7 @@ export default function WorkoutSummary({ data, onClose, unit }) {
                 {muscles.length === 0 ? (
                   <Text style={{ color: colors.textMuted, fontSize: 13 }}>No muscles targeted</Text>
                 ) : (
-                  muscles.map((m) => (
-                    <View key={m} style={styles.chip}>
-                      <Text style={styles.chipText}>{m}</Text>
-                    </View>
-                  ))
+                  muscles.map((m) => <MuscleTag key={m} group={m} />)
                 )}
               </View>
             </View>

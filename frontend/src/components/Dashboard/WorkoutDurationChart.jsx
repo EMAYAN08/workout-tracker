@@ -45,13 +45,10 @@ export default function WorkoutDurationChart() {
 
   return (
     <View style={{ marginTop: 8, paddingBottom: 8 }}>
-      <View style={styles.head}>
-        <Text style={styles.title}>Workout duration</Text>
-        <InfoPopover
-          title="Workout Duration"
-          description="Track how much time you spend working out each day. The dashed line shows your average duration over this period."
-        />
-      </View>
+      <InfoPopover
+        title="Workout duration"
+        description="Track how much time you spend working out each day. The dashed line shows your average duration over this period."
+      />
 
       <View style={styles.panel}>
         <View style={styles.row}>
