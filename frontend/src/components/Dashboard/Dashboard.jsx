@@ -169,7 +169,7 @@ export default function Dashboard({ onMapClick, visible = true }) {
           title="Exercise progression"
           description="Track your performance over time. 'Total Volume' shows the total weight lifted across all sets. 'Est. 1RM' calculates your theoretical 1-rep maximum based on your heaviest sets."
         />
-        <View style={styles.panel}>
+        <View style={[styles.panel, { marginTop: 4 }]}>
           <Text style={styles.label}>Exercise</Text>
           <Select
             value={selectedExerciseId}
@@ -196,7 +196,7 @@ export default function Dashboard({ onMapClick, visible = true }) {
           title="Max weight"
           description="Focus purely on strength. This chart plots the absolute heaviest single set you lifted during each workout for the selected exercise."
         />
-        <View style={styles.panel}>
+        <View style={[styles.panel, { marginTop: 4 }]}>
           <Text style={styles.label}>Exercise</Text>
           <Select
             value={weightExerciseId}

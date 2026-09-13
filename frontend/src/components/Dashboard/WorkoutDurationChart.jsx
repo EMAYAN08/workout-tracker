@@ -48,7 +48,7 @@ export default function WorkoutDurationChart() {
         description="Track how much time you spend working out each day. The dashed line shows your average duration over this period."
       />
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, { marginTop: 10 }]}>
         <View style={styles.row}>
           <View>
             <Text style={styles.label}>Time Unit</Text>

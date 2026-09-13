@@ -36,6 +36,29 @@ const mapMuscleGroup = (rawGroup) => {
   return null;
 };
 
+const LABEL_W = 84;
+const LABEL_H = 40;
+
+function labelSlot(i, w, h) {
+  const mid = (w - LABEL_W) / 2;
+  const sideTop = Math.round(h * 0.18);
+  const sideBot = Math.round(h * 0.58);
+  switch (i) {
+    case 0:
+      return { left: mid, top: 0, width: LABEL_W, alignItems: 'center' };
+    case 1:
+      return { left: w - LABEL_W, top: sideTop, width: LABEL_W, alignItems: 'flex-end' };
+    case 2:
+      return { left: w - LABEL_W, top: sideBot, width: LABEL_W, alignItems: 'flex-end' };
+    case 3:
+      return { left: mid, top: h - LABEL_H, width: LABEL_W, alignItems: 'center' };
+    case 4:
+      return { left: 0, top: sideBot, width: LABEL_W, alignItems: 'flex-start' };
+    default:
+      return { left: 0, top: sideTop, width: LABEL_W, alignItems: 'flex-start' };
+  }
+}
+
 function describeArc(x, y, innerRadius, outerRadius, startAngle, endAngle) {
   const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
     const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
@@ -73,7 +96,7 @@ export default function StrengthChart() {
   ];
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');
-  const [box, setBox] = useState({ w: 0, h: 320 });
+  const [box, setBox] = useState({ w: 0, h: 380 });
 
   const metricOptions = [
     { value: 'frequency', label: 'Workout Frequency' },
@@ -185,8 +208,8 @@ export default function StrengthChart() {
                   <React.Fragment key={cat.id}>
                     {[...Array(5)].map((_, ringIndex) => {
                       const rLevel = ringIndex + 1;
-                      const iRadius = 22 + ringIndex * 15.2;
-                      const oRadius = iRadius + 13.6;
+                      const iRadius = 20 + ringIndex * 14.4;
+                      const oRadius = iRadius + 12.8;
                       const isFilled = rLevel <= cat.level;
                       return (
                         <Path
@@ -204,29 +227,9 @@ export default function StrengthChart() {
             </Svg>
           </View>
           {chartValues.map((cat, i) => {
-            const angle = ((i * 60 - 90) * Math.PI) / 180;
-            const r = Math.min(box.w, box.h) * 0.38;
-            const lx = (box.w || 0) / 2 + Math.cos(angle) * r;
-            const ly = (box.h || 0) / 2 + Math.sin(angle) * r;
-            const side = i === 0 || i === 3 ? 'center' : i < 3 ? 'left' : 'right';
-            let left = lx - 36;
-            if (side === 'left') left = Math.min(lx + 6, (box.w || 80) - 76);
-            if (side === 'right') left = Math.max(lx - 78, 4);
-            left = Math.max(4, Math.min(left, (box.w || 80) - 76));
-            const top = Math.max(2, Math.min(ly - 18, (box.h || 40) - 40));
+            const pos = labelSlot(i, box.w || 320, box.h || 380);
             return (
-              <View
-                key={`label-${cat.id}`}
-                pointerEvents="none"
-                style={[
-                  styles.labelBox,
-                  {
-                    left,
-                    top,
-                    alignItems: side === 'left' ? 'flex-start' : side === 'right' ? 'flex-end' : 'center',
-                  },
-                ]}
-              >
+              <View key={`label-${cat.id}`} pointerEvents="none" style={[styles.labelBox, pos]}>
                 <Text style={styles.valueLine} numberOfLines={1}>
                   {cat.valueLine}
                 </Text>
@@ -261,20 +264,21 @@ function makeStyles(colors) {
       padding: 16,
     },
     radarWrap: {
-      height: 320,
-      marginTop: 4,
+      height: 380,
+      marginTop: 8,
       position: 'relative',
     },
     radarInner: {
       position: 'absolute',
-      left: 56,
-      right: 56,
-      top: 40,
-      bottom: 40,
+      left: 86,
+      right: 86,
+      top: 48,
+      bottom: 48,
     },
     labelBox: {
       position: 'absolute',
-      width: 72,
+      height: LABEL_H,
+      justifyContent: 'center',
     },
     valueLine: {
       color: colors.textMuted,

@@ -1,27 +1,10 @@
-import React, { useMemo, useState, useId } from 'react';
+import React, { useMemo, useState, useId, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
-
-function smoothLine(points) {
-  if (!points.length) return '';
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i - 1] || points[i];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[i + 2] || p2;
-    const c1x = p1.x + (p2.x - p0.x) / 6;
-    const c1y = p1.y + (p2.y - p0.y) / 6;
-    const c2x = p2.x - (p3.x - p1.x) / 6;
-    const c2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  }
-  return d;
-}
+import { smoothLine, pointOnSmoothLine } from '../../utils/chartPath';
 
 export default function AreaChart({
   data = [],
@@ -36,9 +19,10 @@ export default function AreaChart({
   const stroke = color || colors.chartAccent || colors.text;
   const styles = makeStyles(colors);
   const [boxW, setBoxW] = useState(0);
-  const [activeIdx, setActiveIdx] = useState(null);
+  const [cursor, setCursor] = useState(null);
   const width = Math.max(200, boxW || 0);
   const gid = `fill-${String(useId()).replace(/[^a-zA-Z0-9]/g, '')}`;
+  const chartRef = useRef(null);
 
   const chart = useMemo(() => {
     if (!data || data.length < 2 || width < 40) return null;
@@ -73,18 +57,19 @@ export default function AreaChart({
     return { padL, padT, innerH, innerW, points, line, area, yTicks, xTicks, min, span };
   }, [data, width, height]);
 
-  const pickIndex = (x) => {
-    if (!chart) return;
-    let nearest = 0;
-    let best = Infinity;
-    chart.points.forEach((p, i) => {
-      const d = Math.abs(p.x - x);
-      if (d < best) {
-        best = d;
-        nearest = i;
-      }
-    });
-    setActiveIdx(nearest);
+  chartRef.current = chart;
+
+  const moveCursor = (locationX) => {
+    const c = chartRef.current;
+    if (!c) return;
+    const next = pointOnSmoothLine(c.points, locationX);
+    if (next) setCursor(next);
+  };
+
+  const formatValue = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return v;
+    return Number.isInteger(n) || Math.abs(n) >= 100 ? Math.round(n) : Number(n.toFixed(1));
   };
 
   return (
@@ -102,14 +87,13 @@ export default function AreaChart({
           <Text style={styles.emptySub}>{emptySubtitle}</Text>
         </View>
       ) : (
-        <View>
-          <Svg
-            width={width}
-            height={height}
-            onPress={(e) => pickIndex(e.nativeEvent.locationX)}
-            onMoveShouldSetResponder={() => true}
-            onResponderMove={(e) => pickIndex(e.nativeEvent.locationX)}
-          >
+        <View
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={(e) => moveCursor(e.nativeEvent.locationX)}
+          onResponderMove={(e) => moveCursor(e.nativeEvent.locationX)}
+        >
+          <Svg width={width} height={height} pointerEvents="none">
             <Defs>
               <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0%" stopColor={stroke} stopOpacity="0.38" />
@@ -172,21 +156,21 @@ export default function AreaChart({
                 {p.date}
               </SvgText>
             ))}
-            {activeIdx != null && chart.points[activeIdx] && (
+            {cursor && (
               <>
                 <Line
-                  x1={chart.points[activeIdx].x}
-                  x2={chart.points[activeIdx].x}
+                  x1={cursor.x}
+                  x2={cursor.x}
                   y1={chart.padT}
                   y2={chart.padT + chart.innerH}
                   stroke={stroke}
                   strokeWidth={1}
-                  opacity={0.25}
+                  opacity={0.28}
                 />
                 <Circle
-                  cx={chart.points[activeIdx].x}
-                  cy={chart.points[activeIdx].y}
-                  r={5}
+                  cx={cursor.x}
+                  cy={cursor.y}
+                  r={6}
                   fill={stroke}
                   stroke={colors.chartDotStroke}
                   strokeWidth={3}
@@ -194,18 +178,19 @@ export default function AreaChart({
               </>
             )}
           </Svg>
-          {activeIdx != null && chart.points[activeIdx] && (
+          {cursor && (
             <View
               style={[
                 styles.tooltip,
                 {
-                  left: Math.min(Math.max(chart.points[activeIdx].x - 44, 8), width - 100),
+                  left: Math.min(Math.max(cursor.x - 44, 8), width - 100),
                 },
               ]}
+              pointerEvents="none"
             >
-              <Text style={styles.tooltipLabel}>{chart.points[activeIdx].date}</Text>
+              <Text style={styles.tooltipLabel}>{cursor.date}</Text>
               <Text style={styles.tooltipValue}>
-                {chart.points[activeIdx].value}
+                {formatValue(cursor.value)}
                 <Text style={styles.tooltipUnit}> {unit}</Text>
               </Text>
             </View>
