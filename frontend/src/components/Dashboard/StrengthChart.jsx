@@ -41,7 +41,7 @@ const LABEL_H = 40;
 
 function labelSlot(i, w, h) {
   const mid = (w - LABEL_W) / 2;
-  const sideTop = Math.round(h * 0.18);
+  const sideTop = Math.round(h * 0.28);
   const sideBot = Math.round(h * 0.58);
   switch (i) {
     case 0:
@@ -96,7 +96,7 @@ export default function StrengthChart() {
   ];
   const [metric, setMetric] = useState('volume');
   const [timeRange, setTimeRange] = useState('3m');
-  const [box, setBox] = useState({ w: 0, h: 380 });
+  const [box, setBox] = useState({ w: 0, h: 332 });
 
   const metricOptions = [
     { value: 'frequency', label: 'Workout Frequency' },
@@ -208,8 +208,8 @@ export default function StrengthChart() {
                   <React.Fragment key={cat.id}>
                     {[...Array(5)].map((_, ringIndex) => {
                       const rLevel = ringIndex + 1;
-                      const iRadius = 20 + ringIndex * 14.4;
-                      const oRadius = iRadius + 12.8;
+                      const iRadius = 18 + ringIndex * 15.6;
+                      const oRadius = iRadius + 14.2;
                       const isFilled = rLevel <= cat.level;
                       return (
                         <Path
@@ -264,16 +264,16 @@ function makeStyles(colors) {
       padding: 16,
     },
     radarWrap: {
-      height: 380,
+      height: 332,
       marginTop: 8,
       position: 'relative',
     },
     radarInner: {
       position: 'absolute',
-      left: 86,
-      right: 86,
-      top: 48,
-      bottom: 48,
+      left: 62,
+      right: 62,
+      top: 40,
+      bottom: 40,
     },
     labelBox: {
       position: 'absolute',
