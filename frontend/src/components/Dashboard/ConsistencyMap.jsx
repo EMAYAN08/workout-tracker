@@ -17,7 +17,10 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
-const generateMonthGrid = (date, countsMap) => {
+const CELL = 11;
+const GUTTER = 2;
+const MONTH_GAP = 16;
+const MONTH_LABEL = 16;
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -205,7 +208,7 @@ export default function ConsistencyMap({ onMapClick }) {
         <View style={styles.calRow}>
           <View style={styles.yAxis}>
             {weekdays.map((day, i) => (
-              <Text key={i} style={styles.yLabel}>
+              <Text key={i} style={[styles.yLabel, i === weekdays.length - 1 && { marginBottom: 0 }]}>
                 {i % 2 === 0 ? day : ''}
               </Text>
             ))}
@@ -216,11 +219,18 @@ export default function ConsistencyMap({ onMapClick }) {
                 <Text style={styles.monthName}>{monthData.name}</Text>
                 <View style={styles.grid}>
                   {monthData.grid.map((week, wIdx) => (
-                    <View key={wIdx} style={styles.weekCol}>
+                    <View
+                      key={wIdx}
+                      style={[styles.weekCol, wIdx === monthData.grid.length - 1 && { marginRight: 0 }]}
+                    >
                       {week.map((day, dIdx) => (
                         <View
                           key={dIdx}
-                          style={[styles.cell, { backgroundColor: cellColor(day) }]}
+                          style={[
+                            styles.cell,
+                            dIdx === week.length - 1 && { marginBottom: 0 },
+                            { backgroundColor: cellColor(day) },
+                          ]}
                         />
                       ))}
                     </View>
@@ -310,26 +320,35 @@ function makeStyles(colors) {
       marginTop: 14,
       marginBottom: 14,
     },
-    calRow: { flexDirection: 'row', gap: 10 },
-    yAxis: { paddingTop: 18, gap: 2, width: 14 },
+    calRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    yAxis: { width: 12, paddingTop: MONTH_LABEL },
     yLabel: {
-      height: 10,
+      height: CELL,
+      marginBottom: GUTTER,
       color: colors.textMuted,
       fontSize: 9,
       fontFamily: fonts.bold,
       textAlign: 'center',
+      lineHeight: CELL,
     },
-    months: { flexDirection: 'row', gap: 18, flex: 1 },
-    month: { flex: 1, gap: 6 },
+    months: { flexDirection: 'row', alignItems: 'flex-start', gap: MONTH_GAP, flex: 1 },
+    month: { flexGrow: 0, flexShrink: 0 },
     monthName: {
+      height: MONTH_LABEL,
       color: colors.textMuted,
       fontSize: 11,
       fontFamily: fonts.semibold,
       textTransform: 'uppercase',
       letterSpacing: 1,
+      lineHeight: MONTH_LABEL,
     },
-    grid: { flexDirection: 'row', gap: 3, justifyContent: 'space-between' },
-    weekCol: { gap: 1.5, flex: 1, alignItems: 'center' },
-    cell: { width: 11, height: 9, borderRadius: 0, alignSelf: 'stretch', maxWidth: 16 },
+    grid: { flexDirection: 'row', alignItems: 'flex-start' },
+    weekCol: { width: CELL, marginRight: GUTTER },
+    cell: {
+      width: CELL,
+      height: CELL,
+      marginBottom: GUTTER,
+      borderRadius: 2,
+    },
   });
 }
