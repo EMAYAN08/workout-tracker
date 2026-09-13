@@ -17,11 +17,11 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
-const ROW_H = 10;
-const GUTTER = 2;
-const MONTH_GAP = 12;
-const MONTH_LABEL = 16;
+const GUTTER = 5;
+const MONTH_GAP = 18;
+const MONTH_LABEL = 22;
 const MAX_OFFSET = 23;
+const Y_AXIS_W = 16;
 
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
@@ -57,6 +57,7 @@ export default function ConsistencyMap({ onMapClick }) {
   const styles = makeStyles(colors);
   const mapRef = useRef(null);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [areaW, setAreaW] = useState(0);
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -89,7 +90,7 @@ export default function ConsistencyMap({ onMapClick }) {
           if (data && data.hasRealWorkout) activeDays++;
         }
       });
-      return { name: format(date, 'MMM'), grid, year: format(date, 'yyyy') };
+      return { name: format(date, 'MMMM'), grid, year: format(date, 'yyyy') };
     });
 
     return {
@@ -126,6 +127,12 @@ export default function ConsistencyMap({ onMapClick }) {
 
   const canGoOlder = monthOffset < MAX_OFFSET;
   const canGoNewer = monthOffset > 0;
+  const maxWeeks = Math.max(1, ...displayMonths.map((m) => m.grid.length));
+  const monthW = areaW > 0 ? (areaW - MONTH_GAP) / 2 : 0;
+  const cellSize = monthW > 0
+    ? Math.max(10, Math.floor((monthW - (maxWeeks - 1) * GUTTER) / maxWeeks))
+    : 14;
+  const cellRadius = Math.max(4, Math.round(cellSize * 0.28));
 
   return (
     <View style={{ marginTop: 16 }}>
@@ -184,11 +191,27 @@ export default function ConsistencyMap({ onMapClick }) {
 
         <View style={styles.divider} />
 
-        <View style={styles.calRow}>
-          <View style={styles.yAxis}>
+        <View
+          style={styles.calRow}
+          onLayout={(e) => {
+            const w = e.nativeEvent.layout.width - Y_AXIS_W - 8;
+            if (w > 0 && Math.abs(w - areaW) > 1) setAreaW(w);
+          }}
+        >
+          <View style={[styles.yAxis, { height: MONTH_LABEL + cellSize * 7 + GUTTER * 6 }]}>
             {weekdays.map((day, i) => (
-              <Text key={i} style={[styles.yLabel, i === weekdays.length - 1 && { marginBottom: 0 }]}>
-                {i % 2 === 0 ? day : ''}
+              <Text
+                key={i}
+                style={[
+                  styles.yLabel,
+                  {
+                    height: cellSize,
+                    lineHeight: cellSize,
+                    marginBottom: i === weekdays.length - 1 ? 0 : GUTTER,
+                  },
+                ]}
+              >
+                {day}
               </Text>
             ))}
           </View>
@@ -200,15 +223,26 @@ export default function ConsistencyMap({ onMapClick }) {
                   {monthData.grid.map((week, wIdx) => (
                     <View
                       key={wIdx}
-                      style={[styles.weekCol, wIdx === monthData.grid.length - 1 && { marginRight: 0 }]}
+                      style={[
+                        styles.weekCol,
+                        {
+                          width: cellSize,
+                          marginRight: wIdx === monthData.grid.length - 1 ? 0 : GUTTER,
+                        },
+                      ]}
                     >
                       {week.map((day, dIdx) => (
                         <View
                           key={dIdx}
                           style={[
                             styles.cell,
-                            dIdx === week.length - 1 && { marginBottom: 0 },
-                            { backgroundColor: cellColor(day) },
+                            {
+                              width: cellSize,
+                              height: cellSize,
+                              borderRadius: cellRadius,
+                              marginBottom: dIdx === week.length - 1 ? 0 : GUTTER,
+                              backgroundColor: cellColor(day),
+                            },
                           ]}
                         />
                       ))}
@@ -302,34 +336,25 @@ function makeStyles(colors) {
       marginBottom: 14,
     },
     calRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-    yAxis: { width: 12, paddingTop: MONTH_LABEL },
+    yAxis: { width: Y_AXIS_W, paddingTop: MONTH_LABEL, justifyContent: 'flex-start' },
     yLabel: {
-      height: ROW_H,
-      marginBottom: GUTTER,
       color: colors.textMuted,
-      fontSize: 9,
-      fontFamily: fonts.bold,
+      fontSize: 10,
+      fontFamily: fonts.semibold,
       textAlign: 'center',
-      lineHeight: ROW_H,
     },
     months: { flexDirection: 'row', alignItems: 'flex-start', gap: MONTH_GAP, flex: 1 },
     month: { flex: 1, minWidth: 0 },
     monthName: {
       height: MONTH_LABEL,
       color: colors.textMuted,
-      fontSize: 11,
-      fontFamily: fonts.semibold,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      letterSpacing: 0.2,
       lineHeight: MONTH_LABEL,
     },
-    grid: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
-    weekCol: { flex: 1, minWidth: 0, marginRight: GUTTER },
-    cell: {
-      width: '100%',
-      height: ROW_H,
-      marginBottom: GUTTER,
-      borderRadius: 2,
-    },
+    grid: { flexDirection: 'row', alignItems: 'flex-start' },
+    weekCol: {},
+    cell: {},
   });
 }
