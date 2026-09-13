@@ -313,6 +313,7 @@ export default function CustomExercises() {
             keypadOpen
               ? {
                   field: activeInput.field,
+                  targetId: `${activeInput.index}-${activeInput.field}`,
                   onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
                   onNext: () => {
                     if (!activeInput) return;

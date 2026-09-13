@@ -184,8 +184,11 @@ export function WorkoutProvider({ children }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (activeWorkout) setItem('workout_active', JSON.stringify(activeWorkout));
-    else removeItem('workout_active');
+    const t = setTimeout(() => {
+      if (activeWorkout) setItem('workout_active', JSON.stringify(activeWorkout));
+      else removeItem('workout_active');
+    }, 400);
+    return () => clearTimeout(t);
   }, [activeWorkout, hydrated]);
 
   useEffect(() => {
@@ -390,17 +393,23 @@ export function WorkoutProvider({ children }) {
   };
 
   const updateSet = (exerciseIndex, setIndex, field, value) => {
-    if (!activeWorkout) return;
-    const newExercises = [...activeWorkout.exercises];
-    newExercises[exerciseIndex].sets[setIndex][field] = value;
-    if (setIndex === 0) {
-      for (let i = 1; i < newExercises[exerciseIndex].sets.length; i++) {
-        if (!newExercises[exerciseIndex].sets[i].completedAt) {
-          newExercises[exerciseIndex].sets[i][field] = value;
-        }
-      }
-    }
-    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        exercises: prev.exercises.map((ex, ei) => {
+          if (ei !== exerciseIndex) return ex;
+          return {
+            ...ex,
+            sets: ex.sets.map((s, si) => {
+              if (si === setIndex) return { ...s, [field]: value };
+              if (setIndex === 0 && si > 0 && !s.completedAt) return { ...s, [field]: value };
+              return s;
+            }),
+          };
+        }),
+      };
+    });
   };
 
   const reorderActiveExercise = (index, direction) => {

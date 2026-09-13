@@ -472,6 +472,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           activeInput
             ? {
                 field: activeInput.field,
+                targetId: `${activeInput.exerciseIndex}-${activeInput.setIndex}-${activeInput.field}`,
                 onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
                 onNext: () => {
                   const ex = exercises[activeInput.exerciseIndex];

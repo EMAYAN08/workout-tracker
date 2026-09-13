@@ -9,22 +9,47 @@ import { haptic } from '../../haptics';
 
 const SHEET_H = 380;
 
+function NumpadKey({ label, onPress, style, children, flex, accessibilityLabel, colors, styles }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      delayPressIn={0}
+      android_disableSound
+      accessibilityLabel={accessibilityLabel || label}
+      style={({ pressed }) => [styles.key, flex && { flex }, style, pressed && styles.keyPressed]}
+    >
+      {children || <Text style={styles.keyText}>{label}</Text>}
+    </Pressable>
+  );
+}
+
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
   const insets = useSafeAreaInsets();
   const { colors, setTabBarHidden } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const freshRef = useRef(true);
-  const fieldRef = useRef(null);
+  const targetRef = useRef(null);
+  const draftRef = useRef(String(value ?? ''));
   const translateY = useRef(new Animated.Value(SHEET_H)).current;
   const originY = useRef(0);
   const tracking = useRef(false);
   const closing = useRef(false);
   const lastInput = useRef(activeInput);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
   const [mounted, setMounted] = useState(!!activeInput);
   const nativeDriver = Platform.OS !== 'web';
+  const keypadOpen = !!activeInput;
 
   if (activeInput) lastInput.current = activeInput;
   const input = activeInput || lastInput.current;
+  const targetId = input ? input.targetId || input.field : null;
+
+  if (targetRef.current !== targetId) {
+    targetRef.current = targetId;
+    freshRef.current = true;
+    draftRef.current = String(value ?? '');
+  }
 
   const animateIn = useCallback(() => {
     closing.current = false;
@@ -84,11 +109,11 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   settleRef.current = settle;
 
   useLayoutEffect(() => {
-    setTabBarHidden(!!activeInput || mounted);
-    return () => setTabBarHidden(false);
-  }, [activeInput, mounted, setTabBarHidden]);
+    setTabBarHidden(keypadOpen || mounted);
+  }, [keypadOpen, mounted, setTabBarHidden]);
 
-  const keypadOpen = !!activeInput;
+  useEffect(() => () => setTabBarHidden(false), [setTabBarHidden]);
+
   useEffect(() => {
     if (keypadOpen) {
       Keyboard.dismiss();
@@ -160,63 +185,55 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
     [settle, translateY]
   );
 
-  if (!mounted || !input) return null;
+  const commit = useCallback((next) => {
+    draftRef.current = next;
+    onUpdateRef.current?.(next);
+  }, []);
 
-  if (fieldRef.current !== input.field) {
-    fieldRef.current = input.field;
-    freshRef.current = true;
-  }
-
-  const handleKeyPress = (key) => {
-    haptic('selection');
-    let currentVal = String(value ?? '');
-    if (key === 'delete') {
-      freshRef.current = false;
-      onUpdate(currentVal.slice(0, -1));
-      return;
-    }
-    if (key === '.') {
-      if (input.field === 'reps') return;
-      if (freshRef.current) {
+  const handleKeyPress = useCallback(
+    (key) => {
+      const field = lastInput.current?.field;
+      let currentVal = draftRef.current;
+      if (key === 'delete') {
         freshRef.current = false;
-        onUpdate('0.');
+        haptic('selection');
+        commit(currentVal.slice(0, -1));
         return;
       }
-      if (!currentVal.includes('.')) onUpdate(currentVal + (currentVal.length === 0 ? '0.' : '.'));
-      return;
-    }
-    if (key === '+' || key === '-') {
-      freshRef.current = false;
-      let num = parseFloat(currentVal) || 0;
-      const step = input.field === 'weight' ? 2.5 : 1;
-      if (key === '+') num += step;
-      if (key === '-') num = Math.max(0, num - step);
-      onUpdate(String(Math.round(num * 100) / 100));
-      return;
-    }
-    if (freshRef.current) {
-      freshRef.current = false;
-      onUpdate(key);
-      return;
-    }
-    if (currentVal === '0' && key !== '.') onUpdate(key);
-    else onUpdate(currentVal + key);
-  };
-
-  const Key = ({ label, onPress, style, children, flex, accessibilityLabel }) => (
-    <Pressable
-      onPress={onPress}
-      accessibilityLabel={accessibilityLabel || label}
-      style={({ pressed }) => [styles.key, flex && { flex }, style, pressed && { opacity: 0.85 }]}
-    >
-      {children || <Text style={styles.keyText}>{label}</Text>}
-    </Pressable>
+      if (key === '.') {
+        if (field === 'reps') return;
+        if (freshRef.current) {
+          freshRef.current = false;
+          commit('0.');
+          return;
+        }
+        if (!currentVal.includes('.')) commit(currentVal + (currentVal.length === 0 ? '0.' : '.'));
+        return;
+      }
+      if (key === '+' || key === '-') {
+        freshRef.current = false;
+        haptic('selection');
+        let num = parseFloat(currentVal) || 0;
+        const step = field === 'weight' ? 2.5 : 1;
+        if (key === '+') num += step;
+        if (key === '-') num = Math.max(0, num - step);
+        commit(String(Math.round(num * 100) / 100));
+        return;
+      }
+      if (freshRef.current) {
+        freshRef.current = false;
+        commit(key);
+        return;
+      }
+      if (currentVal === '0' && key !== '.') commit(key);
+      else commit(currentVal + key);
+    },
+    [commit]
   );
 
-  const tabs = [
-    { id: 'weight', label: 'Weight' },
-    { id: 'reps', label: 'Reps' },
-  ];
+  if (!mounted || !input) return null;
+
+  const keyProps = { colors, styles };
 
   return (
     <GestureDetector gesture={pan}>
@@ -229,10 +246,18 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
           <View style={styles.handle} />
         </View>
         <View style={styles.tabs}>
-          {tabs.map((tab) => {
+          {[
+            { id: 'weight', label: 'Weight' },
+            { id: 'reps', label: 'Reps' },
+          ].map((tab) => {
             const active = input.field === tab.id;
             return (
-              <Pressable key={tab.id} onPress={() => input.onChangeField?.(tab.id)} style={styles.tab}>
+              <Pressable
+                key={tab.id}
+                delayPressIn={0}
+                onPress={() => input.onChangeField?.(tab.id)}
+                style={styles.tab}
+              >
                 <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
                 {active ? (
                   <View style={styles.checkOn}>
@@ -248,40 +273,41 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
 
         <View style={styles.grid}>
           <View style={styles.row}>
-            <Key label="1" onPress={() => handleKeyPress('1')} />
-            <Key label="2" onPress={() => handleKeyPress('2')} />
-            <Key label="3" onPress={() => handleKeyPress('3')} />
-            <Key onPress={close} accessibilityLabel="Dismiss keypad">
+            <NumpadKey label="1" onPress={() => handleKeyPress('1')} {...keyProps} />
+            <NumpadKey label="2" onPress={() => handleKeyPress('2')} {...keyProps} />
+            <NumpadKey label="3" onPress={() => handleKeyPress('3')} {...keyProps} />
+            <NumpadKey onPress={close} accessibilityLabel="Dismiss keypad" {...keyProps}>
               <ChevronDown size={22} color={colors.text} />
-            </Key>
+            </NumpadKey>
           </View>
           <View style={styles.row}>
-            <Key label="4" onPress={() => handleKeyPress('4')} />
-            <Key label="5" onPress={() => handleKeyPress('5')} />
-            <Key label="6" onPress={() => handleKeyPress('6')} />
+            <NumpadKey label="4" onPress={() => handleKeyPress('4')} {...keyProps} />
+            <NumpadKey label="5" onPress={() => handleKeyPress('5')} {...keyProps} />
+            <NumpadKey label="6" onPress={() => handleKeyPress('6')} {...keyProps} />
             <View style={styles.split}>
-              <Key label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} />
-              <Key label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} />
+              <NumpadKey label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} {...keyProps} />
+              <NumpadKey label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} {...keyProps} />
             </View>
           </View>
           <View style={styles.rowBottom}>
             <View style={{ flex: 3 }}>
               <View style={styles.row}>
-                <Key label="7" onPress={() => handleKeyPress('7')} />
-                <Key label="8" onPress={() => handleKeyPress('8')} />
-                <Key label="9" onPress={() => handleKeyPress('9')} />
+                <NumpadKey label="7" onPress={() => handleKeyPress('7')} {...keyProps} />
+                <NumpadKey label="8" onPress={() => handleKeyPress('8')} {...keyProps} />
+                <NumpadKey label="9" onPress={() => handleKeyPress('9')} {...keyProps} />
               </View>
               <View style={[styles.row, { marginBottom: 0 }]}>
-                <Key label="." onPress={() => handleKeyPress('.')} />
-                <Key label="0" onPress={() => handleKeyPress('0')} />
-                <Key onPress={() => handleKeyPress('delete')}>
+                <NumpadKey label="." onPress={() => handleKeyPress('.')} {...keyProps} />
+                <NumpadKey label="0" onPress={() => handleKeyPress('0')} {...keyProps} />
+                <NumpadKey onPress={() => handleKeyPress('delete')} {...keyProps}>
                   <Delete size={22} color={colors.text} />
-                </Key>
+                </NumpadKey>
               </View>
             </View>
             <Pressable
+              delayPressIn={0}
               onPress={() => input.onNext?.()}
-              style={({ pressed }) => [styles.nextKey, pressed && { opacity: 0.82 }]}
+              style={({ pressed }) => [styles.nextKey, pressed && styles.keyPressed]}
             >
               <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
             </Pressable>
@@ -364,6 +390,7 @@ function makeStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    keyPressed: { opacity: 0.85 },
     keyText: { color: colors.text, fontSize: 22, fontFamily: fonts.medium, fontVariant: ['tabular-nums'] },
     split: {
       flex: 1,

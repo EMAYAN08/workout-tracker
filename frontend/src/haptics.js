@@ -1,21 +1,27 @@
 import * as Haptics from 'expo-haptics';
 
-export async function haptic(kind = 'light') {
+let lastAt = 0;
+const MIN_GAP = 28;
+
+export function haptic(kind = 'light') {
+  const now = Date.now();
+  if (kind === 'selection' && now - lastAt < MIN_GAP) return;
+  lastAt = now;
   try {
     if (kind === 'success') {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else if (kind === 'warning') {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } else if (kind === 'error') {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } else if (kind === 'selection') {
-      await Haptics.selectionAsync();
+      Haptics.selectionAsync();
     } else if (kind === 'medium') {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else if (kind === 'heavy') {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } else {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   } catch {
     // web / simulator

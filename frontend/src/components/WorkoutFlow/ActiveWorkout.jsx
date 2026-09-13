@@ -434,6 +434,7 @@ export default function ActiveWorkout() {
           activeInput
             ? {
                 field: activeInput.field,
+                targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
                 onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
                 onNext: () => {
                   const ex = activeWorkout.exercises[activeInput.eIdx];
