@@ -17,10 +17,11 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
-const CELL = 11;
+const ROW_H = 10;
 const GUTTER = 2;
-const MONTH_GAP = 16;
+const MONTH_GAP = 12;
 const MONTH_LABEL = 16;
+const MAX_OFFSET = 23;
 
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
@@ -55,8 +56,7 @@ export default function ConsistencyMap({ onMapClick }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mapRef = useRef(null);
-  const [chunkOffset, setChunkOffset] = useState(0);
-  const monthsToShow = 2;
+  const [monthOffset, setMonthOffset] = useState(0);
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -72,22 +72,13 @@ export default function ConsistencyMap({ onMapClick }) {
     return map;
   }, [workoutHistory]);
 
-  const { displayMonths, monthPairs, activeDaysInChunk, score, yearLabel, rangeLabel } = useMemo(() => {
+  const { displayMonths, activeDaysInChunk, score, yearLabel } = useMemo(() => {
     const now = startOfDay(new Date());
-    const pairs = [];
-    for (let i = 0; i < 6; i++) {
-      const dates = [];
-      for (let j = monthsToShow - 1; j >= 0; j--) dates.push(subMonths(now, i * monthsToShow + j));
-      pairs.push({ id: i, dates });
-    }
-    const activePair = pairs[chunkOffset] || pairs[0];
-    const prevPair = pairs[chunkOffset + 1];
+    const dates = [subMonths(now, monthOffset + 1), subMonths(now, monthOffset)];
     let activeDays = 0;
     let validDays = 0;
-    let prevActiveDays = 0;
-    let prevValidDays = 0;
 
-    const generatedMonths = activePair.dates.map((date) => {
+    const generatedMonths = dates.map((date) => {
       const grid = generateMonthGrid(date, countsMap);
       const days = eachDayOfInterval({ start: startOfMonth(date), end: endOfMonth(date) });
       days.forEach((d) => {
@@ -98,34 +89,16 @@ export default function ConsistencyMap({ onMapClick }) {
           if (data && data.hasRealWorkout) activeDays++;
         }
       });
-      return { name: format(date, 'MMM'), grid };
+      return { name: format(date, 'MMM'), grid, year: format(date, 'yyyy') };
     });
 
-    if (prevPair) {
-      prevPair.dates.forEach((date) => {
-        const days = eachDayOfInterval({ start: startOfMonth(date), end: endOfMonth(date) });
-        days.forEach((d) => {
-          if (!isAfter(d, now)) {
-            const data = countsMap.get(d.getTime());
-            const isRestOnly = data && data.hasRestDay && !data.hasRealWorkout;
-            if (!isRestOnly) prevValidDays++;
-            if (data && data.hasRealWorkout) prevActiveDays++;
-          }
-        });
-      });
-    }
-
-    const calcScore = (act, val) => Math.min(Math.round((act / (val || 1)) * 100), 100);
     return {
       displayMonths: generatedMonths,
-      monthPairs: pairs,
       activeDaysInChunk: activeDays,
-      score: calcScore(activeDays, validDays),
-      previousScore: prevPair ? calcScore(prevActiveDays, prevValidDays) : calcScore(activeDays, validDays),
-      yearLabel: format(activePair.dates[activePair.dates.length - 1], 'yyyy'),
-      rangeLabel: generatedMonths.map((m) => m.name).join(' – '),
+      score: Math.min(Math.round((activeDays / (validDays || 1)) * 100), 100),
+      yearLabel: generatedMonths[generatedMonths.length - 1].year,
     };
-  }, [countsMap, chunkOffset]);
+  }, [countsMap, monthOffset]);
 
   const handleShare = async () => {
     try {
@@ -151,12 +124,36 @@ export default function ConsistencyMap({ onMapClick }) {
     return colors.heatmapEmpty;
   };
 
+  const canGoOlder = monthOffset < MAX_OFFSET;
+  const canGoNewer = monthOffset > 0;
+
   return (
     <View style={{ marginTop: 16 }}>
       <View ref={mapRef} collapsable={false} style={styles.panel}>
         <View style={styles.topRow}>
           <Text style={styles.title}>Consistency</Text>
           <View style={styles.actions}>
+            <View style={styles.nav}>
+              <Pressable
+                onPress={() => setMonthOffset((p) => Math.min(p + 1, MAX_OFFSET))}
+                disabled={!canGoOlder}
+                accessibilityLabel="Older months"
+                style={[styles.navBtn, !canGoOlder && { opacity: 0.3 }]}
+              >
+                <ChevronLeft size={16} color={colors.textMuted} />
+              </Pressable>
+              <Text style={styles.year} numberOfLines={1}>
+                {yearLabel}
+              </Text>
+              <Pressable
+                onPress={() => setMonthOffset((p) => Math.max(p - 1, 0))}
+                disabled={!canGoNewer}
+                accessibilityLabel="Newer months"
+                style={[styles.navBtn, !canGoNewer && { opacity: 0.3 }]}
+              >
+                <ChevronRight size={16} color={colors.textMuted} />
+              </Pressable>
+            </View>
             <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
               <Text style={styles.historyText}>History</Text>
             </Pressable>
@@ -183,26 +180,6 @@ export default function ConsistencyMap({ onMapClick }) {
             <Text style={styles.statVal}>{activeDaysInChunk}</Text>
             <Text style={styles.statLbl}>Days</Text>
           </View>
-          <View style={{ flex: 1 }} />
-          <View style={styles.nav}>
-            <Pressable
-              onPress={() => setChunkOffset((p) => Math.min(p + 1, monthPairs.length - 1))}
-              disabled={chunkOffset >= monthPairs.length - 1}
-              style={[styles.navBtn, chunkOffset >= monthPairs.length - 1 && { opacity: 0.3 }]}
-            >
-              <ChevronLeft size={16} color={colors.textMuted} />
-            </Pressable>
-            <Text style={styles.year} numberOfLines={1}>
-              {rangeLabel || yearLabel}
-            </Text>
-            <Pressable
-              onPress={() => setChunkOffset((p) => Math.max(p - 1, 0))}
-              disabled={chunkOffset <= 0}
-              style={[styles.navBtn, chunkOffset <= 0 && { opacity: 0.3 }]}
-            >
-              <ChevronRight size={16} color={colors.textMuted} />
-            </Pressable>
-          </View>
         </View>
 
         <View style={styles.divider} />
@@ -217,7 +194,7 @@ export default function ConsistencyMap({ onMapClick }) {
           </View>
           <View style={styles.months}>
             {displayMonths.map((monthData, idx) => (
-              <View key={idx} style={styles.month}>
+              <View key={`${monthData.name}-${idx}`} style={styles.month}>
                 <Text style={styles.monthName}>{monthData.name}</Text>
                 <View style={styles.grid}>
                   {monthData.grid.map((week, wIdx) => (
@@ -261,6 +238,7 @@ function makeStyles(colors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       minHeight: HIT,
+      gap: 8,
     },
     title: {
       color: colors.textSubtle,
@@ -268,11 +246,12 @@ function makeStyles(colors) {
       fontSize: 13,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
+      flexShrink: 0,
     },
-    actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
     historyBtn: {
       minHeight: 32,
-      paddingHorizontal: 12,
+      paddingHorizontal: 10,
       borderRadius: radius.sm,
       borderWidth: 1,
       borderColor: colors.borderStrong,
@@ -280,7 +259,7 @@ function makeStyles(colors) {
       justifyContent: 'center',
     },
     historyText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
-    iconBtn: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
+    iconBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
     statsRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -306,14 +285,14 @@ function makeStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
       paddingHorizontal: 2,
-      minHeight: 36,
+      minHeight: 32,
     },
-    navBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+    navBtn: { width: 28, height: 32, alignItems: 'center', justifyContent: 'center' },
     year: {
       color: colors.text,
       fontFamily: fonts.semibold,
-      fontSize: 12,
-      minWidth: 72,
+      fontSize: 13,
+      minWidth: 40,
       textAlign: 'center',
     },
     divider: {
@@ -325,16 +304,16 @@ function makeStyles(colors) {
     calRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
     yAxis: { width: 12, paddingTop: MONTH_LABEL },
     yLabel: {
-      height: CELL,
+      height: ROW_H,
       marginBottom: GUTTER,
       color: colors.textMuted,
       fontSize: 9,
       fontFamily: fonts.bold,
       textAlign: 'center',
-      lineHeight: CELL,
+      lineHeight: ROW_H,
     },
     months: { flexDirection: 'row', alignItems: 'flex-start', gap: MONTH_GAP, flex: 1 },
-    month: { flexGrow: 0, flexShrink: 0 },
+    month: { flex: 1, minWidth: 0 },
     monthName: {
       height: MONTH_LABEL,
       color: colors.textMuted,
@@ -344,11 +323,11 @@ function makeStyles(colors) {
       letterSpacing: 1,
       lineHeight: MONTH_LABEL,
     },
-    grid: { flexDirection: 'row', alignItems: 'flex-start' },
-    weekCol: { width: CELL, marginRight: GUTTER },
+    grid: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
+    weekCol: { flex: 1, minWidth: 0, marginRight: GUTTER },
     cell: {
-      width: CELL,
-      height: CELL,
+      width: '100%',
+      height: ROW_H,
       marginBottom: GUTTER,
       borderRadius: 2,
     },
