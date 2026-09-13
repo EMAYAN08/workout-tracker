@@ -236,15 +236,6 @@ export default function StrengthChart() {
               </View>
             );
           })}
-                <Text style={styles.valueLine} numberOfLines={1}>
-                  {cat.valueLine}
-                </Text>
-                <Text style={styles.nameLine} numberOfLines={1}>
-                  {cat.label}
-                </Text>
-              </View>
-            );
-          })}
         </View>
         <Text style={styles.caption}>{unitCaption}</Text>
       </View>
