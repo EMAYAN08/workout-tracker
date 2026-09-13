@@ -32,7 +32,8 @@ async function mod() {
 }
 
 export function formatRestClock(sec) {
-  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  let s = Math.floor(Number(sec));
+  if (!Number.isFinite(s) || s < 0) s = 0;
   const m = Math.floor(s / 60);
   const r = s % 60;
   return `${m}:${String(r).padStart(2, '0')}`;

@@ -6,6 +6,7 @@ import {
   parseISO,
   isAfter,
   isEqual,
+  isValid,
 } from 'date-fns';
 
 export const CHART_RANGES = [
@@ -14,6 +15,12 @@ export const CHART_RANGES = [
   { value: '6m', label: '6M' },
   { value: '1y', label: '1Y' },
 ];
+
+function asValidDate(date) {
+  if (date == null || date === '') return null;
+  const d = date instanceof Date ? date : new Date(date);
+  return isValid(d) ? d : null;
+}
 
 export function rangeCutoff(range) {
   const now = new Date();
@@ -27,28 +34,37 @@ export function rangeCutoff(range) {
 export function inChartRange(date, range) {
   const cutoff = rangeCutoff(range);
   if (!cutoff || !date) return true;
-  const d = date instanceof Date ? date : new Date(date);
+  const d = asValidDate(date);
+  if (!d) return false;
   return isAfter(d, cutoff) || isEqual(d, cutoff);
 }
 
 export function bucketKey(date, range) {
-  const d = date instanceof Date ? date : new Date(date);
+  const d = asValidDate(date);
+  if (!d) return null;
   if (range === '1y') return format(d, 'yyyy-MM');
   if (range === '6m') return format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   return format(d, 'yyyy-MM-dd');
 }
 
 export function bucketLabel(key, range) {
-  if (range === '1y') return format(parseISO(`${key}-01`), 'MMM');
-  return format(parseISO(key), 'MMM d');
+  if (!key) return '';
+  try {
+    if (range === '1y') return format(parseISO(`${key}-01`), 'MMM');
+    return format(parseISO(key), 'MMM d');
+  } catch {
+    return '';
+  }
 }
 
 export function seriesFromWorkouts(points, range, reduce = 'last') {
   const map = new Map();
   (points || []).forEach((p) => {
     if (!p || p.value == null || !p.date) return;
+    if (!asValidDate(p.date)) return;
     if (!inChartRange(p.date, range)) return;
     const key = bucketKey(p.date, range);
+    if (!key) return;
     const prev = map.get(key);
     if (!prev) {
       map.set(key, { value: Number(p.value) || 0, date: p.date, key });

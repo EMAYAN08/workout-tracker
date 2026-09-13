@@ -14,22 +14,41 @@ export const convertWeight = (weight, fromUnit, toUnit) => {
 
 // Calculate 1 Rep Max using the Brzycki Formula
 export const calculate1RM = (weight, reps) => {
-  if (!weight || !reps || reps <= 0) return 0;
-  if (reps === 1) return weight;
+  const w = Number(weight) || 0;
+  const r = Number(reps) || 0;
+  if (!w || r <= 0) return 0;
+  if (r === 1) return w;
   // Brzycki formula: weight / (1.0278 - 0.0278 * reps)
-  return Math.round(weight / (1.0278 - 0.0278 * reps));
+  // Denominator hits 0 around 37 reps and goes negative after that.
+  if (r >= 37) return Math.round(w * (1 + r / 30));
+  const denom = 1.0278 - 0.0278 * r;
+  if (denom <= 0) return Math.round(w * (1 + r / 30));
+  const result = Math.round(w / denom);
+  if (!Number.isFinite(result) || result < 0) return Math.round(w * (1 + r / 30));
+  return result;
 };
 
 // Get the highest 1RM from an array of sets
 export const getBest1RM = (sets) => {
   if (!sets || sets.length === 0) return 0;
-  return Math.max(...sets.map(s => calculate1RM(s.weight, s.reps)));
+  const rms = [];
+  for (const s of sets) {
+    if (!s) continue;
+    const w = Number(s.weight);
+    const r = Number(s.reps);
+    if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0) continue;
+    const rm = calculate1RM(w, r);
+    if (!Number.isFinite(rm) || rm < 0) continue;
+    rms.push(rm);
+  }
+  if (rms.length === 0) return 0;
+  return Math.max(...rms);
 };
 
 // Calculate total volume (weight * reps) for an array of sets
 export const calculateVolume = (sets) => {
   if (!sets || sets.length === 0) return 0;
-  return sets.reduce((total, s) => total + (s.weight * s.reps), 0);
+  return sets.reduce((total, s) => total + ((Number(s?.weight) || 0) * (Number(s?.reps) || 0)), 0);
 };
 
 export const getPreviousPerformance = (exerciseId, history, currentUnit = 'lbs') => {

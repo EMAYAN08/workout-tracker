@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
-import { differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { differenceInDays, parseISO, startOfDay, subDays } from 'date-fns';
 import { getItem, setItem, removeItem } from '../storage';
 import { localStore } from '../db/store';
 import { searchCatalog } from '../data/catalog';
@@ -525,13 +525,12 @@ export function WorkoutProvider({ children }) {
     let bestStreak = 0;
     let tempStreak = 0;
     const today = startOfDay(new Date()).getTime();
-    let expectedDate = today;
-    if (dates[0] === today || dates[0] === today - 86400000) {
-      expectedDate = dates[0];
-      for (let i = 0; i < dates.length; i++) {
-        if (dates[i] === expectedDate) {
+    const yesterday = startOfDay(subDays(new Date(), 1)).getTime();
+    if (dates[0] === today || dates[0] === yesterday) {
+      currentStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        if (differenceInDays(dates[i - 1], dates[i]) === 1) {
           currentStreak++;
-          expectedDate -= 86400000;
         } else {
           break;
         }

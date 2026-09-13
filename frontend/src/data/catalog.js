@@ -72,19 +72,19 @@ export function searchCatalog(query, customExercises = []) {
   if (!q) return [];
   const customHits = customExercises.filter(
     (ex) =>
-      ex.name?.toLowerCase().includes(q) ||
-      ex.muscleGroup?.toLowerCase().includes(q)
+      ex.name?.toLowerCase()?.includes(q) ||
+      ex.muscleGroup?.toLowerCase()?.includes(q)
   );
   const catalogHits = EXERCISE_CATALOG.filter(
-    (ex) => ex.name.toLowerCase().includes(q) || ex.muscleGroup.includes(q)
+    (ex) => ex.name?.toLowerCase()?.includes(q) || ex.muscleGroup?.includes(q)
   );
-  const seen = new Set(customHits.map((e) => e.name.toLowerCase()));
+  const seen = new Set(customHits.map((e) => e.name?.toLowerCase()).filter(Boolean));
   const merged = [...customHits];
   for (const ex of catalogHits) {
-    if (!seen.has(ex.name.toLowerCase())) {
-      seen.add(ex.name.toLowerCase());
-      merged.push(ex);
-    }
+    const nameKey = ex.name?.toLowerCase();
+    if (nameKey && seen.has(nameKey)) continue;
+    if (nameKey) seen.add(nameKey);
+    merged.push(ex);
   }
   return merged.slice(0, 40);
 }

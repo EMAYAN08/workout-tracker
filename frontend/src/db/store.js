@@ -17,6 +17,17 @@ class LocalStore {
     this._writeChain = Promise.resolve();
   }
 
+  /** Test-only: drop in-memory state so suites can share the singleton. */
+  async resetForTests() {
+    clearTimeout(this._timer);
+    this._timer = null;
+    this.workouts = [];
+    this.routines = [];
+    this.customExercises = [];
+    this.ready = false;
+    this._writeChain = Promise.resolve();
+  }
+
   async init() {
     if (this.ready) return;
     const raw = await getItem(ASYNC_KEY);
@@ -115,3 +126,4 @@ class LocalStore {
 }
 
 export const localStore = new LocalStore();
+export const resetForTests = () => localStore.resetForTests();

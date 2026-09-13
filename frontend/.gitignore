@@ -6,4 +6,5 @@ web-build
 .DS_Store
 *.orig.*
 npm-debug.*
-.metro-health-check*
+coverage
+
