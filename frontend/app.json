@@ -12,6 +12,11 @@
       "resizeMode": "contain",
       "backgroundColor": "#070707"
     },
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#4A7C9B",
+      "iosDisplayInForeground": true
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.trackit.app",
@@ -43,7 +48,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/notification-icon.png",
+          "largeIcon": "./assets/icon.png",
           "color": "#4A7C9B",
           "defaultChannel": "rest"
         }

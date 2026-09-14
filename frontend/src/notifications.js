@@ -7,6 +7,7 @@ const CH_DONE = 'rest-done';
 
 let Notifications = null;
 let lastLiveKey = '';
+let logoAttachment = null;
 
 async function mod() {
   if (Notifications) return Notifications;
@@ -29,6 +30,42 @@ async function mod() {
     Notifications = null;
   }
   return Notifications;
+}
+
+async function getLogoAttachment() {
+  if (logoAttachment) return logoAttachment;
+  if (Platform.OS === 'web') return null;
+  try {
+    const { Asset } = await import('expo-asset');
+    let FileSystem;
+    try {
+      FileSystem = await import('expo-file-system/legacy');
+    } catch {
+      FileSystem = await import('expo-file-system');
+    }
+    const asset = Asset.fromModule(require('../assets/icon.png'));
+    await asset.downloadAsync();
+    const src = asset.localUri || asset.uri;
+    if (!src) return null;
+    const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+    const dest = `${dir}trackit-notification-logo.png`;
+    try {
+      await FileSystem.copyAsync({ from: src, to: dest });
+    } catch {
+      /* already copied */
+    }
+    logoAttachment = {
+      identifier: 'trackit-logo',
+      url: dest,
+      type: 'image/png',
+      typeHint: 'public.png',
+      hideThumbnail: false,
+    };
+    return logoAttachment;
+  } catch (err) {
+    console.warn('notification logo', err?.message || err);
+    return null;
+  }
 }
 
 export function formatRestClock(sec) {
@@ -76,6 +113,7 @@ export async function registerNotificationCategories() {
 async function presentLive(content) {
   const N = await mod();
   if (!N || Platform.OS === 'web') return;
+  const logo = await getLogoAttachment();
   await N.scheduleNotificationAsync({
     identifier: LIVE_ID,
     content: {
@@ -87,6 +125,7 @@ async function presentLive(content) {
       priority: N.AndroidNotificationPriority?.DEFAULT,
       interruptionLevel: 'passive',
       data: { kind: 'restLive' },
+      ...(logo ? { attachments: [logo] } : {}),
     },
     trigger: null,
   });
@@ -140,6 +179,7 @@ export async function scheduleRestNotification({
     await registerNotificationCategories();
     await tickRestNotification({ remainingSec: remaining, totalSec: remaining, exerciseName, setLabel });
     if (remaining > 0) {
+      const logo = await getLogoAttachment();
       await N.scheduleNotificationAsync({
         identifier: DONE_ID,
         content: {
@@ -150,6 +190,7 @@ export async function scheduleRestNotification({
           channelId: CH_DONE,
           interruptionLevel: 'timeSensitive',
           data: { kind: 'restDone', exerciseName, setLabel },
+          ...(logo ? { attachments: [logo] } : {}),
         },
         trigger: {
           type: N.SchedulableTriggerInputTypes?.TIME_INTERVAL || 'timeInterval',
