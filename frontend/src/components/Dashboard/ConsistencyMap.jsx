@@ -17,11 +17,12 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 
-const GUTTER = 5;
-const MONTH_GAP = 18;
+const GUTTER = 4;
+const MONTH_GAP = 24;
 const MONTH_LABEL = 22;
 const MAX_OFFSET = 23;
 const Y_AXIS_W = 16;
+const TARGET_CELL = 11;
 
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
@@ -129,10 +130,12 @@ export default function ConsistencyMap({ onMapClick }) {
   const canGoNewer = monthOffset > 0;
   const maxWeeks = Math.max(1, ...displayMonths.map((m) => m.grid.length));
   const monthW = areaW > 0 ? (areaW - MONTH_GAP) / 2 : 0;
-  const cellSize = monthW > 0
-    ? Math.max(10, Math.floor((monthW - (maxWeeks - 1) * GUTTER) / maxWeeks))
-    : 14;
-  const cellRadius = Math.max(4, Math.round(cellSize * 0.28));
+  const fillSize = monthW > 0
+    ? Math.floor((monthW - (maxWeeks - 1) * GUTTER) / maxWeeks)
+    : TARGET_CELL;
+  const cellSize = Math.max(8, Math.min(TARGET_CELL, fillSize));
+  const cellRadius = Math.max(3, Math.round(cellSize * 0.28));
+  const monthWidth = (weeks) => weeks * cellSize + Math.max(0, weeks - 1) * GUTTER;
 
   return (
     <View style={{ marginTop: 16 }}>
@@ -217,7 +220,10 @@ export default function ConsistencyMap({ onMapClick }) {
           </View>
           <View style={styles.months}>
             {displayMonths.map((monthData, idx) => (
-              <View key={`${monthData.name}-${idx}`} style={styles.month}>
+              <View
+                key={`${monthData.name}-${idx}`}
+                style={[styles.month, { width: monthWidth(monthData.grid.length) }]}
+              >
                 <Text style={styles.monthName}>{monthData.name}</Text>
                 <View style={styles.grid}>
                   {monthData.grid.map((week, wIdx) => (
@@ -335,7 +341,7 @@ function makeStyles(colors) {
       marginTop: 14,
       marginBottom: 14,
     },
-    calRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    calRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 8 },
     yAxis: { width: Y_AXIS_W, paddingTop: MONTH_LABEL, justifyContent: 'flex-start' },
     yLabel: {
       color: colors.textMuted,
@@ -343,8 +349,8 @@ function makeStyles(colors) {
       fontFamily: fonts.semibold,
       textAlign: 'center',
     },
-    months: { flexDirection: 'row', alignItems: 'flex-start', gap: MONTH_GAP, flex: 1 },
-    month: { flex: 1, minWidth: 0 },
+    months: { flexDirection: 'row', alignItems: 'flex-start', gap: MONTH_GAP },
+    month: {},
     monthName: {
       height: MONTH_LABEL,
       color: colors.textMuted,
@@ -352,6 +358,7 @@ function makeStyles(colors) {
       fontFamily: fonts.medium,
       letterSpacing: 0.2,
       lineHeight: MONTH_LABEL,
+      textAlign: 'center',
     },
     grid: { flexDirection: 'row', alignItems: 'flex-start' },
     weekCol: {},
