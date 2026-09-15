@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing } from 'react-native';
 import Svg, { Path, Line, Text as SvgText } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
 import { fonts } from '../../theme';
@@ -56,6 +56,17 @@ function formatValue(v) {
   return String(Number(n.toFixed(1)));
 }
 
+function indexAt(locationX, locationY, c) {
+  if (!c) return null;
+  const inPlotX = locationX >= c.padL - 4 && locationX <= c.padL + c.innerW + 4;
+  const inPlotY = locationY >= c.padT - 8 && locationY <= c.padT + c.innerH + 16;
+  if (!inPlotX || !inPlotY) return null;
+  const i = Math.floor((locationX - c.padL) / (c.innerW / c.bars.length));
+  if (i < 0 || i >= c.bars.length) return null;
+  if (c.bars[i].h < 0.5) return null;
+  return i;
+}
+
 export default function BarChart({
   data = [],
   color,
@@ -70,13 +81,19 @@ export default function BarChart({
   const styles = useMemo(() => makeStyles(colors, fill), [colors, fill]);
   const [boxW, setBoxW] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [anchor, setAnchor] = useState({ x: 0, y: 0, w: 0 });
   const selectedRef = useRef(null);
   const chartRef = useRef(null);
+  const wrapRef = useRef(null);
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  const closing = useRef(false);
   const width = Math.max(200, boxW || 0);
 
   useEffect(() => {
     selectedRef.current = null;
+    closing.current = false;
     setSelected(null);
+    cardAnim.setValue(0);
   }, [data]);
 
   const hasBars = (data || []).some((d) => Number(d.value) > 0);
@@ -121,21 +138,63 @@ export default function BarChart({
 
   chartRef.current = chart;
 
-  const pick = (locationX) => {
-    const c = chartRef.current;
-    if (!c) return;
-    const i = Math.max(0, Math.min(c.bars.length - 1, Math.floor((locationX - c.padL) / (c.innerW / c.bars.length))));
-    if (selectedRef.current !== i) {
+  const open = (i) => {
+    const apply = (nextAnchor) => {
+      if (nextAnchor) setAnchor(nextAnchor);
+      closing.current = false;
+      const switching = selectedRef.current != null && selectedRef.current !== i;
       selectedRef.current = i;
       setSelected(i);
+      if (!switching) {
+        cardAnim.setValue(0);
+        Animated.spring(cardAnim, {
+          toValue: 1,
+          friction: 7.2,
+          tension: 92,
+          useNativeDriver: true,
+        }).start();
+      }
       haptic('selection');
+    };
+    if (wrapRef.current?.measureInWindow) {
+      wrapRef.current.measureInWindow((x, y, w) => apply({ x, y, w }));
+    } else {
+      apply();
     }
+  };
+
+  const dismiss = () => {
+    if (selectedRef.current == null || closing.current) return;
+    closing.current = true;
+    Animated.timing(cardAnim, {
+      toValue: 0,
+      duration: 140,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      selectedRef.current = null;
+      closing.current = false;
+      setSelected(null);
+    });
+  };
+
+  const handleLocal = (locationX, locationY) => {
+    const i = indexAt(locationX, locationY, chartRef.current);
+    if (typeof i === 'number') {
+      if (i === selectedRef.current) dismiss();
+      else open(i);
+      return;
+    }
+    if (selectedRef.current != null) dismiss();
   };
 
   const sel = chart && selected != null ? chart.bars[selected] : null;
 
   return (
     <View
+      ref={wrapRef}
+      collapsable={false}
       style={{ width: '100%' }}
       onLayout={(e) => {
         const w = e.nativeEvent.layout.width;
@@ -150,10 +209,8 @@ export default function BarChart({
         </View>
       ) : (
         <View
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={(e) => pick(e.nativeEvent.locationX)}
-          onResponderMove={(e) => pick(e.nativeEvent.locationX)}
+          onStartShouldSetResponder={() => selected == null}
+          onResponderRelease={(e) => handleLocal(e.nativeEvent.locationX, e.nativeEvent.locationY)}
         >
           <Svg width={width} height={height} pointerEvents="none">
             {chart.yTicks.map((t, i) => (
@@ -230,13 +287,50 @@ export default function BarChart({
               />
             )}
           </Svg>
-          {sel && (
-            <View
+        </View>
+      )}
+
+      <Modal
+        visible={selected != null}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={dismiss}
+      >
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={(e) => {
+              const { pageX, pageY } = e.nativeEvent;
+              wrapRef.current?.measureInWindow((x, y) => {
+                handleLocal(pageX - x, pageY - y);
+              });
+            }}
+            accessibilityLabel="Dismiss bar details"
+          />
+          {sel ? (
+            <Animated.View
               pointerEvents="none"
               style={[
                 styles.tip,
                 {
-                  left: Math.min(Math.max(sel.cx - 62, 4), width - 128),
+                  top: anchor.y + 4,
+                  left: Math.min(Math.max(anchor.x + sel.cx - 62, 12), (anchor.w || width) + anchor.x - 136),
+                  opacity: cardAnim,
+                  transform: [
+                    {
+                      scale: cardAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.86, 1],
+                      }),
+                    },
+                    {
+                      translateY: cardAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [10, 0],
+                      }),
+                    },
+                  ],
                 },
               ]}
             >
@@ -246,10 +340,10 @@ export default function BarChart({
                 {unit ? <Text style={styles.tipUnit}> {unit}</Text> : null}
               </Text>
               <Text style={styles.tipDate}>{sel.fullDate || sel.date}</Text>
-            </View>
-          )}
+            </Animated.View>
+          ) : null}
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -269,11 +363,10 @@ function makeStyles(colors, fill) {
     },
     tip: {
       position: 'absolute',
-      top: 4,
-      minWidth: 112,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      borderRadius: 14,
+      minWidth: 124,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 16,
       backgroundColor: fill,
       alignItems: 'center',
     },
@@ -288,7 +381,7 @@ function makeStyles(colors, fill) {
     tipValue: {
       color: onFill,
       fontFamily: fonts.monoBold,
-      fontSize: 22,
+      fontSize: 24,
       letterSpacing: -0.4,
       marginTop: 1,
     },
