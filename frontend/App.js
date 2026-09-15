@@ -1,13 +1,17 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { WorkoutProvider } from './src/context/WorkoutContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppContent from './src/AppContent';
+import WelcomeSplash from './src/components/WelcomeSplash';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   const id = 'trackit-hide-scrollbars';
@@ -23,10 +27,12 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
 function Root() {
   const { isDark } = useTheme();
+  const [welcome, setWelcome] = useState(true);
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <AppContent />
+      {welcome ? <WelcomeSplash onDone={() => setWelcome(false)} /> : null}
     </>
   );
 }
