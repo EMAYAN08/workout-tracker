@@ -230,6 +230,7 @@ export default function Settings({ scrollRef }) {
           <Timer size={16} color={colors.textMuted} />
           <Text style={styles.rowLabel}>Default rest</Text>
         </View>
+        <Text style={styles.hint}>Starts after each set. Alerts you when rest is over.</Text>
         <Select
           value={String(restTargetSec)}
           onChange={(v) => setRestTargetSec(Number(v))}
@@ -240,7 +241,6 @@ export default function Settings({ scrollRef }) {
             { value: '180', label: '3 minutes' },
           ]}
         />
-        <Text style={styles.hint}>Starts after each set. Alerts you when rest is over.</Text>
       </View>
 
       <Text style={styles.section}>Backup</Text>
