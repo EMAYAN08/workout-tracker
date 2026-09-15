@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
+import { moveItem } from '../utils/reorder';
 import { differenceInDays, parseISO, startOfDay, subDays } from 'date-fns';
 import { getItem, setItem, removeItem } from '../storage';
 import { localStore } from '../db/store';
@@ -412,16 +413,19 @@ export function WorkoutProvider({ children }) {
     });
   };
 
-  const reorderActiveExercise = (index, direction) => {
+  const reorderActiveExercise = (from, to) => {
     if (!activeWorkout) return;
+    if (typeof to !== 'number') {
+      const direction = to;
+      const index = from;
+      const target = direction === 'up' ? index - 1 : index + 1;
+      to = target;
+      from = index;
+    }
     setActiveWorkout((prev) => {
-      const newExercises = [...prev.exercises];
-      if (direction === 'up' && index > 0) {
-        [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
-      } else if (direction === 'down' && index < newExercises.length - 1) {
-        [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
-      }
-      return { ...prev, exercises: newExercises };
+      const next = moveItem(prev.exercises, from, to);
+      if (next === prev.exercises) return prev;
+      return { ...prev, exercises: next };
     });
   };
 

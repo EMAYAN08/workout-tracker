@@ -21,8 +21,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
@@ -32,6 +31,8 @@ import { alertMessage } from '../../dialog';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { titleCase } from '../../utils/format';
+import { moveItem, remapIndex } from '../../utils/reorder';
+import { DragSortList, DragSortItem, DragHandle } from '../ui/DragSort';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
   const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, unit, searchExercises } =
@@ -61,6 +62,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   const [searchResults, setSearchResults] = useState([]);
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
+  const [listScroll, setListScroll] = useState(true);
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
   useEffect(() => {
@@ -103,19 +105,10 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
     setSearchResults([]);
   };
 
-  const moveExercise = (index, direction) => {
-    const target = direction === 'up' ? index - 1 : index + 1;
-    setExercises((prev) => {
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-    setExpandedExerciseIndex((cur) => {
-      if (cur === index) return target;
-      if (cur === target) return index;
-      return cur;
-    });
+  const moveExercise = (from, to) => {
+    setActiveInput(null);
+    setExercises((prev) => moveItem(prev, from, to));
+    setExpandedExerciseIndex((cur) => remapIndex(cur, from, to));
   };
 
   const handleCreateCustom = async () => {
@@ -213,6 +206,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
       />
       <ScrollView
         style={{ flex: 1 }}
+        scrollEnabled={listScroll}
         contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 120 }}
         keyboardShouldPersistTaps="handled"
         {...hideScroll}
@@ -235,63 +229,54 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           </View>
         )}
 
+        <DragSortList
+          onReorder={moveExercise}
+          onDraggingChange={(on) => {
+            setListScroll(!on);
+            if (on) setActiveInput(null);
+          }}
+        >
         {exercises.map((ex, exIdx) => {
           const isExpanded = expandedExerciseIndex === exIdx;
           const sets = ex.defaultSets || [];
           return (
-            <View key={`${ex.id}-${exIdx}`} style={styles.card}>
+            <DragSortItem key={`${ex.id}-${exIdx}`} index={exIdx}>
+            <View style={styles.card}>
               <View style={styles.cardHead}>
-                <Pressable
-                  onPress={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
-                  style={styles.cardHeadMain}
-                  accessibilityLabel={isExpanded ? 'Collapse exercise' : 'Expand exercise'}
-                >
-                  {ex.gifUrl ? (
-                    <Image source={{ uri: ex.gifUrl }} style={styles.thumb} contentFit="cover" />
-                  ) : (
-                    <View style={styles.thumbFallback}>
-                      <Dumbbell size={16} color={colors.textMuted} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.exName} numberOfLines={1}>
-                      {ex.name}
-                    </Text>
-                    <Text style={styles.exMg}>{titleCase(ex.muscleGroup)}</Text>
-                  </View>
-                  {isExpanded ? (
-                    <ChevronUp size={18} color={colors.textMuted} />
-                  ) : (
-                    <ChevronDown size={18} color={colors.textMuted} />
-                  )}
-                </Pressable>
-                <View style={styles.cardActions}>
-                  {exIdx > 0 && (
-                    <Pressable
-                      onPress={() => moveExercise(exIdx, 'up')}
-                      accessibilityLabel="Move exercise up"
-                      style={styles.iconHit}
-                    >
-                      <ArrowUp size={16} color={colors.textMuted} />
-                    </Pressable>
-                  )}
-                  {exIdx < exercises.length - 1 && (
-                    <Pressable
-                      onPress={() => moveExercise(exIdx, 'down')}
-                      accessibilityLabel="Move exercise down"
-                      style={styles.iconHit}
-                    >
-                      <ArrowDown size={16} color={colors.textMuted} />
-                    </Pressable>
-                  )}
+                <DragHandle style={styles.cardHeadMain}>
+                  <GripVertical size={16} color={colors.textSubtle} />
                   <Pressable
-                    onPress={() => removeExercise(exIdx)}
-                    accessibilityLabel="Remove exercise"
-                    style={styles.delEx}
+                    onPress={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
+                    style={styles.cardHeadTap}
+                    accessibilityLabel={isExpanded ? 'Collapse exercise' : 'Expand exercise'}
                   >
-                    <Trash2 size={16} color={colors.danger} />
+                    {ex.gifUrl ? (
+                      <Image source={{ uri: ex.gifUrl }} style={styles.thumb} contentFit="cover" />
+                    ) : (
+                      <View style={styles.thumbFallback}>
+                        <Dumbbell size={16} color={colors.textMuted} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.exName} numberOfLines={1}>
+                        {ex.name}
+                      </Text>
+                      <Text style={styles.exMg}>{titleCase(ex.muscleGroup)}</Text>
+                    </View>
+                    {isExpanded ? (
+                      <ChevronUp size={18} color={colors.textMuted} />
+                    ) : (
+                      <ChevronDown size={18} color={colors.textMuted} />
+                    )}
                   </Pressable>
-                </View>
+                </DragHandle>
+                <Pressable
+                  onPress={() => removeExercise(exIdx)}
+                  accessibilityLabel="Remove exercise"
+                  style={styles.delEx}
+                >
+                  <Trash2 size={16} color={colors.danger} />
+                </Pressable>
               </View>
               {isExpanded && (
                 <View style={{ padding: 14, gap: 8 }}>
@@ -359,8 +344,10 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 </View>
               )}
             </View>
+            </DragSortItem>
           );
         })}
+        </DragSortList>
 
         <Pressable onPress={() => setIsSearching(true)} style={styles.addEx} accessibilityLabel="Add Exercise">
           <Plus size={22} color={colors.text} />
@@ -585,17 +572,23 @@ function makeStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
       marginBottom: 10,
-      overflow: 'hidden',
     },
     cardHead: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
       padding: 8,
-      paddingLeft: 12,
+      paddingLeft: 8,
       backgroundColor: colors.surface2,
     },
     cardHeadMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: HIT,
+    },
+    cardHeadTap: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',

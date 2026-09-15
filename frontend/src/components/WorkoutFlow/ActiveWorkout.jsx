@@ -20,11 +20,10 @@ import {
   Dumbbell,
   Search,
   X,
-  ArrowUp,
-  ArrowDown,
   ChevronUp,
   ChevronDown,
   Moon,
+  GripVertical,
 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { getPreviousPerformance } from '../../utils/calculations';
@@ -36,6 +35,8 @@ import { Select, MuscleTag } from '../ui/primitives';
 import { useTheme } from '../../context/ThemeContext';
 import { titleCase } from '../../utils/format';
 import { haptic } from '../../haptics';
+import { remapIndex } from '../../utils/reorder';
+import { DragSortList, DragSortItem, DragHandle } from '../ui/DragSort';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -79,6 +80,7 @@ export default function ActiveWorkout() {
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [prEvent, setPrEvent] = useState(null);
+  const [listScroll, setListScroll] = useState(true);
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
   const markSetComplete = (idx, sIdx) => {
@@ -168,6 +170,7 @@ export default function ActiveWorkout() {
       </View>
 
       <ScrollView
+        scrollEnabled={listScroll}
         contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -181,80 +184,84 @@ export default function ActiveWorkout() {
           </View>
         )}
 
+        <DragSortList
+          onReorder={(from, to) => {
+            reorderActiveExercise(from, to);
+            setExpandedExerciseIndex((cur) => remapIndex(cur, from, to));
+          }}
+          onDraggingChange={(on) => {
+            setListScroll(!on);
+            if (on) setActiveInput(null);
+          }}
+        >
         {activeWorkout.exercises.map((ex, idx) => {
           const prevPerformance = getPreviousPerformance(ex.id, workoutHistory, unit);
           const isExpanded = idx === expandedExerciseIndex;
           const completedSetsCount = ex.sets.filter((s) => s.completedAt).length;
 
-          const reorderBtns = (
-            <View style={styles.rowBtns}>
-              {idx > 0 && (
-                <Pressable onPress={() => reorderActiveExercise(idx, 'up')} style={styles.iconHit}>
-                  <ArrowUp size={16} color={colors.textMuted} />
+          const header = (
+            <View style={styles.exHeader}>
+              <DragHandle style={styles.dragHandle}>
+                <GripVertical size={16} color={colors.textSubtle} />
+                <Pressable
+                  onPress={() => setExpandedExerciseIndex(isExpanded ? null : idx)}
+                  style={styles.dragTap}
+                  accessibilityLabel={isExpanded ? 'Collapse exercise' : 'Expand exercise'}
+                >
+                  <Thumb uri={ex.gifUrl} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.exName} numberOfLines={1}>
+                      {ex.name}
+                    </Text>
+                    {isExpanded ? (
+                      prevPerformance ? (
+                        <Text style={styles.exMeta}>
+                          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>
+                            PR: {prevPerformance.allTimePR} {unit}
+                          </Text>
+                          {'  |  '}Last: {prevPerformance.lastSessionHeaviest} {unit}
+                          {'  |  '}Est 1RM: {prevPerformance.allTime1RM} {unit}
+                        </Text>
+                      ) : (
+                        <Text style={styles.exMeta}>{titleCase(ex.muscleGroup)}</Text>
+                      )
+                    ) : (
+                      <Text style={styles.exMeta}>
+                        {completedSetsCount}
+                        {' / '}
+                        {ex.sets.length} Sets Completed
+                      </Text>
+                    )}
+                  </View>
+                  {isExpanded ? (
+                    <ChevronUp size={18} color={colors.textMuted} />
+                  ) : (
+                    <ChevronDown size={18} color={colors.textMuted} />
+                  )}
                 </Pressable>
-              )}
-              {idx < activeWorkout.exercises.length - 1 && (
-                <Pressable onPress={() => reorderActiveExercise(idx, 'down')} style={styles.iconHit}>
-                  <ArrowDown size={16} color={colors.textMuted} />
-                </Pressable>
-              )}
+              </DragHandle>
               <Pressable
                 onPress={() => removeActiveExercise(idx)}
                 style={styles.iconHit}
+                accessibilityLabel="Remove exercise"
               >
                 <Trash2 size={16} color={colors.danger} />
               </Pressable>
-              {isExpanded ? (
-                <ChevronUp size={18} color={colors.textMuted} />
-              ) : (
-                <ChevronDown size={18} color={colors.textMuted} />
-              )}
             </View>
           );
 
           if (!isExpanded) {
             return (
-              <Pressable
-                key={idx}
-                onPress={() => setExpandedExerciseIndex(idx)}
-                style={styles.card}
-              >
-                <Thumb uri={ex.gifUrl} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exName} numberOfLines={1}>
-                    {ex.name}
-                  </Text>
-                  <Text style={styles.exMeta}>
-                    {completedSetsCount}
-                    {' / '}
-                    {ex.sets.length} Sets Completed
-                  </Text>
-                </View>
-                {reorderBtns}
-              </Pressable>
+              <DragSortItem key={`${ex.id}-${idx}`} index={idx}>
+                <View style={styles.card}>{header}</View>
+              </DragSortItem>
             );
           }
 
           return (
-            <View key={idx} style={[styles.card, styles.cardExpanded, { flexDirection: 'column', alignItems: 'stretch' }]}>
-              <Pressable onPress={() => setExpandedExerciseIndex(null)} style={styles.exHeader}>
-                <Thumb uri={ex.gifUrl} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exName}>{ex.name}</Text>
-                  {prevPerformance ? (
-                    <Text style={styles.exMeta}>
-                      <Text style={{ color: colors.text, fontFamily: fonts.bold }}>
-                        PR: {prevPerformance.allTimePR} {unit}
-                      </Text>
-                      {'  |  '}Last: {prevPerformance.lastSessionHeaviest} {unit}
-                      {'  |  '}Est 1RM: {prevPerformance.allTime1RM} {unit}
-                    </Text>
-                  ) : (
-                    <Text style={styles.exMeta}>{titleCase(ex.muscleGroup)}</Text>
-                  )}
-                </View>
-                {reorderBtns}
-              </Pressable>
+            <DragSortItem key={`${ex.id}-${idx}`} index={idx}>
+            <View style={[styles.card, styles.cardExpanded]}>
+              {header}
 
               <View style={styles.setHead}>
                 <Text style={[styles.setHeadText, { width: 36, textAlign: 'center' }]}>Set</Text>
@@ -342,8 +349,10 @@ export default function ActiveWorkout() {
                 )}
               </View>
             </View>
+            </DragSortItem>
           );
         })}
+        </DragSortList>
 
         <Pressable onPress={() => setIsSearching(true)} style={styles.addExBtn}>
           <Plus size={20} color={colors.text} />
@@ -516,16 +525,18 @@ function makeStyles(colors) {
     borderColor: colors.border,
     padding: 12,
     marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
   },
   cardExpanded: { borderColor: colors.accent },
   thumb: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface2 },
   thumbFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceLight },
   exName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
   exMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 2 },
-  exHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 8 },
+  exHeader: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 4 },
+  dragHandle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: HIT },
+  dragTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: HIT },
   rowBtns: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   iconHit: { padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center' },
   setHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8 },
