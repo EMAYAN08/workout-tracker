@@ -195,7 +195,7 @@ export default function Settings({ scrollRef }) {
             {CHART_SWATCHES.find((s) => s.id === chartId)?.label || 'Olive'}
           </Text>
         </View>
-        <Text style={styles.hint}>Profile charts only. Kept separate from the app accent. Swipe to see more.</Text>
+        <Text style={styles.hint}>Profile charts only. Swipe to see more.</Text>
         <ScrollView horizontal nestedScrollEnabled {...hideScroll} contentContainerStyle={styles.swatchRow}>
           {CHART_SWATCHES.map((s) => {
             const hex = isDark ? s.dark : s.light;
@@ -267,7 +267,7 @@ export default function Settings({ scrollRef }) {
           <Text style={styles.rowLabel}>Wipe workout data</Text>
         </View>
         <Text style={styles.hint}>
-          Deletes every workout, routine, and custom exercise stored on this phone. Theme and units stay. This cannot be undone.
+          Deletes every workout, routine, and custom exercise stored on this phone. This action cannot be undone.
         </Text>
         <Pressable
           disabled={busy}
