@@ -240,9 +240,7 @@ export default function Settings({ scrollRef }) {
             { value: '180', label: '3 minutes' },
           ]}
         />
-        <Text style={styles.hint}>
-          Completing a set starts this countdown. The remaining time ticks in a lock-screen notification (Uber-style Live Activities need a native iOS build — Expo Go updates the same notice every second instead).
-        </Text>
+        <Text style={styles.hint}>Starts after each set. Alerts you when rest is over.</Text>
       </View>
 
       <Text style={styles.section}>Backup</Text>
