@@ -4,7 +4,15 @@ import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, 
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
-import { ACCENT_SWATCHES, CHART_SWATCHES, fonts, radius, HIT } from '../../theme';
+import ColorPicker from '../ui/ColorPicker';
+import {
+  ACCENT_SWATCHES,
+  CHART_SWATCHES,
+  CUSTOM_COLOR_ID,
+  fonts,
+  radius,
+  HIT,
+} from '../../theme';
 import { haptic } from '../../haptics';
 import { confirmAction } from '../../dialog';
 
@@ -16,8 +24,12 @@ export default function Settings({ scrollRef }) {
     setScheme,
     accentId,
     chartId,
+    accentHex,
+    chartHex,
     setAccentId,
     setChartId,
+    setAccentCustom,
+    setChartCustom,
   } = useTheme();
   const { unit, toggleUnit, restTargetSec, setRestTargetSec, exportData, importData, useMock, toggleMock, wipeAllData } = useWorkout();
   const styles = makeStyles(colors);
@@ -154,10 +166,21 @@ export default function Settings({ scrollRef }) {
           <Palette size={16} color={colors.textMuted} />
           <Text style={styles.rowLabel}>App color</Text>
           <Text style={styles.rowMeta}>
-            {ACCENT_SWATCHES.find((s) => s.id === accentId)?.label || 'Steel'}
+            {accentId === CUSTOM_COLOR_ID
+              ? 'Custom'
+              : ACCENT_SWATCHES.find((s) => s.id === accentId)?.label || 'Steel'}
           </Text>
         </View>
-        <Text style={styles.hint}>Buttons, active tabs, and rest timer. Swipe to see more.</Text>
+        <Text style={styles.hint}>Buttons, tabs, and rest timer. Pick a swatch or mix your own.</Text>
+        <ColorPicker
+          value={
+            accentId === CUSTOM_COLOR_ID && accentHex
+              ? accentHex
+              : (ACCENT_SWATCHES.find((s) => s.id === accentId) || ACCENT_SWATCHES[0])[isDark ? 'dark' : 'light']
+          }
+          onChange={setAccentCustom}
+          accessibilityLabel="Custom app color"
+        />
         <ScrollView horizontal nestedScrollEnabled {...hideScroll} contentContainerStyle={styles.swatchRow}>
           {ACCENT_SWATCHES.map((s) => {
             const hex = isDark ? s.dark : s.light;
@@ -192,10 +215,21 @@ export default function Settings({ scrollRef }) {
           <ChartLine size={16} color={colors.textMuted} />
           <Text style={styles.rowLabel}>Graph color</Text>
           <Text style={styles.rowMeta}>
-            {CHART_SWATCHES.find((s) => s.id === chartId)?.label || 'Olive'}
+            {chartId === CUSTOM_COLOR_ID
+              ? 'Custom'
+              : CHART_SWATCHES.find((s) => s.id === chartId)?.label || 'Olive'}
           </Text>
         </View>
-        <Text style={styles.hint}>Profile charts only. Swipe to see more.</Text>
+        <Text style={styles.hint}>Profile charts and the consistency map. Pick a swatch or mix your own.</Text>
+        <ColorPicker
+          value={
+            chartId === CUSTOM_COLOR_ID && chartHex
+              ? chartHex
+              : (CHART_SWATCHES.find((s) => s.id === chartId) || CHART_SWATCHES[0])[isDark ? 'dark' : 'light']
+          }
+          onChange={setChartCustom}
+          accessibilityLabel="Custom graph color"
+        />
         <ScrollView horizontal nestedScrollEnabled {...hideScroll} contentContainerStyle={styles.swatchRow}>
           {CHART_SWATCHES.map((s) => {
             const hex = isDark ? s.dark : s.light;
@@ -339,7 +373,7 @@ function makeStyles(colors) {
     },
     segBtn: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     segText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 14, letterSpacing: 0.4 },
-    swatchRow: { gap: 12, paddingVertical: 4, paddingRight: 8 },
+    swatchRow: { gap: 12, paddingVertical: 4, paddingRight: 8, marginTop: 12 },
     swatchItem: { alignItems: 'center', gap: 6, width: 52 },
     swatch: {
       width: 36,

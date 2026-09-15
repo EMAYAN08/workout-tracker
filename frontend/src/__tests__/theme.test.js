@@ -5,12 +5,16 @@ import {
   CHART_SWATCHES,
   DEFAULT_ACCENT_ID,
   DEFAULT_CHART_ID,
+  CUSTOM_COLOR_ID,
   palettes,
+  normalizeHex,
+  hsvToHex,
+  hexToHsv,
 } from '../theme';
 
 describe('ACCENT_SWATCHES', () => {
   test('has unique ids and hex pairs', () => {
-    expect(ACCENT_SWATCHES.length).toBeGreaterThanOrEqual(16);
+    expect(ACCENT_SWATCHES.length).toBeGreaterThanOrEqual(24);
     const ids = ACCENT_SWATCHES.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const s of ACCENT_SWATCHES) {
@@ -120,5 +124,41 @@ describe('resolvePalette', () => {
     const ice = resolvePalette('dark', 'ice', 'ivory');
     expect(ice.accentFg).toBe('#141414');
     expect(ice.chartFg).toBe('#141414');
+  });
+
+  test('custom hex overrides swatches', () => {
+    const p = resolvePalette('dark', CUSTOM_COLOR_ID, CUSTOM_COLOR_ID, {
+      accent: '#FF5500',
+      chart: '#00AABB',
+    });
+    expect(p.accent).toBe('#FF5500');
+    expect(p.chartAccent).toBe('#00AABB');
+    expect(p.heatmapWork).toBe('#00AABB');
+  });
+
+  test('unknown id with no custom hex still falls back to first swatch', () => {
+    const p = resolvePalette('dark', 'not-a-color', 'also-fake');
+    expect(p.accent).toBe(ACCENT_SWATCHES[0].dark);
+    expect(p.chartAccent).toBe(CHART_SWATCHES[0].dark);
+  });
+});
+
+describe('normalizeHex', () => {
+  test('accepts 3 and 6 digit hex', () => {
+    expect(normalizeHex('#4a7')).toBe('#44AA77');
+    expect(normalizeHex('4A7C9B')).toBe('#4A7C9B');
+  });
+
+  test('rejects junk', () => {
+    expect(normalizeHex('red')).toBeNull();
+    expect(normalizeHex('#12')).toBeNull();
+    expect(normalizeHex('')).toBeNull();
+  });
+});
+
+describe('hsv round-trip', () => {
+  test('pure red survives', () => {
+    const hsv = hexToHsv('#FF0000');
+    expect(hsvToHex(hsv.h, hsv.s, hsv.v).toUpperCase()).toBe('#FF0000');
   });
 });
