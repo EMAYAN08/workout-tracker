@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, PanResponder } from 'react-native';
 import Svg, { Path, Line, Text as SvgText } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
 import { fonts } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { haptic } from '../../haptics';
+
+const TIP_W = 132;
+const TIP_TOP = 6;
 
 function lum(hex) {
   const h = String(hex || '').replace('#', '');
@@ -56,15 +59,40 @@ function formatValue(v) {
   return String(Number(n.toFixed(1)));
 }
 
-function indexAt(locationX, locationY, c) {
-  if (!c) return null;
-  const inPlotX = locationX >= c.padL - 4 && locationX <= c.padL + c.innerW + 4;
-  const inPlotY = locationY >= c.padT - 8 && locationY <= c.padT + c.innerH + 16;
-  if (!inPlotX || !inPlotY) return null;
-  const i = Math.floor((locationX - c.padL) / (c.innerW / c.bars.length));
+function inPlot(x, y, c) {
+  if (!c) return false;
+  return x >= c.padL && x <= c.padL + c.innerW && y >= c.padT - 6 && y <= c.padT + c.innerH + 10;
+}
+
+function slotAt(x, c) {
+  if (!c || !c.bars.length) return null;
+  const i = Math.floor((x - c.padL) / (c.innerW / c.bars.length));
   if (i < 0 || i >= c.bars.length) return null;
-  if (c.bars[i].h < 0.5) return null;
   return i;
+}
+
+function filledSlotAt(x, y, c) {
+  if (!inPlot(x, y, c)) return null;
+  const i = slotAt(x, c);
+  if (i == null || c.bars[i].h < 0.5) return null;
+  return i;
+}
+
+function nearestFilled(x, c) {
+  if (!c) return null;
+  const i = slotAt(x, c);
+  if (i != null && c.bars[i].h >= 0.5) return i;
+  let best = null;
+  let bestD = Infinity;
+  for (let j = 0; j < c.bars.length; j++) {
+    if (c.bars[j].h < 0.5) continue;
+    const d = Math.abs(c.bars[j].cx - x);
+    if (d < bestD) {
+      bestD = d;
+      best = j;
+    }
+  }
+  return best;
 }
 
 export default function BarChart({
@@ -75,35 +103,83 @@ export default function BarChart({
   emptyTitle = 'Not enough data',
   emptySubtitle = 'Log this more than once to see progression.',
   totalLabel = 'Total',
+  onLockScroll,
+  dismissRef,
 }) {
   const { colors } = useTheme();
   const fill = color || colors.chartAccent || colors.text;
   const styles = useMemo(() => makeStyles(colors, fill), [colors, fill]);
   const [boxW, setBoxW] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [anchor, setAnchor] = useState({ x: 0, y: 0, w: 0 });
   const selectedRef = useRef(null);
   const chartRef = useRef(null);
-  const wrapRef = useRef(null);
   const cardAnim = useRef(new Animated.Value(0)).current;
   const closing = useRef(false);
+  const moved = useRef(false);
+  const wasSelected = useRef(null);
+  const lockRef = useRef(onLockScroll);
+  lockRef.current = onLockScroll;
+  const openRef = useRef(() => {});
+  const dismissRefInner = useRef(() => {});
   const width = Math.max(200, boxW || 0);
+
+  const dismissFn = () => {
+    if (selectedRef.current == null || closing.current) return;
+    closing.current = true;
+    lockRef.current?.(true);
+    Animated.timing(cardAnim, {
+      toValue: 0,
+      duration: 140,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      selectedRef.current = null;
+      closing.current = false;
+      setSelected(null);
+    });
+  };
+
+  const openFn = (i) => {
+    closing.current = false;
+    const switching = selectedRef.current != null && selectedRef.current !== i;
+    selectedRef.current = i;
+    setSelected(i);
+    if (!switching) {
+      cardAnim.setValue(0);
+      Animated.spring(cardAnim, {
+        toValue: 1,
+        friction: 7.2,
+        tension: 92,
+        useNativeDriver: true,
+      }).start();
+    }
+    haptic('selection');
+  };
+
+  openRef.current = openFn;
+  dismissRefInner.current = dismissFn;
+
+  useEffect(() => {
+    if (dismissRef) dismissRef.current = () => dismissRefInner.current();
+  }, [dismissRef]);
 
   useEffect(() => {
     selectedRef.current = null;
     closing.current = false;
     setSelected(null);
     cardAnim.setValue(0);
+    lockRef.current?.(true);
   }, [data]);
 
   const hasBars = (data || []).some((d) => Number(d.value) > 0);
 
   const chart = useMemo(() => {
     if (!hasBars || !data.length || width < 40) return null;
-    const padL = 6;
-    const padR = 44;
+    const padL = 10;
+    const padR = 40;
     const padT = 78;
-    const padB = 26;
+    const padB = 28;
     const innerW = width - padL - padR;
     const innerH = height - padT - padB;
     const values = data.map((d) => Number(d.value) || 0);
@@ -138,63 +214,56 @@ export default function BarChart({
 
   chartRef.current = chart;
 
-  const open = (i) => {
-    const apply = (nextAnchor) => {
-      if (nextAnchor) setAnchor(nextAnchor);
-      closing.current = false;
-      const switching = selectedRef.current != null && selectedRef.current !== i;
-      selectedRef.current = i;
-      setSelected(i);
-      if (!switching) {
-        cardAnim.setValue(0);
-        Animated.spring(cardAnim, {
-          toValue: 1,
-          friction: 7.2,
-          tension: 92,
-          useNativeDriver: true,
-        }).start();
-      }
-      haptic('selection');
-    };
-    if (wrapRef.current?.measureInWindow) {
-      wrapRef.current.measureInWindow((x, y, w) => apply({ x, y, w }));
-    } else {
-      apply();
-    }
-  };
-
-  const dismiss = () => {
-    if (selectedRef.current == null || closing.current) return;
-    closing.current = true;
-    Animated.timing(cardAnim, {
-      toValue: 0,
-      duration: 140,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      selectedRef.current = null;
-      closing.current = false;
-      setSelected(null);
-    });
-  };
-
-  const handleLocal = (locationX, locationY) => {
-    const i = indexAt(locationX, locationY, chartRef.current);
-    if (typeof i === 'number') {
-      if (i === selectedRef.current) dismiss();
-      else open(i);
-      return;
-    }
-    if (selectedRef.current != null) dismiss();
-  };
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: (e) => {
+          const c = chartRef.current;
+          const { locationX, locationY } = e.nativeEvent;
+          if (selectedRef.current != null && inPlot(locationX, locationY, c)) return true;
+          return filledSlotAt(locationX, locationY, c) != null;
+        },
+        onMoveShouldSetPanResponder: (e, g) => {
+          if (selectedRef.current == null) return false;
+          return Math.abs(g.dx) > 3 && Math.abs(g.dx) >= Math.abs(g.dy);
+        },
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderGrant: (e) => {
+          lockRef.current?.(false);
+          moved.current = false;
+          const { locationX, locationY } = e.nativeEvent;
+          const i = filledSlotAt(locationX, locationY, chartRef.current);
+          wasSelected.current = selectedRef.current;
+          if (i == null) {
+            dismissRefInner.current();
+            return;
+          }
+          openRef.current(i);
+        },
+        onPanResponderMove: (e, g) => {
+          if (Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5) moved.current = true;
+          const i = nearestFilled(e.nativeEvent.locationX, chartRef.current);
+          if (i != null && i !== selectedRef.current) openRef.current(i);
+        },
+        onPanResponderRelease: () => {
+          lockRef.current?.(true);
+          if (!moved.current && wasSelected.current != null && wasSelected.current === selectedRef.current) {
+            dismissRefInner.current();
+          }
+        },
+        onPanResponderTerminate: () => {
+          lockRef.current?.(true);
+        },
+      }),
+    []
+  );
 
   const sel = chart && selected != null ? chart.bars[selected] : null;
+  const tipLeft = sel ? Math.min(Math.max(sel.cx - TIP_W / 2, 8), width - TIP_W - 8) : 8;
 
   return (
     <View
-      ref={wrapRef}
-      collapsable={false}
       style={{ width: '100%' }}
       onLayout={(e) => {
         const w = e.nativeEvent.layout.width;
@@ -208,10 +277,7 @@ export default function BarChart({
           <Text style={styles.emptySub}>{emptySubtitle}</Text>
         </View>
       ) : (
-        <View
-          onStartShouldSetResponder={() => selected == null}
-          onResponderRelease={(e) => handleLocal(e.nativeEvent.locationX, e.nativeEvent.locationY)}
-        >
+        <View {...pan.panHandlers} style={{ width: '100%' }}>
           <Svg width={width} height={height} pointerEvents="none">
             {chart.yTicks.map((t, i) => (
               <React.Fragment key={`y-${i}`}>
@@ -260,16 +326,19 @@ export default function BarChart({
                 />
               );
             })}
-            {chart.xIdx.map((idx) => {
+            {chart.xIdx.map((idx, n) => {
               const b = chart.bars[idx];
+              const first = n === 0;
+              const last = n === chart.xIdx.length - 1;
+              const x = first ? chart.padL : last ? chart.padL + chart.innerW : b.cx;
               return (
                 <SvgText
                   key={`x-${idx}`}
-                  x={b.cx}
+                  x={x}
                   y={height - 8}
                   fill={colors.chartAxis}
                   fontSize="11"
-                  textAnchor="middle"
+                  textAnchor={first ? 'start' : last ? 'end' : 'middle'}
                 >
                   {b.date}
                 </SvgText>
@@ -279,7 +348,7 @@ export default function BarChart({
               <Line
                 x1={sel.cx}
                 x2={sel.cx}
-                y1={56}
+                y1={TIP_TOP + 62}
                 y2={sel.y}
                 stroke={fill}
                 strokeWidth={1.5}
@@ -287,35 +356,15 @@ export default function BarChart({
               />
             )}
           </Svg>
-        </View>
-      )}
-
-      <Modal
-        visible={selected != null}
-        transparent
-        animationType="none"
-        statusBarTranslucent
-        onRequestClose={dismiss}
-      >
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={(e) => {
-              const { pageX, pageY } = e.nativeEvent;
-              wrapRef.current?.measureInWindow((x, y) => {
-                handleLocal(pageX - x, pageY - y);
-              });
-            }}
-            accessibilityLabel="Dismiss bar details"
-          />
           {sel ? (
             <Animated.View
               pointerEvents="none"
               style={[
                 styles.tip,
                 {
-                  top: anchor.y + 4,
-                  left: Math.min(Math.max(anchor.x + sel.cx - 62, 12), (anchor.w || width) + anchor.x - 136),
+                  top: TIP_TOP,
+                  left: tipLeft,
+                  width: TIP_W,
                   opacity: cardAnim,
                   transform: [
                     {
@@ -327,7 +376,7 @@ export default function BarChart({
                     {
                       translateY: cardAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [10, 0],
+                        outputRange: [8, 0],
                       }),
                     },
                   ],
@@ -343,7 +392,7 @@ export default function BarChart({
             </Animated.View>
           ) : null}
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -363,9 +412,8 @@ function makeStyles(colors, fill) {
     },
     tip: {
       position: 'absolute',
-      minWidth: 124,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
       borderRadius: 16,
       backgroundColor: fill,
       alignItems: 'center',
@@ -381,7 +429,7 @@ function makeStyles(colors, fill) {
     tipValue: {
       color: onFill,
       fontFamily: fonts.monoBold,
-      fontSize: 24,
+      fontSize: 22,
       letterSpacing: -0.4,
       marginTop: 1,
     },

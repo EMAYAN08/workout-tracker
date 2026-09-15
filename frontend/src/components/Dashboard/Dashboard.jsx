@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Activity, TrendingUp, Flame, Trophy } from 'lucide-react-native';
 import { Select, ScreenHeader, CountUp, hideScroll } from '../ui/primitives';
@@ -48,6 +48,8 @@ export default function Dashboard({ onMapClick, visible = true }) {
   const [weightExerciseId, setWeightExerciseId] = useState('');
   const [progressRange, setProgressRange] = useState('3m');
   const [weightRange, setWeightRange] = useState('3m');
+  const [profileScroll, setProfileScroll] = useState(true);
+  const durationDismiss = useRef(null);
 
   const uniqueExercises = useMemo(() => {
     const exercisesMap = new Map();
@@ -113,6 +115,9 @@ export default function Dashboard({ onMapClick, visible = true }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
+        scrollEnabled={profileScroll}
+        onScrollBeginDrag={() => durationDismiss.current?.()}
+        keyboardShouldPersistTaps="handled"
         {...hideScroll}
       >
         <View style={styles.grid}>
@@ -210,7 +215,7 @@ export default function Dashboard({ onMapClick, visible = true }) {
           <AreaChart data={weightChartData} unit={unit} />
         </View>
 
-        <WorkoutDurationChart />
+        <WorkoutDurationChart onLockScroll={setProfileScroll} dismissRef={durationDismiss} />
       </ScrollView>
     </View>
   );

@@ -8,7 +8,7 @@ import RangePills from '../charts/RangePills';
 import { fonts, radius } from '../../theme';
 import { filledBarSeries, barGranularity } from '../../utils/chartRange';
 
-export default function WorkoutDurationChart() {
+export default function WorkoutDurationChart({ onLockScroll, dismissRef }) {
   const { workoutHistory } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -82,13 +82,15 @@ export default function WorkoutDurationChart() {
         <RangePills value={range} onChange={setRange} />
       </View>
 
-      <View style={[styles.panel, { marginTop: 10, paddingVertical: 8 }]}>
+      <View style={[styles.panel, { marginTop: 10, paddingVertical: 8, overflow: 'hidden' }]}>
         <BarChart
           data={chartData}
           unit={displayUnit}
           color={colors.chartAccent}
           totalLabel="Total"
           emptySubtitle="Log more workouts to see your duration trends."
+          onLockScroll={onLockScroll}
+          dismissRef={dismissRef}
         />
       </View>
     </View>
