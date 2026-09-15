@@ -16,6 +16,7 @@ import { ChevronLeft, ChevronRight, Flame, Share2 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { CountUp } from '../ui/primitives';
 
 const GUTTER = 4;
 const MONTH_GAP = 24;
@@ -52,7 +53,7 @@ const generateMonthGrid = (date, countsMap) => {
   return weeks;
 };
 
-export default function ConsistencyMap({ onMapClick }) {
+export default function ConsistencyMap({ onMapClick, play = true }) {
   const { workoutHistory } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -181,13 +182,15 @@ export default function ConsistencyMap({ onMapClick }) {
           <View style={styles.stat}>
             <View style={styles.statValRow}>
               <Flame size={14} color={colors.textMuted} />
-              <Text style={styles.statVal}>{score}%</Text>
+              <Text style={styles.statVal}>
+                <CountUp value={score} style={styles.statVal} play={play} />%
+              </Text>
             </View>
             <Text style={styles.statLbl}>Score</Text>
           </View>
           <View style={styles.statRule} />
           <View style={styles.stat}>
-            <Text style={styles.statVal}>{activeDaysInChunk}</Text>
+            <CountUp value={activeDaysInChunk} style={styles.statVal} play={play} />
             <Text style={styles.statLbl}>Days</Text>
           </View>
         </View>

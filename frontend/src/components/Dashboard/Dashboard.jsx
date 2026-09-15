@@ -168,7 +168,7 @@ export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
           />
         </View>
 
-        <ConsistencyMap onMapClick={onMapClick} />
+        <ConsistencyMap onMapClick={onMapClick} play={visible} />
         <StrengthChart />
 
         <InfoPopover
