@@ -39,7 +39,12 @@
       "themeColor": "#4A7C9B"
     },
     "plugins": [
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/VioletSans-Regular.ttf"]
+        }
+      ],
       "expo-sharing",
       "expo-image",
       "expo-splash-screen",

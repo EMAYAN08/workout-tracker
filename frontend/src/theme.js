@@ -230,14 +230,14 @@ export const type = {
 };
 
 export const fonts = {
-  regular: 'IBMPlexSans_400Regular',
-  medium: 'IBMPlexSans_500Medium',
-  semibold: 'IBMPlexSans_600SemiBold',
-  bold: 'IBMPlexSans_700Bold',
-  extrabold: 'IBMPlexSans_700Bold',
-  black: 'IBMPlexSans_700Bold',
-  mono: 'IBMPlexMono_500Medium',
-  monoBold: 'IBMPlexMono_700Bold',
+  regular: 'VioletSans-Regular',
+  medium: 'VioletSans-Regular',
+  semibold: 'VioletSans-Regular',
+  bold: 'VioletSans-Regular',
+  extrabold: 'VioletSans-Regular',
+  black: 'VioletSans-Regular',
+  mono: 'VioletSans-Regular',
+  monoBold: 'VioletSans-Regular',
 };
 
 export const HIT = 44;

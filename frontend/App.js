@@ -2,16 +2,9 @@ import 'react-native-gesture-handler';
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  useFonts,
-  IBMPlexSans_400Regular,
-  IBMPlexSans_500Medium,
-  IBMPlexSans_600SemiBold,
-  IBMPlexSans_700Bold,
-} from '@expo-google-fonts/ibm-plex-sans';
-import { IBMPlexMono_500Medium, IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono';
 import { WorkoutProvider } from './src/context/WorkoutContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppContent from './src/AppContent';
@@ -40,12 +33,7 @@ function Root() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    IBMPlexSans_400Regular,
-    IBMPlexSans_500Medium,
-    IBMPlexSans_600SemiBold,
-    IBMPlexSans_700Bold,
-    IBMPlexMono_500Medium,
-    IBMPlexMono_700Bold,
+    'VioletSans-Regular': require('./assets/fonts/VioletSans-Regular.ttf'),
   });
 
   if (!fontsLoaded) {
