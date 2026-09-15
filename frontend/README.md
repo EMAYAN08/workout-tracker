@@ -176,7 +176,7 @@ App Store Connect → App Privacy:
 - [ ] App record: bundle id matches `com.trackit.app`.
 - [ ] Certificates + provisioning via EAS (`eas credentials`) — distribution cert, App Store profile.
 - [ ] **Skip** Push Notifications capability.
-- [ ] **Skip** Sign in with Apple (4.8 only applies if you offer third-party login).
+- [x] **Skip** Sign in with Apple. Guideline **4.8** only applies if the app offers a *third-party* login (Google, Facebook, etc.). TrackIt has **no accounts at all**, so SIWA is not required and Apple will **not** reject you for omitting it. Do **not** add Google/Apple login “just in case” — that would *create* a 4.8 obligation.
 - [ ] **Skip** HealthKit, Game Center, Associated Domains, App Clips, Widgets.
 - [ ] Pricing: Free (or paid up front). If free, no Restore Purchase needed.
 - [ ] Age rating questionnaire answered honestly (4+).
@@ -208,37 +208,35 @@ Fill these even though they are not all “code”:
 
 ---
 
-## 6. Listing copy you should actually use (draft)
+## 6. Listing copy (paste into App Store Connect)
 
 **Name:** TrackIt
 
-**Subtitle:** Workout log on your iPhone
+**Subtitle:** Private workout log
 
-**Promotional text (optional):** Log sets, rest, and PRs. Everything stays on this phone.
+**Promotional text:** Your sets, rest, and PRs — saved only on this iPhone.
 
-**Description (skeleton):**
+**Description:**
 
-> TrackIt is a workout logger that lives entirely on your iPhone. No account. No cloud.
+> TrackIt is a workout logger that lives on your iPhone. No account. No cloud. Your training never leaves this device.
 >
-> • Build routines and custom exercises
-> • Log weight, reps, and rest with a dedicated keypad
-> • Rest timer with an optional lock-screen alert
-> • Personal-record badge when you hit a new best
-> • History calendar, consistency map, and strength charts
-> • Export / import a backup JSON, or wipe the device clean
+> Build routines and custom exercises, then log every set with a dedicated number pad. Rest between sets with an optional lock-screen timer. Hit a personal record and you’ll see it.
 >
-> Units in pounds or kilograms. Dark or light. Colors you pick.
+> History, a consistency map, and strength charts show how you actually trained — by month, quarter, or year.
+>
+> Switch phones with an export. Start over anytime. Pounds or kilograms. Dark or light. A color you choose.
 >
 > Estimated 1-rep max is a formula, not medical advice.
 
-**Review notes (skeleton):**
+**Keywords:** workout,gym,lifting,logger,routine,sets,reps,strength,fitness,training
 
-> Local-first app, no sign-in.
-> To preview charts: Settings → Mock data → On.
-> To test rest notifications: start a routine, complete a set, lock the device.
-> Photo/share: system share sheet for a summary image. We do not request Photos access.
-> No background audio, no push, no tracking, no data collection.
-> iPhone only for 1.0.
+**Review notes:**
+
+> No sign-in. All data is on-device.
+> To preview charts: Settings → Mock data → On. Please turn it Off before judging empty states.
+> Rest notifications: start a routine, complete a set, lock the device. Local only — no push.
+> Share uses the system share sheet. We do not request Photos access.
+> No background audio, no tracking, no data collection. iPhone only.
 
 ---
 

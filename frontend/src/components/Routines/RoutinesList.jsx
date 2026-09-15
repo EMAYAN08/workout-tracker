@@ -5,6 +5,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
+import { haptic } from '../../haptics';
 import { ScreenHeader, hideScroll, MuscleTag } from '../ui/primitives';
 
 export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
@@ -93,9 +94,10 @@ export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
                   <Edit2 size={16} color={colors.text} />
                 </Pressable>
                 <Pressable
-                  onPress={() =>
-                    confirmAction('Delete routine', 'Delete this routine?', () => deleteRoutine(routine.id))
-                  }
+                  onPress={() => {
+                    haptic('warning');
+                    deleteRoutine(routine.id);
+                  }}
                   style={styles.actDel}
                   accessibilityLabel="Delete routine"
                 >
