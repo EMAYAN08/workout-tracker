@@ -246,7 +246,7 @@ export default function Settings({ scrollRef }) {
       <Text style={styles.section}>Backup</Text>
       <View style={styles.card}>
         <Text style={styles.hint}>
-          Everything lives on this device. Export a JSON file and import it on another phone — including a later Mongo dump.
+          Everything lives on this device. Export a JSON file and import it on another phone.
         </Text>
         <View style={styles.backupRow}>
           <Pressable disabled={busy} onPress={onExport} style={[styles.backupBtn, busy && { opacity: 0.5 }]}>
