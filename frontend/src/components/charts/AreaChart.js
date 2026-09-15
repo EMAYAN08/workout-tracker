@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useId, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useId, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
@@ -14,6 +14,7 @@ export default function AreaChart({
   emptyTitle = 'Not enough data',
   emptySubtitle = 'Log this more than once to see progression.',
   averageLine,
+  active = true,
 }) {
   const { colors } = useTheme();
   const stroke = color || colors.chartAccent || colors.text;
@@ -23,6 +24,10 @@ export default function AreaChart({
   const width = Math.max(200, boxW || 0);
   const gid = `fill-${String(useId()).replace(/[^a-zA-Z0-9]/g, '')}`;
   const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!active) setCursor(null);
+  }, [active]);
 
   const chart = useMemo(() => {
     if (!data || data.length < 2 || width < 40) return null;

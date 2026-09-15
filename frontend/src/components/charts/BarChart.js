@@ -105,6 +105,7 @@ export default function BarChart({
   totalLabel = 'Total',
   onLockScroll,
   dismissRef,
+  active = true,
 }) {
   const { colors } = useTheme();
   const fill = color || colors.chartAccent || colors.text;
@@ -171,6 +172,15 @@ export default function BarChart({
     cardAnim.setValue(0);
     lockRef.current?.(true);
   }, [data]);
+
+  useEffect(() => {
+    if (active) return;
+    selectedRef.current = null;
+    closing.current = false;
+    setSelected(null);
+    cardAnim.setValue(0);
+    lockRef.current?.(true);
+  }, [active]);
 
   const hasBars = (data || []).some((d) => Number(d.value) > 0);
 

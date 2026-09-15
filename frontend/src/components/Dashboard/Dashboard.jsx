@@ -195,7 +195,7 @@ export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
           <RangePills value={progressRange} onChange={setProgressRange} />
         </View>
         <View style={[styles.panel, { marginTop: 10 }]}>
-          <AreaChart data={chartData} unit={unit} />
+          <AreaChart data={chartData} unit={unit} active={visible} />
         </View>
 
         <InfoPopover
@@ -213,10 +213,14 @@ export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
           <RangePills value={weightRange} onChange={setWeightRange} />
         </View>
         <View style={[styles.panel, { marginTop: 10 }]}>
-          <AreaChart data={weightChartData} unit={unit} />
+          <AreaChart data={weightChartData} unit={unit} active={visible} />
         </View>
 
-        <WorkoutDurationChart onLockScroll={setProfileScroll} dismissRef={durationDismiss} />
+        <WorkoutDurationChart
+          onLockScroll={setProfileScroll}
+          dismissRef={durationDismiss}
+          active={visible}
+        />
       </ScrollView>
     </View>
   );
