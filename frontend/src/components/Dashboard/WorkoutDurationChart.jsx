@@ -3,17 +3,17 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTheme } from '../../context/ThemeContext';
 import InfoPopover from './InfoPopover';
-import AreaChart from '../charts/AreaChart';
+import BarChart from '../charts/BarChart';
 import RangePills from '../charts/RangePills';
 import { fonts, radius } from '../../theme';
-import { seriesFromWorkouts } from '../../utils/chartRange';
+import { filledBarSeries, barGranularity } from '../../utils/chartRange';
 
 export default function WorkoutDurationChart() {
   const { workoutHistory } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [displayUnit, setDisplayUnit] = useState('mins');
-  const [range, setRange] = useState('3m');
+  const [range, setRange] = useState('1m');
 
   const chartData = useMemo(() => {
     if (!workoutHistory || workoutHistory.length === 0) return [];
@@ -27,13 +27,15 @@ export default function WorkoutDurationChart() {
         value: displayUnit === 'mins' ? secs / 60 : secs / 3600,
       });
     });
-    const reduce = range === '1m' || range === '3m' ? 'sum' : 'sum';
-    const series = seriesFromWorkouts(points, range, reduce);
+    const series = filledBarSeries(points, range, 'sum');
     return series.map((d) => ({
       ...d,
       value: displayUnit === 'mins' ? Math.round(d.value) : Number(d.value.toFixed(1)),
     }));
   }, [workoutHistory, displayUnit, range]);
+
+  const grain = barGranularity(range);
+  const avgLabel = grain === 'day' ? 'Daily average' : grain === 'week' ? 'Weekly average' : 'Monthly average';
 
   const averageValue = useMemo(() => {
     if (chartData.length === 0) return 0;
@@ -45,13 +47,13 @@ export default function WorkoutDurationChart() {
     <View style={{ marginTop: 8, paddingBottom: 8 }}>
       <InfoPopover
         title="Workout duration"
-        description="Track how much time you spend working out each day. The dashed line shows your average duration over this period."
+        description="Time spent training in this range. Tap or drag a bar to see that day’s total. Color follows your chart color in Settings."
       />
 
       <View style={[styles.panel, { marginTop: 10 }]}>
         <View style={styles.row}>
           <View>
-            <Text style={styles.label}>Time Unit</Text>
+            <Text style={styles.label}>Time unit</Text>
             <View style={styles.toggle}>
               {['mins', 'hrs'].map((u) => (
                 <Pressable
@@ -66,11 +68,12 @@ export default function WorkoutDurationChart() {
               ))}
             </View>
           </View>
-          {chartData.length > 0 && (
+          {chartData.some((d) => d.value > 0) && (
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.label}>Average</Text>
-              <Text style={styles.avg}>
-                {averageValue} <Text style={styles.avgUnit}>{displayUnit}</Text>
+              <Text style={styles.label}>{avgLabel}</Text>
+              <Text style={[styles.avg, { color: colors.chartAccent }]}>
+                {averageValue}
+                <Text style={styles.avgUnit}> {displayUnit}</Text>
               </Text>
             </View>
           )}
@@ -80,10 +83,11 @@ export default function WorkoutDurationChart() {
       </View>
 
       <View style={[styles.panel, { marginTop: 10, paddingVertical: 8 }]}>
-        <AreaChart
+        <BarChart
           data={chartData}
           unit={displayUnit}
-          averageLine={averageValue}
+          color={colors.chartAccent}
+          totalLabel="Total"
           emptySubtitle="Log more workouts to see your duration trends."
         />
       </View>
@@ -93,20 +97,6 @@ export default function WorkoutDurationChart() {
 
 function makeStyles(colors) {
   return StyleSheet.create({
-    head: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-      marginTop: 8,
-    },
-    title: {
-      color: colors.textSubtle,
-      fontFamily: fonts.semibold,
-      fontSize: 13,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
-    },
     panel: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
@@ -141,7 +131,7 @@ function makeStyles(colors) {
     toggleOn: { backgroundColor: colors.text },
     toggleText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12 },
     toggleTextOn: { color: colors.background },
-    avg: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 18 },
+    avg: { fontFamily: fonts.monoBold, fontSize: 22, letterSpacing: -0.4 },
     avgUnit: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.regular },
   });
 }

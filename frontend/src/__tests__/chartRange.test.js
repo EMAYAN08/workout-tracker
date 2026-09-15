@@ -6,6 +6,9 @@ import {
   bucketKey,
   bucketLabel,
   seriesFromWorkouts,
+  barGranularity,
+  filledBarSeries,
+  enumerateBarKeys,
 } from '../utils/chartRange';
 
 const FIXED = new Date('2026-09-12T15:00:00.000Z');
@@ -227,5 +230,35 @@ describe('seriesFromWorkouts', () => {
     expect(series[0].key).toBe('2026-09');
     expect(series[0].date).toBe(bucketLabel('2026-09', '1y'));
     expect(series[0].value).toBe(12);
+  });
+});
+
+describe('filledBarSeries', () => {
+  test('barGranularity is day / week / month', () => {
+    expect(barGranularity('1m')).toBe('day');
+    expect(barGranularity('3m')).toBe('week');
+    expect(barGranularity('6m')).toBe('week');
+    expect(barGranularity('1y')).toBe('month');
+  });
+
+  test('1m fills every day in the window including zeros', () => {
+    const series = filledBarSeries([{ date: FIXED, value: 10 }], '1m', 'sum');
+    expect(series.length).toBe(enumerateBarKeys('1m').length);
+    expect(series.some((p) => p.value === 10)).toBe(true);
+    expect(series.some((p) => p.value === 0)).toBe(true);
+    expect(series[series.length - 1].key).toBe(format(FIXED, 'yyyy-MM-dd'));
+  });
+
+  test('sums two sessions on the same day', () => {
+    const series = filledBarSeries(
+      [
+        { date: FIXED, value: 10 },
+        { date: FIXED, value: 5 },
+      ],
+      '1m',
+      'sum'
+    );
+    const hit = series.find((p) => p.value === 15);
+    expect(hit).toBeTruthy();
   });
 });
