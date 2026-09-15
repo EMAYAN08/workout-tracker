@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -59,9 +59,39 @@ export default function AppContent() {
   const [currentTab, setCurrentTab] = useState('routines');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const routinesScroll = useRef(null);
+  const exercisesScroll = useRef(null);
+  const dashboardScroll = useRef(null);
+  const settingsScroll = useRef(null);
+  const routinesPop = useRef(null);
+  const exercisesPop = useRef(null);
+
+  const scrollTabTop = (ref) => {
+    const run = () => ref.current?.scrollTo?.({ y: 0, animated: true });
+    run();
+    requestAnimationFrame(run);
+    setTimeout(run, 60);
+  };
 
   const navigateTab = (newTab) => {
-    if (newTab === currentTab) return;
+    const onThisProfile = newTab === 'dashboard' && (currentTab === 'dashboard' || currentTab === 'calendar' || currentTab === 'workout-detail');
+    const same = newTab === currentTab || onThisProfile;
+    if (same) {
+      haptic('selection');
+      if (newTab === 'dashboard' && currentTab !== 'dashboard') setCurrentTab('dashboard');
+      if (newTab === 'routines') routinesPop.current?.();
+      if (newTab === 'custom_exercises') exercisesPop.current?.();
+      const ref =
+        newTab === 'routines'
+          ? routinesScroll
+          : newTab === 'custom_exercises'
+            ? exercisesScroll
+            : newTab === 'dashboard'
+              ? dashboardScroll
+              : settingsScroll;
+      scrollTabTop(ref);
+      return;
+    }
     haptic('selection');
     setCurrentTab(newTab);
   };
@@ -134,16 +164,20 @@ export default function AppContent() {
         ) : (
           <>
             <TabPane active={currentTab === 'routines'}>
-              <RoutinesMain />
+              <RoutinesMain scrollRef={routinesScroll} popRef={routinesPop} />
             </TabPane>
             <TabPane active={currentTab === 'custom_exercises'}>
-              <CustomExercises />
+              <CustomExercises scrollRef={exercisesScroll} popRef={exercisesPop} />
             </TabPane>
             <TabPane active={currentTab === 'dashboard'}>
-              <Dashboard visible={currentTab === 'dashboard'} onMapClick={() => navigateTab('calendar')} />
+              <Dashboard
+                visible={currentTab === 'dashboard'}
+                onMapClick={() => navigateTab('calendar')}
+                scrollRef={dashboardScroll}
+              />
             </TabPane>
             <TabPane active={currentTab === 'settings'}>
-              <Settings />
+              <Settings scrollRef={settingsScroll} />
             </TabPane>
             {currentTab === 'calendar' && (
               <CalendarView

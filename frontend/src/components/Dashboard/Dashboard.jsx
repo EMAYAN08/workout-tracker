@@ -38,7 +38,7 @@ const StatCard = ({ icon: Icon, iconColor, title, value, unit, description, colo
   );
 };
 
-export default function Dashboard({ onMapClick, visible = true }) {
+export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
   const { workoutHistory, unit, getStreaks, useMock } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -113,6 +113,7 @@ export default function Dashboard({ onMapClick, visible = true }) {
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Profile" subtitle={useMock ? 'Demo data — toggle off in Settings.' : 'On this phone. Yours alone.'} />
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
         scrollEnabled={profileScroll}

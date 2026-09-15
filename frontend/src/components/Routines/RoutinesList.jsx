@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { confirmAction } from '../../dialog';
 import { ScreenHeader, hideScroll, MuscleTag } from '../ui/primitives';
 
-export default function RoutinesList({ onCreateNew, onEdit }) {
+export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
   const { routines, deleteRoutine, startWorkoutFromRoutine, startWorkout, activeWorkout } = useWorkout();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -45,7 +45,7 @@ export default function RoutinesList({ onCreateNew, onEdit }) {
           </Pressable>
         }
       />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
 
       <Pressable
         onPress={() => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator, Keyboard } from 'react-native';
 import { Dumbbell, Plus, Trash2, Search, ChevronDown } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
@@ -107,7 +107,7 @@ const CustomExerciseCard = ({ ex, onDelete, onEdit, unit, isExpanded, onToggle }
   );
 };
 
-export default function CustomExercises() {
+export default function CustomExercises({ scrollRef, popRef }) {
   const { customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise, unit } =
     useWorkout();
   const { colors } = useTheme();
@@ -149,6 +149,14 @@ export default function CustomExercises() {
     setIsCreating(false);
     applyBlankForm();
   };
+
+  useEffect(() => {
+    if (!popRef) return undefined;
+    popRef.current = () => resetForm();
+    return () => {
+      popRef.current = null;
+    };
+  });
 
   const startCreate = () => {
     applyBlankForm();
@@ -368,6 +376,7 @@ export default function CustomExercises() {
         </View>
       </View>
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 16, paddingBottom: 120, flexGrow: 1 }}

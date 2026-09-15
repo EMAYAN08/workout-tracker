@@ -8,7 +8,7 @@ import { ACCENT_SWATCHES, CHART_SWATCHES, fonts, radius, HIT } from '../../theme
 import { haptic } from '../../haptics';
 import { confirmAction } from '../../dialog';
 
-export default function Settings() {
+export default function Settings({ scrollRef }) {
   const {
     colors,
     isDark,
@@ -64,7 +64,7 @@ export default function Settings() {
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Settings" subtitle="Looks, units, rest, and backup." />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
       <Text style={styles.section}>Demo</Text>
       <View style={styles.card}>
         <View style={styles.row}>

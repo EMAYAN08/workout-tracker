@@ -1,10 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import RoutinesList from './RoutinesList';
 import RoutineBuilder from './RoutineBuilder';
 
-export default function RoutinesMain() {
+export default function RoutinesMain({ scrollRef, popRef }) {
   const [view, setView] = useState('list');
   const [editingRoutine, setEditingRoutine] = useState(null);
+
+  useEffect(() => {
+    if (!popRef) return undefined;
+    popRef.current = () => {
+      setEditingRoutine(null);
+      setView('list');
+    };
+    return () => {
+      popRef.current = null;
+    };
+  }, [popRef]);
 
   const handleCreateNew = () => {
     setEditingRoutine(null);
@@ -32,5 +43,5 @@ export default function RoutinesMain() {
       />
     );
   }
-  return <RoutinesList onCreateNew={handleCreateNew} onEdit={handleEdit} />;
+  return <RoutinesList onCreateNew={handleCreateNew} onEdit={handleEdit} scrollRef={scrollRef} />;
 }
