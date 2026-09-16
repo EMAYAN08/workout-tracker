@@ -314,22 +314,15 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
 
   const keyProps = { colors, styles };
   const overlayH = hostHeight > 80 ? hostHeight : Math.round(Dimensions.get('window').height * 0.72);
+  const glassFill = isDark ? 'rgba(18,18,18,0.55)' : 'rgba(255,255,255,0.5)';
 
   return (
-    <View style={[styles.overlay, { height: overlayH }]} collapsable={false}>
-      <View style={styles.glass} pointerEvents="none">
-        <BlurView
-          intensity={isDark ? 80 : 64}
-          tint={isDark ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[
-            styles.glassTint,
-            { backgroundColor: isDark ? 'rgba(8,8,10,0.18)' : 'rgba(255,255,255,0.12)' },
-          ]}
-        />
-      </View>
+    <BlurView
+      intensity={isDark ? 48 : 62}
+      tint={isDark ? 'dark' : 'light'}
+      collapsable={false}
+      style={[styles.overlay, { height: overlayH, backgroundColor: glassFill }]}
+    >
       <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Dismiss editor" />
       <Animated.View style={[styles.stage, { transform: [{ translateY: slide }] }]}>
         <View style={styles.previewWrap}>
@@ -416,7 +409,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
           </View>
         </GestureDetector>
       </Animated.View>
-    </View>
+    </BlurView>
   );
 }
 
@@ -428,13 +421,7 @@ function makeStyles(colors) {
       left: 0,
       right: 0,
       zIndex: 80,
-      elevation: 24,
-    },
-    glass: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    glassTint: {
-      ...StyleSheet.absoluteFillObject,
+      overflow: 'hidden',
     },
     stage: {
       flex: 1,
