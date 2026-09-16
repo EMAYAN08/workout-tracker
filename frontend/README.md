@@ -2,7 +2,7 @@
 
 TrackIt is a **local-first iOS/Android workout logger** (Expo SDK 57). There is **no account, no server, and no analytics**. Workouts, routines, and custom exercises live in AsyncStorage on the phone. Users can export/import a JSON backup, get **local** rest-timer notifications, and share a summary image.
 
-This file is the pre-submit checklist so App Review does not bounce the binary. `[x]` = already true in the repo. `[ ]` = you still have to do it in Xcode, App Store Connect, or on a physical iPhone.
+Tick a box when that item is done. `[x]` is already true in the repo. `[ ]` is still on you (Xcode, App Store Connect, or a physical iPhone). Checking a box on GitHub writes a commit — that is the intended workflow.
 
 Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/).
 
@@ -10,38 +10,32 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 
 ## Repo surgery already applied (do not re-do)
 
-These used to be reject magnets. They are fixed in `app.json` / the source tree:
-
-| Was | Now |
-|---|---|
-| `UIBackgroundModes: ["audio"]` | **Removed.** Rest is a local notification, not an audio session. |
-| `ios.supportsTablet: true` | **`false`.** First ship is iPhone-only (no iPad screenshots required). |
-| `NSPhotoLibraryUsageDescription` | **Removed.** Share uses the system share sheet (`expo-sharing` + `UIActivityViewController`), not Photos. |
-| `expo-sqlite` plugin + dependency | **Removed.** Storage is AsyncStorage (`src/db/store.js`). |
-| `src/components/Auth/Login.jsx` + `src/config.js` | **Deleted.** Dead API login is gone. |
-| `ConsistencyMap_old.jsx` + unused Vite assets | **Deleted.** |
-| Fonts from Google at runtime | **Bundled** `VioletSans-Regular.ttf` via `expo-font`. Airplane mode still has type. |
-| No export-compliance flag | `ITSAppUsesNonExemptEncryption` / `usesNonExemptEncryption` = **false**. |
-| No privacy manifest | `ios.privacyManifests` declares UserDefaults (`CA92.1`) and file timestamps (`C617.1`). |
-| `expo-notifications` might inject push | Plugin sets `enableBackgroundRemoteNotifications: false`. |
-| No EAS config | [eas.json](eas.json) production profile added. |
-
-**Icon check:** `assets/icon.png` is **1024×1024 RGB, no alpha**. Splash is opaque `#070707`. Notification glyph is RGBA (correct for Android small-icon; iOS uses the app icon).
+- [x] Removed `UIBackgroundModes: ["audio"]` — rest is a local notification, not an audio session.
+- [x] Set `ios.supportsTablet: false` — first ship is iPhone-only (no iPad screenshots).
+- [x] Removed `NSPhotoLibraryUsageDescription` — share uses the system share sheet, not Photos.
+- [x] Removed `expo-sqlite` plugin + dependency — storage is AsyncStorage (`src/db/store.js`).
+- [x] Deleted `src/components/Auth/Login.jsx` + `src/config.js` — dead API login is gone.
+- [x] Deleted `ConsistencyMap_old.jsx` + unused Vite assets.
+- [x] Bundled `VioletSans-Regular.ttf` via `expo-font` (no Google Fonts at runtime).
+- [x] Set `ITSAppUsesNonExemptEncryption` / `usesNonExemptEncryption` = **false**.
+- [x] Added `ios.privacyManifests` for UserDefaults (`CA92.1`) and file timestamps (`C617.1`).
+- [x] `expo-notifications` plugin sets `enableBackgroundRemoteNotifications: false`.
+- [x] Added production profile in [eas.json](eas.json).
+- [x] App icon `assets/icon.png` is **1024×1024 RGB, no alpha**. Splash is opaque `#070707`. Notification glyph is RGBA (Android small-icon; iOS uses the app icon).
 
 ---
 
 ## 0. What reviewers will still flag if you skip it
 
-| Still on you | Why it matters |
-|---|---|
-| No production IPA yet | Expo Go / a dev client **cannot** be submitted. Need `eas build --platform ios --profile production`. |
-| Bundle id `com.trackit.app` | Confirm you own it in App Store Connect and lock it. Changing later is painful. |
-| No Support URL / Privacy Policy URL | **Hard required** in App Store Connect. |
-| Screenshots | 2026 required set is **6.9" iPhone, 1320×2868**. Do not screenshot Mock-on “Demo data”. |
-| Device QA | Reviewers use physical iPhones. Simulator-only is not enough. |
-| Privacy nutrition labels | Declare **Data Not Collected**. Audit the archive’s privacy report. |
-| EU DSA trader contact | Required to distribute in the EU. |
-| Accessibility Nutrition Labels | Optional today, expected soon — fill them in. |
+- [ ] Production IPA — Expo Go / a dev client **cannot** be submitted. Run `eas build --platform ios --profile production`.
+- [ ] Bundle id `com.trackit.app` — confirm you own it in App Store Connect and lock it.
+- [ ] Support URL — **hard required** in App Store Connect.
+- [ ] Privacy Policy URL — **hard required** in App Store Connect.
+- [ ] Screenshots — 2026 required set is **6.9" iPhone, 1320×2868**. Do not screenshot Mock-on “Demo data”.
+- [ ] Device QA on a physical iPhone (reviewers do not use your simulator).
+- [ ] Privacy nutrition labels — declare **Data Not Collected**. Audit the archive’s privacy report.
+- [ ] EU DSA trader contact — required to distribute in the EU.
+- [ ] Accessibility Nutrition Labels — optional today, expected soon.
 
 ---
 
@@ -53,16 +47,19 @@ These used to be reject magnets. They are fixed in `app.json` / the source tree:
 - [x] Delete dead `Login.jsx` / `config.js` / `ConsistencyMap_old.jsx` / unused Vite assets.
 - [x] `ios.supportsTablet` is **false** (iPhone-only). Revisit only if you later test every tab on iPad and add 13" iPad screenshots (2064×2752).
 - [x] `ITSAppUsesNonExemptEncryption` = `false`. Confirm with a lawyer if you later add a backend.
-- [x] Privacy manifest in `app.json` for UserDefaults + file timestamps. Still **open the archive in Xcode** and confirm Expo injected the same.
+- [x] Privacy manifest in `app.json` for UserDefaults + file timestamps.
+- [ ] Open the archive in Xcode and confirm Expo injected the same privacy manifest.
 - [x] No Photo Library usage string. Share is share-sheet only. Do not add `NSPhotoLibraryAddUsageDescription` unless you later save into Camera Roll.
 - [x] Notification permission is requested **only when rest starts** (`ensureNotificationPermission`). Do not prompt on first launch.
 - [x] No Tracking / ATT (`NSUserTrackingUsageDescription`) and no HealthKit.
 - [x] App icon: 1024×1024 PNG, no transparency, no baked-in rounded corners, not the Expo default. Splash `#070707`.
-- [x] Dark is the default theme; Light exists in Settings. **Still test both on device.**
+- [x] Dark is the default theme; Light exists in Settings.
+- [ ] Test Dark **and** Light on a physical device.
 - [x] Violet Sans is bundled (no Google Fonts network call).
 - [x] Mock data defaults **OFF** (`useMock` only when `workout_mock_on=1`).
 - [x] Portrait locked (`orientation: portrait`).
-- [x] Marketing version `1.0.0` and iOS `buildNumber` `1` in [app.json](app.json). **Bump build number on every upload.**
+- [x] Marketing version `1.0.0` and iOS `buildNumber` `1` in [app.json](app.json).
+- [ ] Bump `buildNumber` on every App Store upload.
 - [ ] Create an **EAS production build** (`npx eas build --platform ios --profile production`). Expo Go cannot be submitted.
 - [ ] Confirm the store binary is **Release** (no `__DEV__` banners, no “development build” warning).
 - [ ] Confirm you own bundle id `com.trackit.app` in the Apple Developer portal / App Store Connect.
@@ -175,9 +172,9 @@ App Store Connect → App Privacy:
 - [ ] Apple Developer Program membership (paid), two-factor, agreements accepted.
 - [ ] App record: bundle id matches `com.trackit.app`.
 - [ ] Certificates + provisioning via EAS (`eas credentials`) — distribution cert, App Store profile.
-- [ ] **Skip** Push Notifications capability.
+- [x] **Skip** Push Notifications capability.
 - [x] **Skip** Sign in with Apple. Guideline **4.8** only applies if the app offers a *third-party* login (Google, Facebook, etc.). TrackIt has **no accounts at all**, so SIWA is not required and Apple will **not** reject you for omitting it. Do **not** add Google/Apple login “just in case” — that would *create* a 4.8 obligation.
-- [ ] **Skip** HealthKit, Game Center, Associated Domains, App Clips, Widgets.
+- [ ] **Skip** HealthKit, Game Center, Associated Domains, App Clips, Widgets. (Tick once you have confirmed none of these are on the app record.)
 - [ ] Pricing: Free (or paid up front). If free, no Restore Purchase needed.
 - [ ] Age rating questionnaire answered honestly (4+).
 - [ ] Export compliance: Non-exempt encryption = No (Info.plist flag is set).
@@ -191,8 +188,6 @@ App Store Connect → App Privacy:
 ---
 
 ## 5. New / easy-to-miss 2025–2026 Connect fields
-
-Fill these even though they are not all “code”:
 
 - [ ] **iPhone 6.9" screenshots (1320×2868)** — currently the required iPhone set. Skipping blocks submit.
 - [ ] **EU Digital Services Act (DSA) trader status** — App Information → App Store Regulations. If you distribute in the EU you must declare trader vs non-trader and (if trader) publish a phone + email on the product page. [Apple’s DSA help](https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-compliance-information/).
@@ -210,11 +205,14 @@ Fill these even though they are not all “code”:
 
 ## 6. Listing copy (paste into App Store Connect)
 
-**Name:** TrackIt
+Tick each line after you paste it in Connect.
 
-**Subtitle:** Private workout log
-
-**Promotional text:** Your sets, rest, and PRs — saved only on this iPhone.
+- [ ] **Name:** TrackIt
+- [ ] **Subtitle:** Private workout log
+- [ ] **Promotional text:** Your sets, rest, and PRs — saved only on this iPhone.
+- [ ] **Description** pasted (text below).
+- [ ] **Keywords** pasted: `workout,gym,lifting,logger,routine,sets,reps,strength,fitness,training`
+- [ ] **Review notes** pasted (text below).
 
 **Description:**
 
@@ -228,8 +226,6 @@ Fill these even though they are not all “code”:
 >
 > Estimated 1-rep max is a formula, not medical advice.
 
-**Keywords:** workout,gym,lifting,logger,routine,sets,reps,strength,fitness,training
-
 **Review notes:**
 
 > No sign-in. All data is on-device.
@@ -240,17 +236,20 @@ Fill these even though they are not all “code”:
 
 ---
 
-## 7. Build & submit (when the remaining `[ ]` boxes are ticked)
+## 7. Build & submit
 
-```bash
-cd frontend
-npm test
-npx eas login
-npx eas build --platform ios --profile production
-npx eas submit --platform ios
-```
+Do this only after the remaining boxes above are ticked.
 
-Then in App Store Connect: attach the build, fill Privacy, DSA, accessibility labels, social-media questions, 6.9" screenshots, privacy-policy URL, Review Notes, **Submit for Review**.
+- [ ] `cd frontend && npm test` — tests pass.
+- [ ] `npx eas login`
+- [ ] `npx eas build --platform ios --profile production`
+- [ ] `npx eas submit --platform ios`
+- [ ] Attach the build in App Store Connect.
+- [ ] Fill Privacy, DSA, accessibility labels, social-media questions.
+- [ ] Upload 6.9" screenshots.
+- [ ] Paste privacy-policy URL + support URL.
+- [ ] Paste Review Notes.
+- [ ] **Submit for Review.**
 
 Android Play Store is a separate checklist (Data safety form, 12+ / PEGI, notification permission). Do not reuse this iOS list blindly.
 
@@ -260,15 +259,15 @@ Android Play Store is a separate checklist (Data safety form, 12+ / PEGI, notifi
 
 Do this on the **TestFlight** build, not Expo Go.
 
-1. Delete the app, install TestFlight, launch **offline**.
-2. Create “Push Day”, add Bench + a custom raise, start, log 3 sets, finish, share summary.
-3. Lock during rest; confirm “Rest is over”.
-4. Hit a PR (first set counts); dismiss the gold badge.
-5. Export backup, wipe, import, confirm history returns.
-6. Toggle Light mode + kg, open Profile charts. Pointers clear if you leave the tab.
-7. Turn Mock on, then off — real data still there.
-8. Force-quit mid-workout, reopen, finish.
-9. Confirm Settings → TrackIt shows **no** Photos / Tracking / Background App Refresh you did not intend.
+- [ ] Delete the app, install TestFlight, launch **offline**.
+- [ ] Create “Push Day”, add Bench + a custom raise, start, log 3 sets, finish, share summary.
+- [ ] Lock during rest; confirm “Rest is over”.
+- [ ] Hit a PR (first set counts); dismiss the gold badge.
+- [ ] Export backup, wipe, import, confirm history returns.
+- [ ] Toggle Light mode + kg, open Profile charts. Pointers clear if you leave the tab.
+- [ ] Turn Mock on, then off — real data still there.
+- [ ] Force-quit mid-workout, reopen, finish.
+- [ ] Confirm Settings → TrackIt shows **no** Photos / Tracking / Background App Refresh you did not intend.
 
 If any step fails, **do not submit**.
 
@@ -276,11 +275,11 @@ If any step fails, **do not submit**.
 
 ## 9. After 1.0 (not blockers — do not advertise them)
 
-- iCloud / CloudKit sync (changes privacy labels).
-- Apple Watch / Live Activities / Dynamic Island — only after a dedicated implementation.
-- HealthKit — Health review + usage strings + medical disclaimer.
-- IAP / “Pro” — StoreKit 2, restore, guideline 3.1.1.
-- Accounts — then Sign in with Apple (4.8) **and** account deletion (5.1.1v).
-- iPad / Mac — turn `supportsTablet` back on only after a real iPad pass + 13" screenshots.
+- [ ] iCloud / CloudKit sync (changes privacy labels).
+- [ ] Apple Watch / Live Activities / Dynamic Island — only after a dedicated implementation.
+- [ ] HealthKit — Health review + usage strings + medical disclaimer.
+- [ ] IAP / “Pro” — StoreKit 2, restore, guideline 3.1.1.
+- [ ] Accounts — then Sign in with Apple (4.8) **and** account deletion (5.1.1v).
+- [ ] iPad / Mac — turn `supportsTablet` back on only after a real iPad pass + 13" screenshots.
 
 Until those exist, the listing must not promise them.
