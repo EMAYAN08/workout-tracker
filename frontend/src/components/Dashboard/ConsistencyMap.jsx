@@ -1,7 +1,5 @@
-import React, { useMemo, useState, useRef, useLayoutEffect } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, Share as RNShare } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import {
   parseISO,
   startOfDay,
@@ -17,6 +15,8 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { CountUp } from '../ui/primitives';
+import TrackItMark from '../ui/TrackItMark';
+import { shareViewAsPng } from '../../utils/shareShot';
 
 const GUTTER = 4;
 const MONTH_GAP = 24;
@@ -60,7 +60,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
   const mapRef = useRef(null);
   const [monthOffset, setMonthOffset] = useState(0);
   const [areaW, setAreaW] = useState(0);
-  const [capturing, setCapturing] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -104,38 +104,21 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
     };
   }, [countsMap, monthOffset]);
 
-  const handleShare = () => {
-    if (capturing) return;
-    setCapturing(true);
-  };
-
-  useLayoutEffect(() => {
-    if (!capturing) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        if (mapRef.current && Platform.OS !== 'web') {
-          const uri = await captureRef(mapRef, { format: 'png', quality: 1, result: 'tmpfile' });
-          if (cancelled) return;
-          setCapturing(false);
-          if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'My TrackIt Consistency' });
-            return;
-          }
-        }
-        if (!cancelled) {
-          setCapturing(false);
-          await RNShare.share({ message: 'Check out my workout consistency on TrackIt!' });
-        }
-      } catch (err) {
-        console.error('Failed to share:', err);
-        if (!cancelled) setCapturing(false);
+  const handleShare = async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      if (Platform.OS === 'web') {
+        await RNShare.share({ message: 'Check out my workout consistency on TrackIt!' });
+      } else {
+        await shareViewAsPng(mapRef, { filename: 'TrackIt Consistency', message: 'My TrackIt consistency' });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [capturing]);
+    } catch (err) {
+      console.error('Failed to share:', err);
+    } finally {
+      setSharing(false);
+    }
+  };
 
   const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const cellColor = (day) => {
@@ -159,7 +142,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
 
   return (
     <View style={{ marginTop: 16 }}>
-      <View ref={mapRef} collapsable={false} style={styles.panel}>
+      <View style={styles.panel}>
         <View style={styles.topRow}>
           <Text style={styles.title}>Consistency</Text>
           <View style={styles.actions}>
@@ -184,22 +167,21 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
                 <ChevronRight size={16} color={colors.textMuted} />
               </Pressable>
             </View>
-            {!capturing ? (
-              <>
-                <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
-                  <Text style={styles.historyText}>History</Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleShare}
-                  style={styles.iconBtn}
-                  accessibilityLabel="Share consistency"
-                >
-                  <Share2 size={16} color={colors.textMuted} />
-                </Pressable>
-              </>
-            ) : null}
+            <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
+              <Text style={styles.historyText}>History</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleShare}
+              disabled={sharing}
+              style={[styles.iconBtn, sharing && { opacity: 0.4 }]}
+              accessibilityLabel="Share consistency"
+            >
+              <Share2 size={16} color={colors.textMuted} />
+            </Pressable>
           </View>
         </View>
+
+        <View ref={mapRef} collapsable={false} style={styles.shot}>
 
         <View style={styles.statsRow}>
           <View style={styles.stat}>
@@ -285,6 +267,8 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
             ))}
           </View>
         </View>
+        <TrackItMark colors={colors} />
+        </View>
       </View>
     </View>
   );
@@ -298,6 +282,9 @@ function makeStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
       padding: 16,
+    },
+    shot: {
+      backgroundColor: colors.surface,
     },
     topRow: {
       flexDirection: 'row',

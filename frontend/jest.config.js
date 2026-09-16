@@ -24,5 +24,6 @@ module.exports = {
     'expo-sharing': '<rootDir>/src/__tests__/mocks/empty.js',
     'expo-document-picker': '<rootDir>/src/__tests__/mocks/empty.js',
     '^expo-file-system(/.*)?$': '<rootDir>/src/__tests__/mocks/empty.js',
+    'react-native-view-shot': '<rootDir>/src/__tests__/mocks/empty.js',
   },
 };

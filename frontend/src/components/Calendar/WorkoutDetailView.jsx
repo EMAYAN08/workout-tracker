@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+import React, { useMemo, useState, useRef } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Clock, Activity, Dumbbell, Moon, Share2 } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
@@ -8,9 +8,11 @@ import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { ScreenHeader, hideScroll } from '../ui/primitives';
+import TrackItMark from '../ui/TrackItMark';
 import { titleCase } from '../../utils/format';
 import { haptic } from '../../haptics';
 import { shareWorkoutDayPdf } from '../../utils/workoutDayPdf';
+import { shareViewAsPdf } from '../../utils/shareShot';
 
 const ExerciseImage = ({ src }) => {
   const { colors } = useTheme();
@@ -38,6 +40,7 @@ export default function WorkoutDetailView({ date, onBack }) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [sharing, setSharing] = useState(false);
+  const shotRef = useRef(null);
 
   const dayWorkouts = useMemo(() => {
     if (!workoutHistory || !date) return [];
@@ -76,7 +79,14 @@ export default function WorkoutDetailView({ date, onBack }) {
     setSharing(true);
     haptic('selection');
     try {
-      await shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark });
+      if (Platform.OS === 'web') {
+        await shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark });
+      } else {
+        await shareViewAsPdf(shotRef, {
+          filename: `TrackIt-${date}.pdf`,
+          background: colors.background,
+        });
+      }
     } catch (err) {
       console.error('PDF share failed:', err);
       Alert.alert('Share', 'Could not create the PDF.');
@@ -100,6 +110,7 @@ export default function WorkoutDetailView({ date, onBack }) {
     <View style={{ flex: 1 }}>
       <ScreenHeader title={displayDate} onBack={onBack} right={shareBtn} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
+      <View ref={shotRef} collapsable={false} style={styles.shot}>
       <View style={styles.meta}>
         <View style={styles.metaItem}>
           <Clock size={16} color={colors.textMuted} />
@@ -173,6 +184,8 @@ export default function WorkoutDetailView({ date, onBack }) {
           </View>
         </View>
       ))}
+      <TrackItMark colors={colors} />
+      </View>
       </ScrollView>
     </View>
   );
@@ -181,6 +194,7 @@ export default function WorkoutDetailView({ date, onBack }) {
 function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
+  shot: { backgroundColor: colors.background },
   emptyWrap: { flex: 1 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
