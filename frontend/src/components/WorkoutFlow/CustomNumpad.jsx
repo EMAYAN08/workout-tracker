@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
@@ -90,7 +90,7 @@ function PreviewCard({ preview, field, value, colors, styles }) {
   );
 }
 
-export default function CustomNumpad({ activeInput, onClose, onUpdate, value, preview }) {
+export default function CustomNumpad({ activeInput, onClose, onUpdate, value, preview, hostHeight = 0 }) {
   const insets = useSafeAreaInsets();
   const { colors, isDark, setTabBarHidden } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -367,10 +367,10 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   if (!keypadOpen && !mounted) return null;
 
   const keyProps = { colors, styles };
-  const keypadReserve = 332 + Math.max(insets.bottom, 16);
+  const overlayH = hostHeight > 80 ? hostHeight : Math.round(Dimensions.get('window').height * 0.72);
 
   return (
-    <View style={styles.overlay} collapsable={false}>
+    <View style={[styles.overlay, { height: overlayH }]} collapsable={false}>
       <Animated.View style={[styles.glass, { opacity: glassOpacity }]} pointerEvents="none">
         <BlurView
           intensity={isDark ? 58 : 42}
@@ -386,11 +386,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       </Animated.View>
       <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Dismiss editor" />
       <Animated.View
-        pointerEvents="box-none"
-        style={[
-          styles.previewWrap,
-          { bottom: keypadReserve, transform: [{ translateY: cardY }] },
-        ]}
+        style={[styles.previewWrap, { transform: [{ translateY: cardY }] }]}
       >
         <PreviewCard preview={shownPreview} field={input.field} value={shownValue} colors={colors} styles={styles} />
       </Animated.View>
@@ -481,7 +477,10 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
 function makeStyles(colors) {
   return StyleSheet.create({
     overlay: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       zIndex: 80,
       elevation: 24,
     },
@@ -492,10 +491,11 @@ function makeStyles(colors) {
       ...StyleSheet.absoluteFillObject,
     },
     previewWrap: {
-      position: 'absolute',
-      top: 10,
-      left: 12,
-      right: 12,
+      flex: 1,
+      minHeight: 0,
+      paddingHorizontal: 12,
+      paddingTop: 10,
+      paddingBottom: 8,
     },
     previewCard: {
       flex: 1,
@@ -565,10 +565,6 @@ function makeStyles(colors) {
     previewCellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
     previewCellTextOn: { color: colors.accent },
     sheet: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
       zIndex: 200,
       elevation: 24,
       backgroundColor: colors.surface,

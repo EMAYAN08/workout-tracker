@@ -56,6 +56,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
   });
   const prevUnit = React.useRef(unit);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
+  const [hostH, setHostH] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeInput, setActiveInput] = useState(null);
@@ -204,7 +205,13 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           </View>
         }
       />
-      <View style={{ flex: 1, position: 'relative' }}>
+      <View
+        style={{ flex: 1, position: 'relative' }}
+        onLayout={(e) => {
+          const next = Math.round(e.nativeEvent.layout.height);
+          if (next > 0 && next !== hostH) setHostH(next);
+        }}
+      >
       <ScrollView
         style={{ flex: 1 }}
         scrollEnabled={listScroll && !activeInput}
@@ -415,6 +422,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           if (!ex?.defaultSets?.[activeInput.setIndex]) return;
           updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
         }}
+        hostHeight={hostH}
       />
       </View>
 

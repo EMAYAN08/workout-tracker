@@ -81,6 +81,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [prEvent, setPrEvent] = useState(null);
   const [listScroll, setListScroll] = useState(true);
+  const [hostH, setHostH] = useState(0);
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
   const markSetComplete = (idx, sIdx) => {
@@ -187,7 +188,13 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         ) : null}
       </View>
 
-      <View style={{ flex: 1, position: 'relative' }}>
+      <View
+        style={{ flex: 1, position: 'relative' }}
+        onLayout={(e) => {
+          const next = Math.round(e.nativeEvent.layout.height);
+          if (next > 0 && next !== hostH) setHostH(next);
+        }}
+      >
       <ScrollView
         style={{ flex: 1 }}
         scrollEnabled={listScroll && !activeInput}
@@ -419,6 +426,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
           if (activeInput) updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
         }}
         onClose={() => setActiveInput(null)}
+        hostHeight={hostH}
       />
       </View>
 

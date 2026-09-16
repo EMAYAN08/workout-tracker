@@ -113,6 +113,7 @@ export default function CustomExercises({ scrollRef, popRef }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [isCreating, setIsCreating] = useDraftState('isCreating');
+  const [hostH, setHostH] = useState(0);
   const [activeInput, setActiveInput] = useDraftState('activeInput');
   const [editingId, setEditingId] = useDraftState('editingId');
   const [activeExerciseId, setActiveExerciseId] = useDraftState('activeExerciseId');
@@ -243,7 +244,13 @@ export default function CustomExercises({ scrollRef, popRef }) {
             </View>
           }
         />
-        <View style={{ flex: 1, position: 'relative' }}>
+        <View
+          style={{ flex: 1, position: 'relative' }}
+          onLayout={(e) => {
+            const next = Math.round(e.nativeEvent.layout.height);
+            if (next > 0 && next !== hostH) setHostH(next);
+          }}
+        >
         <ScrollView
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
@@ -353,6 +360,7 @@ export default function CustomExercises({ scrollRef, popRef }) {
             if (!activeInput || activeInput.index == null || activeInput.index >= defaultSets.length) return;
             updateSet(activeInput.index, activeInput.field, val);
           }}
+          hostHeight={hostH}
         />
         </View>
       </View>
