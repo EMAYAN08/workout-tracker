@@ -81,7 +81,7 @@ export default function PrCelebration({ pr, onClose }) {
       toValue: 0,
       duration: 5000,
       easing: Easing.linear,
-      useNativeDriver: false,
+      useNativeDriver: true,
     });
     barAnim.start();
     const t = setTimeout(() => dismiss(), 5000);
@@ -183,9 +183,7 @@ export default function PrCelebration({ pr, onClose }) {
             <Animated.View
               style={[
                 styles.fill,
-                {
-                  width: bar.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                },
+                { transform: [{ scaleX: bar }] },
               ]}
             />
           </View>
@@ -312,8 +310,10 @@ function makeStyles(colors, isDark, gold, goldDeep) {
     },
     fill: {
       height: 3,
+      width: '100%',
       backgroundColor: gold,
       borderRadius: 2,
+      transformOrigin: '0% 50%',
     },
   });
 }
