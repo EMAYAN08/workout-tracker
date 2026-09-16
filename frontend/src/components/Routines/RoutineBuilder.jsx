@@ -490,6 +490,19 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
             : null
         }
         onClose={() => setActiveInput(null)}
+        preview={
+          activeInput
+            ? {
+                title: exercises[activeInput.exerciseIndex]?.name,
+                meta: titleCase(exercises[activeInput.exerciseIndex]?.muscleGroup),
+                sets: exercises[activeInput.exerciseIndex]?.defaultSets || [],
+                setIndex: activeInput.setIndex,
+                unit,
+                onSelectCell: (i, field) =>
+                  setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: i, field }),
+              }
+            : null
+        }
         value={
           activeInput
             ? exercises[activeInput.exerciseIndex]?.defaultSets?.[activeInput.setIndex]?.[activeInput.field]

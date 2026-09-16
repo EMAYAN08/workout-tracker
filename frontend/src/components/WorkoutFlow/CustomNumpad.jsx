@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -23,7 +23,73 @@ function NumpadKey({ label, onPress, style, children, flex, accessibilityLabel, 
   );
 }
 
-export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
+function PreviewCard({ preview, field, value, colors, styles }) {
+  if (!preview) return null;
+  const sets = preview.sets || [];
+  const unit = preview.unit || 'lbs';
+  const activeIdx = preview.setIndex ?? 0;
+  const readout = value === '' || value == null ? '—' : String(value);
+  const readoutUnit = field === 'reps' ? 'reps' : unit;
+  return (
+    <View style={styles.previewCard}>
+      <View style={styles.previewHead}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.previewTitle} numberOfLines={1}>
+            {preview.title || 'Exercise'}
+          </Text>
+          {preview.meta ? <Text style={styles.previewMeta}>{preview.meta}</Text> : null}
+        </View>
+        <View style={styles.readoutWrap}>
+          <Text style={styles.readout} numberOfLines={1}>
+            {readout}
+          </Text>
+          <Text style={styles.readoutUnit}>{readoutUnit}</Text>
+        </View>
+      </View>
+      <View style={styles.previewCols}>
+        <Text style={[styles.previewCol, { width: 36 }]}>Set</Text>
+        <Text style={[styles.previewCol, { flex: 1 }]}>{unit}</Text>
+        <Text style={[styles.previewCol, { flex: 1 }]}>Reps</Text>
+      </View>
+      <ScrollView
+        style={styles.previewSets}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
+      {sets.map((set, i) => {
+        const wOn = i === activeIdx && field === 'weight';
+        const rOn = i === activeIdx && field === 'reps';
+        return (
+          <View key={i} style={[styles.previewRow, i === activeIdx && styles.previewRowOn]}>
+            <Text style={styles.previewIdx}>{i + 1}</Text>
+            <Pressable
+              onPress={() => preview.onSelectCell?.(i, 'weight')}
+              style={[styles.previewCell, wOn && styles.previewCellOn]}
+              accessibilityLabel={`Set ${i + 1} weight`}
+            >
+              <Text style={[styles.previewCellText, wOn && styles.previewCellTextOn]}>
+                {set.weight === '' || set.weight == null ? '—' : String(set.weight)}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => preview.onSelectCell?.(i, 'reps')}
+              style={[styles.previewCell, rOn && styles.previewCellOn]}
+              accessibilityLabel={`Set ${i + 1} reps`}
+            >
+              <Text style={[styles.previewCellText, rOn && styles.previewCellTextOn]}>
+                {set.reps === '' || set.reps == null ? '—' : String(set.reps)}
+              </Text>
+            </Pressable>
+          </View>
+        );
+      })}
+      </ScrollView>
+    </View>
+  );
+}
+
+export default function CustomNumpad({ activeInput, onClose, onUpdate, value, preview }) {
   const insets = useSafeAreaInsets();
   const { colors, setTabBarHidden } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -31,6 +97,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   const targetRef = useRef(null);
   const draftRef = useRef(String(value ?? ''));
   const translateY = useRef(new Animated.Value(SHEET_H)).current;
+  const cardY = useRef(new Animated.Value(56)).current;
+  const overlay = useRef(new Animated.Value(0)).current;
   const originY = useRef(0);
   const tracking = useRef(false);
   const closing = useRef(false);
@@ -53,25 +121,54 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
 
   const animateIn = useCallback(() => {
     closing.current = false;
-    Animated.spring(translateY, {
-      toValue: 0,
-      useNativeDriver: nativeDriver,
-      damping: 26,
-      stiffness: 280,
-      mass: 0.82,
-    }).start();
-  }, [nativeDriver, translateY]);
+    Animated.parallel([
+      Animated.timing(overlay, {
+        toValue: 1,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: nativeDriver,
+      }),
+      Animated.spring(cardY, {
+        toValue: 0,
+        useNativeDriver: nativeDriver,
+        damping: 22,
+        stiffness: 260,
+        mass: 0.82,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: nativeDriver,
+        damping: 26,
+        stiffness: 280,
+        mass: 0.82,
+      }),
+    ]).start();
+  }, [nativeDriver, translateY, cardY, overlay]);
 
   const animateOut = useCallback(
     (then) => {
       if (closing.current) return;
       closing.current = true;
-      Animated.timing(translateY, {
-        toValue: SHEET_H,
-        duration: 240,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: nativeDriver,
-      }).start(({ finished }) => {
+      Animated.parallel([
+        Animated.timing(overlay, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: nativeDriver,
+        }),
+        Animated.timing(cardY, {
+          toValue: 64,
+          duration: 220,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: nativeDriver,
+        }),
+        Animated.timing(translateY, {
+          toValue: SHEET_H,
+          duration: 240,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: nativeDriver,
+        }),
+      ]).start(({ finished }) => {
         closing.current = false;
         if (finished) {
           setMounted(false);
@@ -79,7 +176,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         }
       });
     },
-    [nativeDriver, translateY]
+    [nativeDriver, translateY, cardY, overlay]
   );
 
   const close = useCallback(() => {
@@ -94,15 +191,31 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         close();
         return;
       }
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: nativeDriver,
-        damping: 24,
-        stiffness: 320,
-        mass: 0.7,
-      }).start();
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: nativeDriver,
+          damping: 24,
+          stiffness: 320,
+          mass: 0.7,
+        }),
+        Animated.spring(cardY, {
+          toValue: 0,
+          useNativeDriver: nativeDriver,
+          damping: 24,
+          stiffness: 320,
+          mass: 0.7,
+        }),
+        Animated.spring(overlay, {
+          toValue: 1,
+          useNativeDriver: nativeDriver,
+          damping: 24,
+          stiffness: 320,
+          mass: 0.7,
+        }),
+      ]).start();
     },
-    [close, nativeDriver, translateY]
+    [close, nativeDriver, translateY, cardY, overlay]
   );
 
   const settleRef = useRef(settle);
@@ -124,16 +237,28 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
       }
       if (!mounted) {
         translateY.setValue(SHEET_H);
+        cardY.setValue(56);
+        overlay.setValue(0);
         setMounted(true);
       }
     } else if (mounted && !closing.current) {
       animateOut();
     }
-  }, [keypadOpen, mounted, animateIn, animateOut, translateY]);
+  }, [keypadOpen, mounted, animateIn, animateOut, translateY, cardY, overlay]);
 
   useEffect(() => {
     if (mounted && keypadOpen) animateIn();
   }, [mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dragSheet = useCallback(
+    (dy) => {
+      const y = Math.max(0, dy);
+      translateY.setValue(y);
+      cardY.setValue(y * 0.4);
+      overlay.setValue(Math.max(0, 1 - y / 280));
+    },
+    [translateY, cardY, overlay]
+  );
 
   useEffect(() => {
     if (!mounted || typeof document === 'undefined') return undefined;
@@ -145,12 +270,13 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
       tracking.current = true;
       originY.current = e.clientY;
       translateY.stopAnimation();
+      cardY.stopAnimation();
+      overlay.stopAnimation();
     };
     const onMove = (e) => {
       if (!tracking.current) return;
       e.preventDefault?.();
-      const dy = Math.max(0, e.clientY - originY.current);
-      if (dy > 2) translateY.setValue(dy);
+      dragSheet(e.clientY - originY.current);
     };
     const onUp = (e) => {
       if (!tracking.current) return;
@@ -168,7 +294,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
       document.removeEventListener('pointerup', onUp, opts);
       document.removeEventListener('pointercancel', onUp, opts);
     };
-  }, [mounted, translateY]);
+  }, [mounted, translateY, cardY, overlay, dragSheet]);
 
   const pan = useMemo(
     () =>
@@ -177,12 +303,12 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
         .activeOffsetY(12)
         .failOffsetX([-40, 40])
         .onUpdate((e) => {
-          translateY.setValue(Math.max(0, e.translationY));
+          dragSheet(e.translationY);
         })
         .onEnd((e) => {
           settle(e.translationY, e.velocityY);
         }),
-    [settle, translateY]
+    [settle, dragSheet]
   );
 
   const commit = useCallback((next) => {
@@ -236,96 +362,188 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) 
   const keyProps = { colors, styles };
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View
-        nativeID="keypad-sheet"
-        collapsable={false}
-        style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
-      >
-        <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
-          <View style={styles.handle} />
-        </View>
-        <View style={styles.tabs}>
-          {[
-            { id: 'weight', label: 'Weight' },
-            { id: 'reps', label: 'Reps' },
-          ].map((tab) => {
-            const active = input.field === tab.id;
-            return (
-              <Pressable
-                key={tab.id}
-                delayPressIn={0}
-                onPress={() => input.onChangeField?.(tab.id)}
-                style={styles.tab}
-              >
-                <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
-                {active ? (
-                  <View style={styles.checkOn}>
-                    <Text style={styles.checkOnText}>✓</Text>
-                  </View>
-                ) : (
-                  <View style={styles.checkOff} />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View style={styles.grid}>
-          <View style={styles.row}>
-            <NumpadKey label="1" onPress={() => handleKeyPress('1')} {...keyProps} />
-            <NumpadKey label="2" onPress={() => handleKeyPress('2')} {...keyProps} />
-            <NumpadKey label="3" onPress={() => handleKeyPress('3')} {...keyProps} />
-            <NumpadKey onPress={close} accessibilityLabel="Dismiss keypad" {...keyProps}>
-              <ChevronDown size={22} color={colors.text} />
-            </NumpadKey>
-          </View>
-          <View style={styles.row}>
-            <NumpadKey label="4" onPress={() => handleKeyPress('4')} {...keyProps} />
-            <NumpadKey label="5" onPress={() => handleKeyPress('5')} {...keyProps} />
-            <NumpadKey label="6" onPress={() => handleKeyPress('6')} {...keyProps} />
-            <View style={styles.split}>
-              <NumpadKey label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} {...keyProps} />
-              <NumpadKey label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} {...keyProps} />
+    <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={close}>
+      <GestureHandlerRootView style={styles.modalRoot}>
+        <Animated.View style={[styles.scrim, { opacity: overlay }]} pointerEvents="none" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close editor" />
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.previewWrap,
+            {
+              paddingTop: insets.top + 8,
+              opacity: overlay,
+              transform: [{ translateY: cardY }],
+            },
+          ]}
+        >
+          <PreviewCard preview={preview} field={input.field} value={value} colors={colors} styles={styles} />
+        </Animated.View>
+        <GestureDetector gesture={pan}>
+          <Animated.View
+            nativeID="keypad-sheet"
+            collapsable={false}
+            style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
+          >
+            <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
+              <View style={styles.handle} />
             </View>
-          </View>
-          <View style={styles.rowBottom}>
-            <View style={{ flex: 3 }}>
+            <View style={styles.tabs}>
+              {[
+                { id: 'weight', label: 'Weight' },
+                { id: 'reps', label: 'Reps' },
+              ].map((tab) => {
+                const active = input.field === tab.id;
+                return (
+                  <Pressable
+                    key={tab.id}
+                    delayPressIn={0}
+                    onPress={() => input.onChangeField?.(tab.id)}
+                    style={styles.tab}
+                  >
+                    <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
+                    {active ? (
+                      <View style={styles.checkOn}>
+                        <Text style={styles.checkOnText}>✓</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.checkOff} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.grid}>
               <View style={styles.row}>
-                <NumpadKey label="7" onPress={() => handleKeyPress('7')} {...keyProps} />
-                <NumpadKey label="8" onPress={() => handleKeyPress('8')} {...keyProps} />
-                <NumpadKey label="9" onPress={() => handleKeyPress('9')} {...keyProps} />
-              </View>
-              <View style={[styles.row, { marginBottom: 0 }]}>
-                <NumpadKey label="." onPress={() => handleKeyPress('.')} {...keyProps} />
-                <NumpadKey label="0" onPress={() => handleKeyPress('0')} {...keyProps} />
-                <NumpadKey onPress={() => handleKeyPress('delete')} {...keyProps}>
-                  <Delete size={22} color={colors.text} />
+                <NumpadKey label="1" onPress={() => handleKeyPress('1')} {...keyProps} />
+                <NumpadKey label="2" onPress={() => handleKeyPress('2')} {...keyProps} />
+                <NumpadKey label="3" onPress={() => handleKeyPress('3')} {...keyProps} />
+                <NumpadKey onPress={close} accessibilityLabel="Dismiss keypad" {...keyProps}>
+                  <ChevronDown size={22} color={colors.text} />
                 </NumpadKey>
               </View>
+              <View style={styles.row}>
+                <NumpadKey label="4" onPress={() => handleKeyPress('4')} {...keyProps} />
+                <NumpadKey label="5" onPress={() => handleKeyPress('5')} {...keyProps} />
+                <NumpadKey label="6" onPress={() => handleKeyPress('6')} {...keyProps} />
+                <View style={styles.split}>
+                  <NumpadKey label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} {...keyProps} />
+                  <NumpadKey label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} {...keyProps} />
+                </View>
+              </View>
+              <View style={styles.rowBottom}>
+                <View style={{ flex: 3 }}>
+                  <View style={styles.row}>
+                    <NumpadKey label="7" onPress={() => handleKeyPress('7')} {...keyProps} />
+                    <NumpadKey label="8" onPress={() => handleKeyPress('8')} {...keyProps} />
+                    <NumpadKey label="9" onPress={() => handleKeyPress('9')} {...keyProps} />
+                  </View>
+                  <View style={[styles.row, { marginBottom: 0 }]}>
+                    <NumpadKey label="." onPress={() => handleKeyPress('.')} {...keyProps} />
+                    <NumpadKey label="0" onPress={() => handleKeyPress('0')} {...keyProps} />
+                    <NumpadKey onPress={() => handleKeyPress('delete')} {...keyProps}>
+                      <Delete size={22} color={colors.text} />
+                    </NumpadKey>
+                  </View>
+                </View>
+                <Pressable
+                  delayPressIn={0}
+                  onPress={() => input.onNext?.()}
+                  style={({ pressed }) => [styles.nextKey, pressed && styles.keyPressed]}
+                >
+                  <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
+                </Pressable>
+              </View>
             </View>
-            <Pressable
-              delayPressIn={0}
-              onPress={() => input.onNext?.()}
-              style={({ pressed }) => [styles.nextKey, pressed && styles.keyPressed]}
-            >
-              <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
-            </Pressable>
-          </View>
-        </View>
-        <View style={{ height: Math.max(insets.bottom, 16) }} />
-      </Animated.View>
-    </GestureDetector>
+            <View style={{ height: Math.max(insets.bottom, 16) }} />
+          </Animated.View>
+        </GestureDetector>
+      </GestureHandlerRootView>
+    </Modal>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
+    modalRoot: { flex: 1 },
+    scrim: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.background,
+    },
+    previewWrap: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+    },
+    previewCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: radius.md,
+      padding: 14,
+      gap: 8,
+      maxHeight: '100%',
+    },
+    previewHead: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginBottom: 4 },
+    previewTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 20, textTransform: 'capitalize' },
+    previewMeta: {
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 11,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginTop: 2,
+    },
+    readoutWrap: { alignItems: 'flex-end' },
+    readout: { color: colors.accent, fontFamily: fonts.monoBold, fontSize: 32, lineHeight: 36 },
+    readoutUnit: {
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 11,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    previewCols: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, marginTop: 4 },
+    previewSets: { flexGrow: 0, maxHeight: 240 },
+    previewCol: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontFamily: fonts.bold,
+      textTransform: 'uppercase',
+      textAlign: 'center',
+    },
+    previewRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: radius.sm,
+      paddingVertical: 2,
+      paddingHorizontal: 2,
+    },
+    previewRowOn: { backgroundColor: colors.accentSoftFill || colors.surface2 },
+    previewIdx: {
+      width: 36,
+      textAlign: 'center',
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 13,
+    },
+    previewCell: {
+      flex: 1,
+      marginHorizontal: 4,
+      minHeight: 44,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    previewCellOn: { borderColor: colors.accent, backgroundColor: colors.surface },
+    previewCellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
+    previewCellTextOn: { color: colors.accent },
     sheet: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
       zIndex: 200,
       elevation: 24,
       backgroundColor: colors.surface,

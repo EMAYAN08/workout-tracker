@@ -8,6 +8,8 @@ const CH_DONE = 'rest-done';
 let Notifications = null;
 let lastLiveKey = '';
 let logoAttachment = null;
+let donePresented = false;
+let listenerAttached = false;
 
 async function mod() {
   if (Notifications) return Notifications;
@@ -20,11 +22,20 @@ async function mod() {
           return {
             shouldShowBanner: true,
             shouldShowList: true,
+            shouldShowAlert: true,
             shouldPlaySound: !!done,
             shouldSetBadge: false,
           };
         },
       });
+      if (!listenerAttached) {
+        listenerAttached = true;
+        Notifications.addNotificationReceivedListener((n) => {
+          if (n?.request?.identifier === DONE_ID || n?.request?.content?.data?.kind === 'restDone') {
+            donePresented = true;
+          }
+        });
+      }
     }
   } catch {
     Notifications = null;
@@ -168,32 +179,35 @@ export async function scheduleRestNotification({
   seconds,
   exerciseName,
   setLabel,
+  scheduleDone = true,
 } = {}) {
   const N = await mod();
   const remaining = Math.max(0, Math.floor(Number(seconds) || 0));
   if (!N || Platform.OS === 'web') return;
   try {
     await cancelRestNotification();
+    donePresented = false;
     const ok = await ensureNotificationPermission();
     if (!ok) return;
     await registerNotificationCategories();
     await tickRestNotification({ remainingSec: remaining, totalSec: remaining, exerciseName, setLabel });
-    if (remaining > 0) {
+    if (scheduleDone && remaining > 0) {
       const logo = await getLogoAttachment();
+      const triggerType = N.SchedulableTriggerInputTypes?.TIME_INTERVAL || 'timeInterval';
       await N.scheduleNotificationAsync({
         identifier: DONE_ID,
         content: {
           title: 'Rest is over',
           subtitle: exerciseName || 'TrackIt',
           body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
-          sound: true,
+          sound: 'default',
           channelId: CH_DONE,
-          interruptionLevel: 'timeSensitive',
+          interruptionLevel: 'active',
           data: { kind: 'restDone', exerciseName, setLabel },
           ...(logo ? { attachments: [logo] } : {}),
         },
         trigger: {
-          type: N.SchedulableTriggerInputTypes?.TIME_INTERVAL || 'timeInterval',
+          type: triggerType,
           seconds: Math.max(1, remaining),
           repeats: false,
         },
@@ -201,6 +215,39 @@ export async function scheduleRestNotification({
     }
   } catch (err) {
     console.warn('rest notification failed', err?.message || err);
+  }
+}
+
+export async function presentRestDone({ exerciseName, setLabel } = {}) {
+  if (donePresented) return;
+  donePresented = true;
+  const N = await mod();
+  lastLiveKey = '';
+  if (!N || Platform.OS === 'web') return;
+  try {
+    await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});
+    await N.cancelScheduledNotificationAsync(DONE_ID).catch(() => {});
+    await N.dismissNotificationAsync(LIVE_ID).catch(() => {});
+    const ok = await ensureNotificationPermission();
+    if (!ok) return;
+    await registerNotificationCategories();
+    const logo = await getLogoAttachment();
+    await N.scheduleNotificationAsync({
+      identifier: DONE_ID,
+      content: {
+        title: 'Rest is over',
+        subtitle: exerciseName || 'TrackIt',
+        body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
+        sound: 'default',
+        channelId: CH_DONE,
+        interruptionLevel: 'active',
+        data: { kind: 'restDone', exerciseName, setLabel },
+        ...(logo ? { attachments: [logo] } : {}),
+      },
+      trigger: null,
+    });
+  } catch (err) {
+    console.warn('rest done present', err?.message || err);
   }
 }
 
@@ -216,9 +263,20 @@ export async function dismissLiveRest() {
   }
 }
 
+export async function cancelRestDone() {
+  const N = await mod();
+  if (!N || Platform.OS === 'web') return;
+  try {
+    await N.cancelScheduledNotificationAsync(DONE_ID).catch(() => {});
+  } catch {
+    /* noop */
+  }
+}
+
 export async function cancelRestNotification() {
   const N = await mod();
   lastLiveKey = '';
+  donePresented = false;
   if (!N || Platform.OS === 'web') return;
   try {
     await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});

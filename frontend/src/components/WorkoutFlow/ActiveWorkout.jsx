@@ -478,6 +478,18 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
               }
             : null
         }
+        preview={
+          activeInput
+            ? {
+                title: activeWorkout.exercises[activeInput.eIdx]?.name,
+                meta: titleCase(activeWorkout.exercises[activeInput.eIdx]?.muscleGroup),
+                sets: activeWorkout.exercises[activeInput.eIdx]?.sets || [],
+                setIndex: activeInput.sIdx,
+                unit,
+                onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
+              }
+            : null
+        }
         value={
           activeInput
             ? activeWorkout.exercises[activeInput.eIdx].sets[activeInput.sIdx][activeInput.field]

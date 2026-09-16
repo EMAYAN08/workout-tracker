@@ -335,6 +335,18 @@ export default function CustomExercises({ scrollRef, popRef }) {
               : null
           }
           onClose={() => setActiveInput(null)}
+          preview={
+            keypadOpen
+              ? {
+                  title: newName.trim() || 'Custom exercise',
+                  meta: titleCase(newMuscleGroup),
+                  sets: defaultSets,
+                  setIndex: activeInput.index,
+                  unit,
+                  onSelectCell: (i, field) => setActiveInput({ index: i, field }),
+                }
+              : null
+          }
           value={keypadOpen ? activeSet[activeInput.field] : ''}
           onUpdate={(val) => {
             if (!activeInput || activeInput.index == null || activeInput.index >= defaultSets.length) return;

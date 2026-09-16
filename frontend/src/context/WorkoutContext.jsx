@@ -12,7 +12,7 @@ import {
   scheduleRestNotification,
   cancelRestNotification,
   tickRestNotification,
-  dismissLiveRest,
+  presentRestDone,
   findNextIncompleteSet,
 } from '../notifications';
 
@@ -644,7 +644,11 @@ export function WorkoutProvider({ children }) {
       if (remaining <= 0) {
         if (!liveCleared) {
           liveCleared = true;
-          dismissLiveRest();
+          presentRestDone({
+            exerciseName: meta.exerciseName,
+            setLabel: meta.setLabel,
+          });
+          vibrate('success');
         }
         return;
       }
