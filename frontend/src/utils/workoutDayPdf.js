@@ -1,14 +1,15 @@
 import { Platform, Share as RNShare, Alert } from 'react-native';
+import * as Sharing from 'expo-sharing';
 import { format, parseISO } from 'date-fns';
 import { convertWeight, calculateVolume } from './calculations';
 import { titleCase, muscleTagColors } from './format';
 
 export function esc(value) {
   return String(value ?? '')
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"');
+    .replace(/&/g, '&' + 'amp;')
+    .replace(/</g, '&' + 'lt;')
+    .replace(/>/g, '&' + 'gt;')
+    .replace(/"/g, '&' + 'quot;');
 }
 
 export function dayWorkoutStats(dayWorkouts, unit) {
@@ -30,6 +31,205 @@ export function dayWorkoutStats(dayWorkouts, unit) {
     volume: Math.round(totalVolume),
     exerciseCount,
   };
+}
+
+function pdfSafe(value) {
+  return String(value ?? '')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function rgb(hex) {
+  const h = String(hex || '#000000').replace('#', '');
+  if (h.length < 6) return '0 0 0';
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  return `${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}`;
+}
+
+const PAGE_W = 612;
+const PAGE_H = 792;
+const MARGIN = 36;
+
+function makeDoc(c) {
+  const pages = [];
+  let ops = [];
+  let y = PAGE_H - MARGIN;
+
+  const flush = () => {
+    if (ops.length) pages.push(ops.join('\n'));
+    ops = [];
+  };
+
+  const fillPage = () => {
+    ops.push(`q ${rgb(c.background)} rg 0 0 ${PAGE_W} ${PAGE_H} re f Q`);
+    y = PAGE_H - MARGIN;
+  };
+
+  const newPage = () => {
+    flush();
+    fillPage();
+  };
+
+  const ensure = (need) => {
+    if (y - need < MARGIN + 24) newPage();
+  };
+
+  const rect = (x, bottom, w, h, fill, stroke) => {
+    const parts = ['q'];
+    if (fill) parts.push(`${rgb(fill)} rg`);
+    if (stroke) parts.push(`${rgb(stroke)} RG`, '0.8 w');
+    parts.push(`${x.toFixed(2)} ${bottom.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re`);
+    parts.push(fill && stroke ? 'B' : fill ? 'f' : 'S', 'Q');
+    ops.push(parts.join(' '));
+  };
+
+  const text = (str, x, baseline, size, color, bold) => {
+    const font = bold ? 'F2' : 'F1';
+    ops.push(
+      `q ${rgb(color)} rg BT /${font} ${size} Tf 1 0 0 1 ${x.toFixed(2)} ${baseline.toFixed(2)} Tm (${pdfSafe(str)}) Tj ET Q`
+    );
+  };
+
+  fillPage();
+  return { pages, flush, newPage, ensure, rect, text, get y() { return y; }, set y(v) { y = v; } };
+}
+
+export function buildWorkoutDayPdfString({ date, dayWorkouts, unit, colors, isDark }) {
+  const c = {
+    background: colors?.background || '#070707',
+    surface: colors?.surface || '#111111',
+    surface2: colors?.surface2 || '#181818',
+    surfaceLight: colors?.surfaceLight || '#181818',
+    text: colors?.text || '#F4F4F2',
+    muted: colors?.textMuted || '#9A9A96',
+    subtle: colors?.textSubtle || '#6A6A66',
+    border: colors?.border || '#2A2A2A',
+    accent: colors?.chartAccent || colors?.accent || '#9AAA78',
+  };
+  const displayDate = date ? format(parseISO(date), 'EEEE, MMM d, yyyy') : 'Workout';
+  const stats = dayWorkoutStats(dayWorkouts, unit);
+  const innerW = PAGE_W - MARGIN * 2;
+  const doc = makeDoc(c);
+
+  doc.text('TRACKIT', MARGIN, doc.y - 10, 10, c.subtle, true);
+  doc.text(String(unit || 'lbs').toUpperCase(), PAGE_W - MARGIN - 28, doc.y - 10, 10, c.subtle, true);
+  doc.y -= 28;
+  doc.text(displayDate, MARGIN, doc.y - 6, 22, c.text, true);
+  doc.y -= 36;
+
+  const meta = `${stats.minutes} mins    ${stats.volume.toLocaleString()} ${unit}    ${stats.exerciseCount} Exercises`;
+  doc.text(meta, MARGIN, doc.y, 11, c.muted, false);
+  doc.y -= 8;
+  doc.rect(MARGIN, doc.y - 2, innerW, 0.6, c.border);
+  doc.y -= 18;
+
+  (dayWorkouts || []).forEach((workout, wIdx) => {
+    const isRest = !workout.exercises || workout.exercises.length === 0;
+    const title = isRest ? 'Rest Day' : workout.routineName || `Workout ${wIdx + 1}`;
+    const time = workout.startTime ? format(new Date(workout.startTime), 'h:mm a') : 'Completed';
+    const exercises = workout.exercises || [];
+    const restH = 92;
+    const exH = (ex) => 28 + 18 + 16 + 18 + (ex.sets?.length || 1) * 18 + 16;
+    const cardH = isRest
+      ? restH
+      : 40 + exercises.reduce((sum, ex) => sum + exH(ex), 0) + 8;
+
+    doc.ensure(Math.min(cardH, 220));
+    const top = doc.y;
+    const bottom = top - cardH;
+    doc.rect(MARGIN, bottom, innerW, cardH, c.surface, c.border);
+    doc.rect(MARGIN, top - 36, innerW, 36, c.surfaceLight, c.border);
+    doc.text(title, MARGIN + 14, top - 23, 13, c.text, true);
+    doc.text(time, PAGE_W - MARGIN - 90, top - 23, 10, c.muted, true);
+
+    if (isRest) {
+      doc.text('Active Recovery Logged', MARGIN + 14, top - 58, 13, c.text, true);
+      doc.text('Rest day logged so the map stays honest.', MARGIN + 14, top - 76, 11, c.muted, false);
+      doc.y = bottom - 14;
+      return;
+    }
+
+    let cy = top - 52;
+    exercises.forEach((exercise) => {
+      const need = exH(exercise);
+      if (cy - need < bottom + 10) {
+        doc.y = bottom - 14;
+        doc.ensure(need + 48);
+        cy = doc.y;
+      }
+      const tag = muscleTagColors(exercise.muscleGroup, isDark);
+      doc.text(exercise.name || 'Exercise', MARGIN + 14, cy, 12, c.text, true);
+      cy -= 16;
+      const tagLabel = titleCase(exercise.muscleGroup) || 'Other';
+      const tagW = Math.max(42, tagLabel.length * 6 + 16);
+      doc.rect(MARGIN + 14, cy - 4, tagW, 14, tag.bg);
+      doc.text(tagLabel.toUpperCase(), MARGIN + 20, cy, 8, tag.fg, true);
+      cy -= 20;
+      doc.text('SET', MARGIN + 18, cy, 9, c.muted, true);
+      doc.text('WEIGHT', MARGIN + 160, cy, 9, c.muted, true);
+      doc.text('REPS', MARGIN + 340, cy, 9, c.muted, true);
+      cy -= 6;
+      doc.rect(MARGIN + 14, cy, innerW - 28, 0.5, c.border);
+      cy -= 14;
+      (exercise.sets || []).forEach((set, sIdx) => {
+        if (cy < MARGIN + 28) {
+          doc.newPage();
+          cy = doc.y;
+        }
+        const w = convertWeight(set.weight, workout.unitSaved || 'lbs', unit);
+        doc.text(String(sIdx + 1), MARGIN + 18, cy, 11, c.muted, true);
+        doc.text(`${w} ${unit}`, MARGIN + 160, cy, 11, c.accent, true);
+        doc.text(String(set.reps ?? '—'), MARGIN + 340, cy, 11, c.text, true);
+        cy -= 18;
+      });
+      cy -= 10;
+    });
+    doc.y = Math.min(doc.y, cy) - 8;
+    doc.y = Math.min(doc.y, bottom - 14);
+  });
+
+  doc.ensure(24);
+  doc.text('Logged on this device  ·  TrackIt', MARGIN, MARGIN, 9, c.subtle, false);
+  doc.flush();
+
+  const pageStreams = doc.pages;
+  const n = pageStreams.length;
+  const objects = [];
+  objects.push('<< /Type /Catalog /Pages 2 0 R >>');
+  const pageIds = pageStreams.map((_, i) => 3 + n + i);
+  objects.push(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${n} >>`);
+  pageStreams.forEach((stream) => {
+    objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+  });
+  pageStreams.forEach((_, i) => {
+    const contentId = 3 + i;
+    objects.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Contents ${contentId} 0 R /Resources << /Font << /F1 ${3 + 2 * n} 0 R /F2 ${4 + 2 * n} 0 R >> >> >>`
+    );
+  });
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+
+  let out = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((body, i) => {
+    offsets.push(out.length);
+    out += `${i + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const xrefAt = out.length;
+  out += `xref\n0 ${objects.length + 1}\n`;
+  out += '0000000000 65535 f \n';
+  offsets.slice(1).forEach((off) => {
+    out += `${String(off).padStart(10, '0')} 00000 n \n`;
+  });
+  out += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF`;
+  return out;
 }
 
 export function buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark }) {
@@ -117,138 +317,25 @@ export function buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark })
   <style>
     @page { margin: 0; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: ${bg};
-      color: ${text};
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-    }
+    html, body { margin: 0; padding: 0; background: ${bg}; color: ${text}; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
     body { padding: 36px 32px 44px; }
-    .brand {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 6px;
-    }
-    .logo {
-      font-size: 11px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: ${subtle};
-      font-weight: 600;
-    }
-    h1 {
-      margin: 0 0 18px;
-      font-size: 26px;
-      letter-spacing: -0.6px;
-      font-weight: 700;
-      line-height: 1.15;
-    }
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px;
-      margin-bottom: 22px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid ${border};
-    }
-    .meta-item { color: ${muted}; font-size: 12px; font-weight: 600; }
-    .meta-item strong { color: ${accent}; font-weight: 700; }
-    .card {
-      background: ${surface};
-      border: 1px solid ${border};
-      border-radius: 14px;
-      overflow: hidden;
-      margin-bottom: 16px;
-      page-break-inside: avoid;
-    }
-    .card-head {
-      background: ${surfaceLight};
-      padding: 14px 16px;
-      border-bottom: 1px solid ${border};
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .card-title { font-size: 15px; font-weight: 700; }
-    .card-time { font-size: 11px; font-weight: 700; color: ${muted}; text-transform: uppercase; letter-spacing: 0.6px; }
-    .card-body { padding: 16px; }
-    .rest { padding: 28px 18px; text-align: center; background: ${surface2}; }
-    .rest-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-    .rest-sub { font-size: 13px; color: ${muted}; line-height: 1.4; }
-    .ex { margin-bottom: 18px; }
-    .ex:last-child { margin-bottom: 0; }
-    .ex-name { font-size: 15px; font-weight: 700; text-transform: capitalize; margin-bottom: 6px; }
-    .tag {
-      display: inline-block;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      background: ${surfaceLight};
-      border: 1px solid ${border};
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    th {
-      font-size: 11px;
-      font-weight: 700;
-      color: ${muted};
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      text-align: center;
-      padding: 10px 8px 6px;
-    }
-    td {
-      font-size: 14px;
-      font-weight: 700;
-      text-align: center;
-      padding: 8px;
-      border-top: 1px solid ${border};
-    }
-    th.num, td.num { width: 56px; text-align: left; padding-left: 14px; }
-    td.muted { color: ${muted}; }
-    td.accent { color: ${accent}; }
-    .unit { color: ${muted}; font-size: 11px; font-weight: 500; }
-    .foot {
-      margin-top: 8px;
-      text-align: center;
-      color: ${subtle};
-      font-size: 11px;
-      letter-spacing: 0.4px;
-    }
   </style>
 </head>
 <body>
-  <div class="brand">
-    <div class="logo">TrackIt</div>
-    <div class="logo">${esc(unit)}</div>
-  </div>
-  <h1>${esc(displayDate)}</h1>
-  <div class="meta">
-    <div class="meta-item">${stats.minutes} mins</div>
-    <div class="meta-item"><strong>${stats.volume.toLocaleString()} ${esc(unit)}</strong></div>
-    <div class="meta-item">${stats.exerciseCount} Exercises</div>
+  <div style="letter-spacing:3px;text-transform:uppercase;color:${subtle};font-size:11px;font-weight:600">TrackIt</div>
+  <h1 style="margin:8px 0 18px;font-size:26px;letter-spacing:-0.6px">${esc(displayDate)}</h1>
+  <div style="color:${muted};font-size:12px;font-weight:600;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid ${border}">
+    ${stats.minutes} mins · <span style="color:${accent}">${stats.volume.toLocaleString()} ${esc(unit)}</span> · ${stats.exerciseCount} Exercises
   </div>
   ${cards}
-  <div class="foot">Logged on this device · TrackIt</div>
 </body>
 </html>`;
 }
 
 export async function shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark }) {
-  const html = buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark });
   const stamp = date || format(new Date(), 'yyyy-MM-dd');
   const filename = `TrackIt-${stamp}.pdf`;
+  const html = buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark });
 
   if (Platform.OS === 'web') {
     const w = window.open('', '_blank');
@@ -263,8 +350,7 @@ export async function shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDa
     return { ok: true };
   }
 
-  const Print = await import('expo-print');
-  const { uri } = await Print.printToFileAsync({ html });
+  const pdf = buildWorkoutDayPdfString({ date, dayWorkouts, unit, colors, isDark });
   let FileSystem;
   try {
     FileSystem = await import('expo-file-system/legacy');
@@ -278,17 +364,7 @@ export async function shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDa
   } catch {
     /* dest may not exist */
   }
-  try {
-    await FileSystem.copyAsync({ from: uri, to: path });
-  } catch {
-    await Sharing.shareAsync(uri, {
-      mimeType: 'application/pdf',
-      UTI: 'com.adobe.pdf',
-      dialogTitle: 'Share workout PDF',
-    });
-    return { ok: true, path: uri };
-  }
-  const Sharing = await import('expo-sharing');
+  await FileSystem.writeAsStringAsync(path, pdf);
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(path, {
       mimeType: 'application/pdf',

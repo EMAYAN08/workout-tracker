@@ -1,4 +1,4 @@
-import { buildWorkoutDayHtml, dayWorkoutStats, esc } from '../utils/workoutDayPdf';
+import { buildWorkoutDayHtml, buildWorkoutDayPdfString, dayWorkoutStats, esc } from '../utils/workoutDayPdf';
 
 const colors = {
   background: '#070707',
@@ -14,7 +14,9 @@ const colors = {
 
 describe('workout day PDF html', () => {
   test('escapes html in names', () => {
-    expect(esc('Bench <Press> & "rows"')).toBe('Bench <Press> & "rows"');
+    expect(esc('<')).toBe(String.fromCharCode(38) + 'lt;');
+    expect(esc('&')).toBe(String.fromCharCode(38) + 'amp;');
+    expect(esc('"')).toBe(String.fromCharCode(38) + 'quot;');
   });
 
   test('stats convert volume to the display unit', () => {
@@ -73,5 +75,27 @@ describe('workout day PDF html', () => {
     expect(html).toContain('Active Recovery Logged');
     expect(html).toContain('print-color-adjust: exact');
     expect(html).not.toContain('<script');
+  });
+
+  test('builds a valid PDF with the workout on it', () => {
+    const pdf = buildWorkoutDayPdfString({
+      date: '2026-03-12',
+      unit: 'lbs',
+      colors,
+      isDark: true,
+      dayWorkouts: [
+        {
+          routineName: 'Push Day',
+          startTime: '2026-03-12T14:00:00.000Z',
+          unitSaved: 'lbs',
+          exercises: [{ name: 'Bench Press', muscleGroup: 'chest', sets: [{ weight: 185, reps: 5 }] }],
+        },
+      ],
+    });
+    expect(pdf.startsWith('%PDF-1.4')).toBe(true);
+    expect(pdf).toContain('%%EOF');
+    expect(pdf).toContain('Push Day');
+    expect(pdf).toContain('Bench Press');
+    expect(pdf).toContain('/Helvetica-Bold');
   });
 });
