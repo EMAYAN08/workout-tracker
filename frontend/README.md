@@ -1,5 +1,7 @@
 # TrackIt — App Store launch checklist
 
+**Submit walkthrough (dropdowns + steps):** [app-store-checklist.md](app-store-checklist.md)
+
 TrackIt is a **local-first iOS/Android workout logger** (Expo SDK 57). There is **no account, no server, and no analytics**. Workouts, routines, and custom exercises live in AsyncStorage on the phone. Users can export/import a JSON backup, get **local** rest-timer notifications, and share a summary image.
 
 Tick a box when that item is done. `[x]` is already true in the repo. `[ ]` is still on you (Xcode, App Store Connect, or a physical iPhone). Checking a box on GitHub writes a commit — that is the intended workflow.
