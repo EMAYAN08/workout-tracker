@@ -140,12 +140,13 @@ export default function AppContent() {
   }
 
   const onProfile = currentTab === 'dashboard' || currentTab === 'calendar' || currentTab === 'workout-detail';
+  const showWorkout = !!activeWorkout && !workoutDocked;
   const browsing = !activeWorkout || workoutDocked;
   const navH = 55 + Math.max(insets.bottom, 8);
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
-      {activeWorkout && !workoutDocked && (
+      {showWorkout && (
         <View style={styles.workoutBar}>
           <Pressable
             onPress={() => {
@@ -177,6 +178,16 @@ export default function AppContent() {
       )}
 
       <View style={[styles.main, workoutDocked && { paddingBottom: 76 }]}>
+        {showWorkout ? (
+          <ActiveWorkout
+            minimized={false}
+            onMinimize={() => {
+              setWorkoutDocked(true);
+              setTabBarHidden(false);
+            }}
+          />
+        ) : (
+          <>
         <TabPane active={currentTab === 'routines'}>
           <RoutinesMain scrollRef={routinesScroll} popRef={routinesPop} />
         </TabPane>
@@ -205,25 +216,8 @@ export default function AppContent() {
         {currentTab === 'workout-detail' && (
           <WorkoutDetailView date={selectedDate} onBack={() => navigateTab('calendar')} />
         )}
-
-        {activeWorkout ? (
-          <View
-            pointerEvents={workoutDocked ? 'none' : 'auto'}
-            style={
-              workoutDocked
-                ? styles.workoutHidden
-                : [StyleSheet.absoluteFillObject, { backgroundColor: colors.background, zIndex: 2, elevation: 8 }]
-            }
-          >
-            <ActiveWorkout
-              minimized={workoutDocked}
-              onMinimize={() => {
-                setWorkoutDocked(true);
-                setTabBarHidden(false);
-              }}
-            />
-          </View>
-        ) : null}
+          </>
+        )}
       </View>
 
       {activeWorkout && workoutDocked ? (

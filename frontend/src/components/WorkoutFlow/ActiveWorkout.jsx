@@ -116,6 +116,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
 
   if (!activeWorkout) return null;
 
+  const exercises = Array.isArray(activeWorkout.exercises) ? activeWorkout.exercises : [];
   const restRemaining = Math.max(0, restTargetSec - restTimer);
   const showRest = isResting && restRemaining > 0;
 
@@ -194,7 +195,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
-        {activeWorkout.exercises.length === 0 && (
+        {exercises.length === 0 && (
           <View style={styles.restCard}>
             <Moon size={28} color={colors.textMuted} style={{ marginBottom: 6 }} />
             <Text style={styles.restTitle}>Empty session</Text>
@@ -212,7 +213,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
             if (on) setActiveInput(null);
           }}
         >
-        {activeWorkout.exercises.map((ex, idx) => {
+        {exercises.map((ex, idx) => {
           const prevPerformance = getPreviousPerformance(ex.id, workoutHistory, unit);
           const isExpanded = idx === expandedExerciseIndex;
           const completedSetsCount = ex.sets.filter((s) => s.completedAt).length;
@@ -357,7 +358,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
                   <Plus size={16} color={colors.text} />
                   <Text style={styles.addSetText}>New Set</Text>
                 </Pressable>
-                {idx < activeWorkout.exercises.length - 1 && (
+                {idx < exercises.length - 1 && (
                   <Pressable
                     onPress={() => setExpandedExerciseIndex(idx + 1)}
                     style={styles.addSetBtn}
@@ -386,12 +387,12 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
                 targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
                 onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
                 onNext: () => {
-                  const ex = activeWorkout.exercises[activeInput.eIdx];
+                  const ex = exercises[activeInput.eIdx];
                   if (activeInput.field === 'weight') {
                     setActiveInput((prev) => ({ ...prev, field: 'reps' }));
-                  } else if (activeInput.sIdx < ex.sets.length - 1) {
+                  } else if (activeInput.sIdx < (ex?.sets?.length || 0) - 1) {
                     setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
-                  } else if (activeInput.eIdx < activeWorkout.exercises.length - 1) {
+                  } else if (activeInput.eIdx < exercises.length - 1) {
                     setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
                     setExpandedExerciseIndex(activeInput.eIdx + 1);
                   } else {
@@ -404,9 +405,9 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         preview={
           activeInput
             ? {
-                title: activeWorkout.exercises[activeInput.eIdx]?.name,
-                meta: titleCase(activeWorkout.exercises[activeInput.eIdx]?.muscleGroup),
-                sets: activeWorkout.exercises[activeInput.eIdx]?.sets || [],
+                title: exercises[activeInput.eIdx]?.name,
+                meta: titleCase(exercises[activeInput.eIdx]?.muscleGroup),
+                sets: exercises[activeInput.eIdx]?.sets || [],
                 setIndex: activeInput.sIdx,
                 unit,
                 onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
@@ -415,7 +416,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         }
         value={
           activeInput
-            ? activeWorkout.exercises[activeInput.eIdx].sets[activeInput.sIdx][activeInput.field]
+            ? exercises[activeInput.eIdx]?.sets?.[activeInput.sIdx]?.[activeInput.field]
             : ''
         }
         onUpdate={(val) => {

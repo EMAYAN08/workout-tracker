@@ -95,14 +95,9 @@ export function DragSortItem({ index, children, style }) {
 
   const animStyle = useAnimatedStyle(() => ({
     zIndex: activeSv.value ? 30 : 0,
-    elevation: activeSv.value ? 10 : 0,
-    shadowColor: '#000',
-    shadowOpacity: activeSv.value ? 0.28 : 0,
-    shadowRadius: activeSv.value ? 16 : 0,
-    shadowOffset: { width: 0, height: 8 },
     transform: [
       { translateY: activeSv.value ? ty.value : shiftSv.value },
-      { scale: activeSv.value ? 1.03 : 1 },
+      { scale: activeSv.value ? 1.02 : 1 },
     ],
   }));
 
@@ -111,12 +106,14 @@ export function DragSortItem({ index, children, style }) {
       index,
       ty,
       activeSv,
-      start: list.start,
-      update: list.update,
-      end: list.end,
+      start: list?.start,
+      update: list?.update,
+      end: list?.end,
     }),
-    [index, ty, activeSv, list.start, list.update, list.end]
+    [index, ty, activeSv, list]
   );
+
+  if (!list) return <View style={style}>{children}</View>;
 
   return (
     <ItemCtx.Provider value={itemValue}>

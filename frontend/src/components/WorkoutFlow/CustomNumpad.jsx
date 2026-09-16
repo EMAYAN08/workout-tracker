@@ -98,8 +98,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const targetRef = useRef(null);
   const draftRef = useRef(String(value ?? ''));
   const translateY = useRef(new Animated.Value(SHEET_H)).current;
-  const cardY = useRef(new Animated.Value(56)).current;
-  const overlay = useRef(new Animated.Value(0)).current;
+  const cardY = useRef(new Animated.Value(24)).current;
   const originY = useRef(0);
   const tracking = useRef(false);
   const closing = useRef(false);
@@ -123,12 +122,6 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const animateIn = useCallback(() => {
     closing.current = false;
     Animated.parallel([
-      Animated.timing(overlay, {
-        toValue: 1,
-        duration: 240,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: nativeDriver,
-      }),
       Animated.spring(cardY, {
         toValue: 0,
         useNativeDriver: nativeDriver,
@@ -144,22 +137,16 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
         mass: 0.82,
       }),
     ]).start();
-  }, [nativeDriver, translateY, cardY, overlay]);
+  }, [nativeDriver, translateY, cardY]);
 
   const animateOut = useCallback(
     (then) => {
       if (closing.current) return;
       closing.current = true;
       Animated.parallel([
-        Animated.timing(overlay, {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: nativeDriver,
-        }),
         Animated.timing(cardY, {
-          toValue: 64,
-          duration: 220,
+          toValue: 28,
+          duration: 200,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: nativeDriver,
         }),
@@ -174,10 +161,13 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
         if (finished) {
           setMounted(false);
           then?.();
+        } else {
+          setMounted(false);
+          then?.();
         }
       });
     },
-    [nativeDriver, translateY, cardY, overlay]
+    [nativeDriver, translateY, cardY]
   );
 
   const close = useCallback(() => {
@@ -207,22 +197,16 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
           stiffness: 320,
           mass: 0.7,
         }),
-        Animated.spring(overlay, {
-          toValue: 1,
-          useNativeDriver: nativeDriver,
-          damping: 24,
-          stiffness: 320,
-          mass: 0.7,
-        }),
       ]).start();
     },
-    [close, nativeDriver, translateY, cardY, overlay]
+    [close, nativeDriver, translateY, cardY]
   );
 
   const settleRef = useRef(settle);
   settleRef.current = settle;
 
   useLayoutEffect(() => {
+    if (keypadOpen) setMounted(true);
     setTabBarHidden(keypadOpen || mounted);
   }, [keypadOpen, mounted, setTabBarHidden]);
 
@@ -238,14 +222,13 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       }
       if (!mounted) {
         translateY.setValue(SHEET_H);
-        cardY.setValue(56);
-        overlay.setValue(0);
+        cardY.setValue(24);
         setMounted(true);
       }
     } else if (mounted && !closing.current) {
       animateOut();
     }
-  }, [keypadOpen, mounted, animateIn, animateOut, translateY, cardY, overlay]);
+  }, [keypadOpen, mounted, animateIn, animateOut, translateY, cardY]);
 
   useEffect(() => {
     if (mounted && keypadOpen) animateIn();
@@ -256,9 +239,8 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       const y = Math.max(0, dy);
       translateY.setValue(y);
       cardY.setValue(y * 0.4);
-      overlay.setValue(Math.max(0, 1 - y / 280));
     },
-    [translateY, cardY, overlay]
+    [translateY, cardY]
   );
 
   useEffect(() => {
@@ -272,7 +254,6 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       originY.current = e.clientY;
       translateY.stopAnimation();
       cardY.stopAnimation();
-      overlay.stopAnimation();
     };
     const onMove = (e) => {
       if (!tracking.current) return;
@@ -295,7 +276,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       document.removeEventListener('pointerup', onUp, opts);
       document.removeEventListener('pointercancel', onUp, opts);
     };
-  }, [mounted, translateY, cardY, overlay, dragSheet]);
+  }, [mounted, translateY, cardY, dragSheet]);
 
   const pan = useMemo(
     () =>
@@ -358,32 +339,29 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
     [commit]
   );
 
-  if (!mounted || !input) return null;
+  if (!input) return null;
+  if (!keypadOpen && !mounted) return null;
 
   const keyProps = { colors, styles };
 
   return (
     <View style={styles.overlay} pointerEvents="auto">
-      <Animated.View style={[styles.scrim, { opacity: overlay }]} pointerEvents="none" />
       <Animated.View
         style={[
           styles.previewWrap,
-          {
-            opacity: overlay,
-            transform: [{ translateY: cardY }],
-          },
+          { transform: [{ translateY: cardY }] },
         ]}
       >
         <PreviewCard preview={preview} field={input.field} value={value} colors={colors} styles={styles} />
       </Animated.View>
-      <Animated.View style={[styles.glassGap, { opacity: overlay }]} pointerEvents="none">
+      <View style={styles.glassGap} pointerEvents="none">
         <BlurView
           intensity={isDark ? 48 : 36}
           tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.glassSheen} />
-      </Animated.View>
+      </View>
       <GestureDetector gesture={pan}>
         <Animated.View
           nativeID="keypad-sheet"
@@ -472,12 +450,9 @@ function makeStyles(colors) {
   return StyleSheet.create({
     overlay: {
       ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.background,
       zIndex: 80,
       elevation: 24,
-    },
-    scrim: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: colors.background,
     },
     previewWrap: {
       flex: 1,
