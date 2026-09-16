@@ -16,7 +16,7 @@ import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { CountUp } from '../ui/primitives';
 import TrackItMark from '../ui/TrackItMark';
-import { shareViewAsPng } from '../../utils/shareShot';
+import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
 const GUTTER = 4;
 const MONTH_GAP = 24;
@@ -61,6 +61,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [areaW, setAreaW] = useState(0);
   const [sharing, setSharing] = useState(false);
+  const [stamp, setStamp] = useState(false);
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -110,12 +111,22 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
     try {
       if (Platform.OS === 'web') {
         await RNShare.share({ message: 'Check out my workout consistency on TrackIt!' });
-      } else {
-        await shareViewAsPng(mapRef, { filename: 'TrackIt Consistency', message: 'My TrackIt consistency' });
+        return;
       }
+      setStamp(true);
+      await waitFrames(2);
+      const uri = await captureHiResPng(mapRef, { pixelRatio: 3 });
+      setStamp(false);
+      await shareFile(uri, {
+        filename: 'TrackIt Consistency',
+        message: 'My TrackIt consistency',
+        mimeType: 'image/png',
+        uti: 'public.png',
+      });
     } catch (err) {
       console.error('Failed to share:', err);
     } finally {
+      setStamp(false);
       setSharing(false);
     }
   };
@@ -142,7 +153,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
 
   return (
     <View style={{ marginTop: 16 }}>
-      <View style={styles.panel}>
+      <View ref={mapRef} collapsable={false} style={[styles.panel, stamp && styles.panelStamp]}>
         <View style={styles.topRow}>
           <Text style={styles.title}>Consistency</Text>
           <View style={styles.actions}>
@@ -173,15 +184,13 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
             <Pressable
               onPress={handleShare}
               disabled={sharing}
-              style={[styles.iconBtn, sharing && { opacity: 0.4 }]}
+              style={styles.iconBtn}
               accessibilityLabel="Share consistency"
             >
               <Share2 size={16} color={colors.textMuted} />
             </Pressable>
           </View>
         </View>
-
-        <View ref={mapRef} collapsable={false} style={styles.shot}>
 
         <View style={styles.statsRow}>
           <View style={styles.stat}>
@@ -267,8 +276,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
             ))}
           </View>
         </View>
-        <TrackItMark colors={colors} />
-        </View>
+        {stamp ? <TrackItMark colors={colors} /> : null}
       </View>
     </View>
   );
@@ -283,9 +291,7 @@ function makeStyles(colors) {
       borderColor: colors.border,
       padding: 16,
     },
-    shot: {
-      backgroundColor: colors.surface,
-    },
+    panelStamp: { paddingBottom: 20 },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -12,13 +12,13 @@ import TrackItMark from '../ui/TrackItMark';
 import { titleCase } from '../../utils/format';
 import { haptic } from '../../haptics';
 import { shareWorkoutDayPdf } from '../../utils/workoutDayPdf';
-import { shareViewAsPdf } from '../../utils/shareShot';
+import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
-const ExerciseImage = ({ src }) => {
+const ExerciseImage = ({ src, lite }) => {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [error, setError] = useState(false);
-  if (!src || error) {
+  if (lite || !src || error) {
     return (
       <View style={styles.thumbFallback}>
         <Dumbbell size={24} color={colors.textMuted} />
@@ -40,6 +40,7 @@ export default function WorkoutDetailView({ date, onBack }) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [sharing, setSharing] = useState(false);
+  const [stamp, setStamp] = useState(false);
   const shotRef = useRef(null);
 
   const dayWorkouts = useMemo(() => {
@@ -76,21 +77,28 @@ export default function WorkoutDetailView({ date, onBack }) {
 
   const handleSharePdf = async () => {
     if (sharing || !dayWorkouts.length) return;
-    setSharing(true);
     haptic('selection');
+    setSharing(true);
     try {
       if (Platform.OS === 'web') {
         await shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark });
-      } else {
-        await shareViewAsPdf(shotRef, {
-          filename: `TrackIt-${date}.pdf`,
-          background: colors.background,
-        });
+        return;
       }
+      setStamp(true);
+      await waitFrames(2);
+      const uri = await captureHiResPng(shotRef, { pixelRatio: 2 });
+      setStamp(false);
+      await shareFile(uri, {
+        filename: `TrackIt-${date}`,
+        mimeType: 'image/png',
+        uti: 'public.png',
+        message: `TrackIt · ${displayDate}`,
+      });
     } catch (err) {
-      console.error('PDF share failed:', err);
-      Alert.alert('Share', 'Could not create the PDF.');
+      console.error('Share failed:', err);
+      Alert.alert('Share', 'Could not export this workout.');
     } finally {
+      setStamp(false);
       setSharing(false);
     }
   };
@@ -99,8 +107,8 @@ export default function WorkoutDetailView({ date, onBack }) {
     <Pressable
       onPress={handleSharePdf}
       disabled={sharing}
-      accessibilityLabel="Share workout PDF"
-      style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center', opacity: sharing ? 0.4 : 1 }}
+      accessibilityLabel="Share workout"
+      style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' }}
     >
       <Share2 size={20} color={colors.text} />
     </Pressable>
@@ -111,6 +119,7 @@ export default function WorkoutDetailView({ date, onBack }) {
       <ScreenHeader title={displayDate} onBack={onBack} right={shareBtn} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
       <View ref={shotRef} collapsable={false} style={styles.shot}>
+      {stamp ? <Text style={styles.shotTitle}>{displayDate}</Text> : null}
       <View style={styles.meta}>
         <View style={styles.metaItem}>
           <Clock size={16} color={colors.textMuted} />
@@ -153,7 +162,7 @@ export default function WorkoutDetailView({ date, onBack }) {
               workout.exercises.map((exercise, eIdx) => (
                 <View key={exercise.id || eIdx} style={{ gap: 10 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <ExerciseImage src={exercise.gifUrl} />
+                    <ExerciseImage src={exercise.gifUrl} lite={stamp} />
                     <View>
                       <Text style={styles.exName}>{exercise.name}</Text>
                       <Text style={styles.exMg}>{titleCase(exercise.muscleGroup)}</Text>
@@ -184,7 +193,7 @@ export default function WorkoutDetailView({ date, onBack }) {
           </View>
         </View>
       ))}
-      <TrackItMark colors={colors} />
+      {stamp ? <TrackItMark colors={colors} /> : null}
       </View>
       </ScrollView>
     </View>
@@ -195,6 +204,14 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   shot: { backgroundColor: colors.background },
+  shotTitle: {
+    color: colors.text,
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    letterSpacing: -0.6,
+    lineHeight: 32,
+    marginBottom: 16,
+  },
   emptyWrap: { flex: 1 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

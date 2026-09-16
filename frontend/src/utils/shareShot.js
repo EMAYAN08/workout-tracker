@@ -72,74 +72,48 @@ export function jpegToPaddedPdf({ jpegBase64, pad = 44, bg = '#070707' }) {
   return pdf;
 }
 
-function toBase64(bin) {
-  if (typeof global.btoa === 'function') return global.btoa(bin);
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let out = '';
-  for (let i = 0; i < bin.length; i += 3) {
-    const a = bin.charCodeAt(i);
-    const b = i + 1 < bin.length ? bin.charCodeAt(i + 1) : 0;
-    const c = i + 2 < bin.length ? bin.charCodeAt(i + 2) : 0;
-    out += chars[a >> 2];
-    out += chars[((a & 3) << 4) | (b >> 4)];
-    out += i + 1 < bin.length ? chars[((b & 15) << 2) | (c >> 6)] : '=';
-    out += i + 2 < bin.length ? chars[c & 63] : '=';
-  }
-  return out;
-}
-
-async function fs() {
-  try {
-    return await import('expo-file-system/legacy');
-  } catch {
-    return await import('expo-file-system');
-  }
-}
-
-export async function shareViewAsPdf(viewRef, { filename, background }) {
-  if (!viewRef?.current) throw new Error('Nothing to share');
-  const jpegBase64 = await captureRef(viewRef, {
-    format: 'jpg',
-    quality: 0.88,
-    result: 'base64',
+export function waitFrames(n = 2) {
+  return new Promise((resolve) => {
+    const step = (left) => {
+      requestAnimationFrame(() => {
+        if (left <= 1) resolve();
+        else step(left - 1);
+      });
+    };
+    step(n);
   });
-  const pdf = jpegToPaddedPdf({ jpegBase64, pad: 44, bg: background || '#070707' });
-  const FileSystem = await fs();
-  const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
-  const path = `${dir}${filename || 'TrackIt.pdf'}`;
-  try {
-    if (FileSystem.deleteAsync) await FileSystem.deleteAsync(path, { idempotent: true });
-  } catch {
-    /* ok */
-  }
-  const encoding = FileSystem.EncodingType?.Base64 || 'base64';
-  await FileSystem.writeAsStringAsync(path, toBase64(pdf), { encoding });
+}
+
+export async function captureHiResPng(viewRef, { pixelRatio = 3 } = {}) {
+  if (!viewRef?.current) throw new Error('Nothing to share');
+  return captureRef(viewRef, {
+    format: 'png',
+    quality: 1,
+    result: 'tmpfile',
+    pixelRatio,
+  });
+}
+
+export async function shareFile(uri, { filename, mimeType, uti, message } = {}) {
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(path, {
-      mimeType: 'application/pdf',
-      UTI: 'com.adobe.pdf',
-      dialogTitle: 'Share TrackIt',
+    await Sharing.shareAsync(uri, {
+      mimeType: mimeType || 'image/png',
+      UTI: uti || 'public.png',
+      dialogTitle: filename || 'TrackIt',
     });
+  } else if (message) {
+    await RNShare.share({ message, url: uri });
   } else {
     Alert.alert('Share', 'Sharing is not available on this device.');
   }
-  return { ok: true, path };
 }
 
-export async function shareViewAsPng(viewRef, { filename, message } = {}) {
+export async function shareViewAsPng(viewRef, { filename, message, pixelRatio = 3 } = {}) {
   if (Platform.OS === 'web') {
     await RNShare.share({ message: message || 'TrackIt' });
     return { ok: true };
   }
-  if (!viewRef?.current) throw new Error('Nothing to share');
-  const uri = await captureRef(viewRef, { format: 'png', quality: 1, result: 'tmpfile' });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, {
-      mimeType: 'image/png',
-      dialogTitle: filename || 'TrackIt',
-    });
-  } else {
-    await RNShare.share({ message: message || 'TrackIt', url: uri });
-  }
+  const uri = await captureHiResPng(viewRef, { pixelRatio });
+  await shareFile(uri, { filename, message, mimeType: 'image/png', uti: 'public.png' });
   return { ok: true, uri };
 }
