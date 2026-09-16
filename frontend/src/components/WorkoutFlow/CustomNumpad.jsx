@@ -98,11 +98,14 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const targetRef = useRef(null);
   const draftRef = useRef(String(value ?? ''));
   const translateY = useRef(new Animated.Value(SHEET_H)).current;
-  const cardY = useRef(new Animated.Value(24)).current;
+  const cardY = useRef(new Animated.Value(28)).current;
+  const glassOpacity = useRef(new Animated.Value(0)).current;
   const originY = useRef(0);
   const tracking = useRef(false);
   const closing = useRef(false);
   const lastInput = useRef(activeInput);
+  const lastPreview = useRef(preview);
+  const lastValue = useRef(value);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const [mounted, setMounted] = useState(!!activeInput);
@@ -110,7 +113,11 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const keypadOpen = !!activeInput;
 
   if (activeInput) lastInput.current = activeInput;
+  if (preview) lastPreview.current = preview;
+  if (value !== undefined) lastValue.current = value;
   const input = activeInput || lastInput.current;
+  const shownPreview = preview || lastPreview.current;
+  const shownValue = activeInput ? value : lastValue.current;
   const targetId = input ? input.targetId || input.field : null;
 
   if (targetRef.current !== targetId) {
@@ -122,52 +129,59 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const animateIn = useCallback(() => {
     closing.current = false;
     Animated.parallel([
+      Animated.timing(glassOpacity, {
+        toValue: 1,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: nativeDriver,
+      }),
       Animated.spring(cardY, {
         toValue: 0,
         useNativeDriver: nativeDriver,
-        damping: 22,
-        stiffness: 260,
-        mass: 0.82,
+        damping: 20,
+        stiffness: 240,
+        mass: 0.85,
       }),
       Animated.spring(translateY, {
         toValue: 0,
         useNativeDriver: nativeDriver,
-        damping: 26,
-        stiffness: 280,
-        mass: 0.82,
+        damping: 24,
+        stiffness: 260,
+        mass: 0.85,
       }),
     ]).start();
-  }, [nativeDriver, translateY, cardY]);
+  }, [nativeDriver, translateY, cardY, glassOpacity]);
 
   const animateOut = useCallback(
     (then) => {
       if (closing.current) return;
       closing.current = true;
       Animated.parallel([
+        Animated.timing(glassOpacity, {
+          toValue: 0,
+          duration: 240,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: nativeDriver,
+        }),
         Animated.timing(cardY, {
-          toValue: 28,
-          duration: 200,
+          toValue: 36,
+          duration: 240,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: nativeDriver,
         }),
         Animated.timing(translateY, {
           toValue: SHEET_H,
-          duration: 240,
+          duration: 280,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: nativeDriver,
         }),
-      ]).start(({ finished }) => {
+      ]).start(() => {
         closing.current = false;
-        if (finished) {
-          setMounted(false);
-          then?.();
-        } else {
-          setMounted(false);
-          then?.();
-        }
+        setMounted(false);
+        then?.();
       });
     },
-    [nativeDriver, translateY, cardY]
+    [nativeDriver, translateY, cardY, glassOpacity]
   );
 
   const close = useCallback(() => {
@@ -197,9 +211,16 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
           stiffness: 320,
           mass: 0.7,
         }),
+        Animated.spring(glassOpacity, {
+          toValue: 1,
+          useNativeDriver: nativeDriver,
+          damping: 24,
+          stiffness: 320,
+          mass: 0.7,
+        }),
       ]).start();
     },
-    [close, nativeDriver, translateY, cardY]
+    [close, nativeDriver, translateY, cardY, glassOpacity]
   );
 
   const settleRef = useRef(settle);
@@ -222,13 +243,14 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       }
       if (!mounted) {
         translateY.setValue(SHEET_H);
-        cardY.setValue(24);
+        cardY.setValue(28);
+        glassOpacity.setValue(0);
         setMounted(true);
       }
     } else if (mounted && !closing.current) {
       animateOut();
     }
-  }, [keypadOpen, mounted, animateIn, animateOut, translateY, cardY]);
+  }, [keypadOpen, mounted, animateIn, animateOut, translateY, cardY, glassOpacity]);
 
   useEffect(() => {
     if (mounted && keypadOpen) animateIn();
@@ -238,9 +260,10 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
     (dy) => {
       const y = Math.max(0, dy);
       translateY.setValue(y);
-      cardY.setValue(y * 0.4);
+      cardY.setValue(y * 0.22);
+      glassOpacity.setValue(Math.max(0, 1 - y / 320));
     },
-    [translateY, cardY]
+    [translateY, cardY, glassOpacity]
   );
 
   useEffect(() => {
@@ -254,6 +277,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       originY.current = e.clientY;
       translateY.stopAnimation();
       cardY.stopAnimation();
+      glassOpacity.stopAnimation();
     };
     const onMove = (e) => {
       if (!tracking.current) return;
@@ -276,7 +300,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
       document.removeEventListener('pointerup', onUp, opts);
       document.removeEventListener('pointercancel', onUp, opts);
     };
-  }, [mounted, translateY, cardY, dragSheet]);
+  }, [mounted, translateY, cardY, glassOpacity, dragSheet]);
 
   const pan = useMemo(
     () =>
@@ -343,25 +367,33 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   if (!keypadOpen && !mounted) return null;
 
   const keyProps = { colors, styles };
+  const keypadReserve = 332 + Math.max(insets.bottom, 16);
 
   return (
     <View style={styles.overlay} collapsable={false}>
-      <Animated.View
-        style={[
-          styles.previewWrap,
-          { transform: [{ translateY: cardY }] },
-        ]}
-      >
-        <PreviewCard preview={preview} field={input.field} value={value} colors={colors} styles={styles} />
-      </Animated.View>
-      <View style={styles.glassGap} pointerEvents="none">
+      <Animated.View style={[styles.glass, { opacity: glassOpacity }]} pointerEvents="none">
         <BlurView
-          intensity={isDark ? 48 : 36}
+          intensity={isDark ? 58 : 42}
           tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.glassSheen} />
-      </View>
+        <View
+          style={[
+            styles.glassTint,
+            { backgroundColor: isDark ? 'rgba(6,6,8,0.42)' : 'rgba(255,255,255,0.32)' },
+          ]}
+        />
+      </Animated.View>
+      <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Dismiss editor" />
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.previewWrap,
+          { bottom: keypadReserve, transform: [{ translateY: cardY }] },
+        ]}
+      >
+        <PreviewCard preview={shownPreview} field={input.field} value={shownValue} colors={colors} styles={styles} />
+      </Animated.View>
       <GestureDetector gesture={pan}>
         <Animated.View
           nativeID="keypad-sheet"
@@ -449,28 +481,21 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
 function makeStyles(colors) {
   return StyleSheet.create({
     overlay: {
-      flex: 1,
-      minHeight: 0,
-      backgroundColor: colors.background,
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 80,
+      elevation: 24,
+    },
+    glass: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    glassTint: {
+      ...StyleSheet.absoluteFillObject,
     },
     previewWrap: {
-      flex: 1,
-      minHeight: 0,
-      paddingHorizontal: 12,
-      paddingTop: 8,
-      paddingBottom: 0,
-    },
-    glassGap: {
-      height: 18,
-      overflow: 'hidden',
-      zIndex: 90,
-    },
-    glassSheen: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(255,255,255,0.1)',
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
+      position: 'absolute',
+      top: 10,
+      left: 12,
+      right: 12,
     },
     previewCard: {
       flex: 1,
@@ -540,6 +565,10 @@ function makeStyles(colors) {
     previewCellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
     previewCellTextOn: { color: colors.accent },
     sheet: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
       zIndex: 200,
       elevation: 24,
       backgroundColor: colors.surface,
