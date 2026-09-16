@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useTheme } from '../context/ThemeContext';
 import { fonts } from '../theme';
 import { WELCOME_PHRASES } from '../data/welcomePhrases';
+import { haptic } from '../haptics';
 
 export default function WelcomeSplash({ onDone }) {
   const { colors, isDark } = useTheme();
@@ -42,10 +43,14 @@ export default function WelcomeSplash({ onDone }) {
       Animated.spring(logoY, { toValue: 0, damping: 16, stiffness: 140, useNativeDriver: true }),
       Animated.spring(logoScale, { toValue: 1, damping: 14, stiffness: 120, useNativeDriver: true }),
     ]).start();
+    const thud = setTimeout(() => haptic('medium'), 260);
     const fadeLine = setTimeout(() => {
       Animated.timing(lineOp, { toValue: 1, duration: 280, useNativeDriver: true }).start();
     }, 380);
-    return () => clearTimeout(fadeLine);
+    return () => {
+      clearTimeout(thud);
+      clearTimeout(fadeLine);
+    };
   }, [logoOp, logoY, logoScale, lineOp]);
 
   useEffect(() => {
@@ -53,12 +58,16 @@ export default function WelcomeSplash({ onDone }) {
     let timer;
     const tick = () => {
       i += 1;
+      const ch = phrase[i - 1];
       setTyped(phrase.slice(0, i));
+      if (ch && ch !== ' ') {
+        haptic(/[.,!?]/.test(ch) ? 'light' : 'selection');
+      }
       if (i < phrase.length) {
-        const ch = phrase[i - 1];
         const wait = /[.,!?]/.test(ch) ? 160 : 36;
         timer = setTimeout(tick, wait);
       } else {
+        haptic('success');
         timer = setTimeout(exit, 1200);
       }
     };
