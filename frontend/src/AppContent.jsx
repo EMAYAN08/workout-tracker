@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 import { useWorkout } from './context/WorkoutContext';
 import { useTheme } from './context/ThemeContext';
 import ActiveWorkout from './components/WorkoutFlow/ActiveWorkout';
+import MiniWorkoutTab from './components/WorkoutFlow/MiniWorkoutTab';
 import WorkoutSummary from './components/WorkoutFlow/WorkoutSummary';
 import Dashboard from './components/Dashboard/Dashboard';
 import CustomExercises from './components/CustomExercises/CustomExercises';
@@ -52,19 +53,33 @@ export default function AppContent() {
     completedWorkout,
     setCompletedWorkout,
   } = useWorkout();
-  const { colors, tabBarHidden } = useTheme();
+  const { colors, tabBarHidden, setTabBarHidden } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = makeStyles(colors);
 
   const [currentTab, setCurrentTab] = useState('routines');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [workoutDocked, setWorkoutDocked] = useState(false);
   const routinesScroll = useRef(null);
   const exercisesScroll = useRef(null);
   const dashboardScroll = useRef(null);
   const settingsScroll = useRef(null);
   const routinesPop = useRef(null);
   const exercisesPop = useRef(null);
+  const workoutStartRef = useRef(null);
+
+  useEffect(() => {
+    if (!activeWorkout) {
+      setWorkoutDocked(false);
+      workoutStartRef.current = null;
+      return;
+    }
+    if (workoutStartRef.current !== activeWorkout.startTime) {
+      workoutStartRef.current = activeWorkout.startTime;
+      setWorkoutDocked(false);
+    }
+  }, [activeWorkout]);
 
   const scrollTabTop = (ref) => {
     const run = () => ref.current?.scrollTo?.({ y: 0, animated: true });
@@ -124,10 +139,12 @@ export default function AppContent() {
   }
 
   const onProfile = currentTab === 'dashboard' || currentTab === 'calendar' || currentTab === 'workout-detail';
+  const browsing = !activeWorkout || workoutDocked;
+  const navH = 55 + Math.max(insets.bottom, 8);
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
-      {activeWorkout && (
+      {activeWorkout && !workoutDocked && (
         <View style={styles.workoutBar}>
           <Pressable
             onPress={() => {
@@ -158,44 +175,67 @@ export default function AppContent() {
         </View>
       )}
 
-      <View style={styles.main}>
-        {activeWorkout ? (
-          <ActiveWorkout />
-        ) : (
-          <>
-            <TabPane active={currentTab === 'routines'}>
-              <RoutinesMain scrollRef={routinesScroll} popRef={routinesPop} />
-            </TabPane>
-            <TabPane active={currentTab === 'custom_exercises'}>
-              <CustomExercises scrollRef={exercisesScroll} popRef={exercisesPop} />
-            </TabPane>
-            <TabPane active={currentTab === 'dashboard'}>
-              <Dashboard
-                visible={currentTab === 'dashboard'}
-                onMapClick={() => navigateTab('calendar')}
-                scrollRef={dashboardScroll}
-              />
-            </TabPane>
-            <TabPane active={currentTab === 'settings'}>
-              <Settings scrollRef={settingsScroll} />
-            </TabPane>
-            {currentTab === 'calendar' && (
-              <CalendarView
-                onDayClick={(date) => {
-                  setSelectedDate(date);
-                  navigateTab('workout-detail');
-                }}
-                onBack={() => navigateTab('dashboard')}
-              />
-            )}
-            {currentTab === 'workout-detail' && (
-              <WorkoutDetailView date={selectedDate} onBack={() => navigateTab('calendar')} />
-            )}
-          </>
+      <View style={[styles.main, workoutDocked && { paddingBottom: 76 }]}>
+        <TabPane active={currentTab === 'routines'}>
+          <RoutinesMain scrollRef={routinesScroll} popRef={routinesPop} />
+        </TabPane>
+        <TabPane active={currentTab === 'custom_exercises'}>
+          <CustomExercises scrollRef={exercisesScroll} popRef={exercisesPop} />
+        </TabPane>
+        <TabPane active={currentTab === 'dashboard'}>
+          <Dashboard
+            visible={currentTab === 'dashboard'}
+            onMapClick={() => navigateTab('calendar')}
+            scrollRef={dashboardScroll}
+          />
+        </TabPane>
+        <TabPane active={currentTab === 'settings'}>
+          <Settings scrollRef={settingsScroll} />
+        </TabPane>
+        {currentTab === 'calendar' && (
+          <CalendarView
+            onDayClick={(date) => {
+              setSelectedDate(date);
+              navigateTab('workout-detail');
+            }}
+            onBack={() => navigateTab('dashboard')}
+          />
         )}
+        {currentTab === 'workout-detail' && (
+          <WorkoutDetailView date={selectedDate} onBack={() => navigateTab('calendar')} />
+        )}
+
+        {activeWorkout ? (
+          <View
+            pointerEvents={workoutDocked ? 'none' : 'auto'}
+            style={
+              workoutDocked
+                ? styles.workoutHidden
+                : [StyleSheet.absoluteFillObject, { backgroundColor: colors.background, zIndex: 2 }]
+            }
+          >
+            <ActiveWorkout
+              minimized={workoutDocked}
+              onMinimize={() => {
+                setWorkoutDocked(true);
+                setTabBarHidden(false);
+              }}
+            />
+          </View>
+        ) : null}
       </View>
 
-      {!activeWorkout && !tabBarHidden && (
+      {activeWorkout && workoutDocked ? (
+        <MiniWorkoutTab
+          bottom={navH + 8}
+          onPress={() => {
+            haptic('selection');
+            setWorkoutDocked(false);
+          }}
+        />
+      ) : null}
+
+      {browsing && !tabBarHidden && (
         <View style={styles.navWrap}>
           <View style={styles.navBar}>
             <View style={[styles.navRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -260,6 +300,15 @@ function makeStyles(colors) {
     },
     finishText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
     main: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center', overflow: 'hidden', position: 'relative' },
+    workoutHidden: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      opacity: 0,
+      zIndex: 0,
+    },
     navWrap: {
       position: 'absolute',
       left: 0,

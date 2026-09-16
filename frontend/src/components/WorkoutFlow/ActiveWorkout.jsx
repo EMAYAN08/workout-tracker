@@ -44,7 +44,7 @@ const formatTime = (seconds) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-export default function ActiveWorkout() {
+export default function ActiveWorkout({ minimized = false, onMinimize }) {
   const {
     activeWorkout,
     workoutDuration,
@@ -104,6 +104,10 @@ export default function ActiveWorkout() {
   };
 
   React.useEffect(() => {
+    if (minimized) setActiveInput(null);
+  }, [minimized]);
+
+  React.useEffect(() => {
     const t = setTimeout(() => {
       setSearchResults(searchQuery.length > 0 ? searchExercises(searchQuery) : []);
     }, 180);
@@ -148,8 +152,9 @@ export default function ActiveWorkout() {
             <Text style={styles.timerValue}>{formatTime(workoutDuration)}</Text>
           </View>
         </View>
+        <View style={{ flex: 1 }} />
         {playingSet ? (
-          <View style={{ alignItems: 'flex-end' }}>
+          <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
             <Text style={styles.timerLabel}>Set Time</Text>
             <View style={styles.timerRow}>
               <Timer size={14} color={colors.textMuted} />
@@ -157,7 +162,7 @@ export default function ActiveWorkout() {
             </View>
           </View>
         ) : showRest ? (
-          <View style={{ alignItems: 'flex-end' }}>
+          <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
             <Text style={styles.timerLabel}>Rest</Text>
             <View style={styles.timerRow}>
               <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restRemaining)}</Text>
@@ -166,6 +171,18 @@ export default function ActiveWorkout() {
               </Pressable>
             </View>
           </View>
+        ) : null}
+        {onMinimize ? (
+          <Pressable
+            onPress={() => {
+              haptic('selection');
+              onMinimize();
+            }}
+            accessibilityLabel="Minimize workout"
+            style={styles.minBtn}
+          >
+            <ChevronDown size={22} color={colors.text} />
+          </Pressable>
         ) : null}
       </View>
 
@@ -479,12 +496,21 @@ function makeStyles(colors) {
   return StyleSheet.create({
   timerBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.background,
+  },
+  minBtn: {
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
   },
   timerLabel: {
     color: colors.textMuted,
