@@ -84,13 +84,18 @@ export function waitFrames(n = 2) {
   });
 }
 
-export async function captureHiResPng(viewRef, { pixelRatio = 3 } = {}) {
+export async function captureHiResPng(
+  viewRef,
+  { pixelRatio = 3, snapshotContentContainer = false, useRenderInContext = false } = {}
+) {
   if (!viewRef?.current) throw new Error('Nothing to share');
   return captureRef(viewRef, {
     format: 'png',
     quality: 1,
     result: 'tmpfile',
     pixelRatio,
+    snapshotContentContainer,
+    useRenderInContext,
   });
 }
 

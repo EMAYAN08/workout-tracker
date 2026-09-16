@@ -9,8 +9,6 @@ import {
   Share as RNShare,
   ScrollView,
 } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CheckCircle,
@@ -28,6 +26,7 @@ import { convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { MuscleTag } from '../ui/primitives';
+import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -37,6 +36,7 @@ const formatTime = (seconds) => {
 
 export default function WorkoutSummary({ data, onClose, unit }) {
   const cardRef = useRef(null);
+  const scrollRef = useRef(null);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -71,14 +71,29 @@ export default function WorkoutSummary({ data, onClose, unit }) {
 
   const handleShare = async () => {
     try {
-      if (cardRef.current && Platform.OS !== 'web') {
-        const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'TrackIt Workout' });
-          return;
-        }
+      if (Platform.OS === 'web') {
+        await RNShare.share({
+          message: `Just crushed my ${data.routineName || 'TrackIt'} workout!`,
+        });
+        return;
       }
-      await RNShare.share({
+      await waitFrames(2);
+      let uri;
+      try {
+        uri = await captureHiResPng(scrollRef, {
+          pixelRatio: 3,
+          snapshotContentContainer: true,
+        });
+      } catch {
+        uri = await captureHiResPng(cardRef, {
+          pixelRatio: 3,
+          useRenderInContext: true,
+        });
+      }
+      await shareFile(uri, {
+        filename: 'TrackIt Workout',
+        mimeType: 'image/png',
+        uti: 'public.png',
         message: `Just crushed my ${data.routineName || 'TrackIt'} workout!`,
       });
     } catch (err) {
@@ -102,6 +117,9 @@ export default function WorkoutSummary({ data, onClose, unit }) {
       </View>
 
       <ScrollView
+        ref={scrollRef}
+        collapsable={false}
+        removeClippedSubviews={false}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
@@ -226,7 +244,11 @@ function makeStyles(colors) {
     body: {
       width: '100%',
       alignItems: 'center',
-      gap: 12,
+      backgroundColor: colors.background,
+      paddingHorizontal: 4,
+      paddingTop: 8,
+      paddingBottom: 20,
+      overflow: 'visible',
     },
     iconBox: {
       width: 72,
@@ -237,6 +259,7 @@ function makeStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
+      marginBottom: 12,
     },
     title: {
       color: colors.text,
@@ -244,6 +267,7 @@ function makeStyles(colors) {
       fontSize: 28,
       letterSpacing: -0.6,
       textAlign: 'center',
+      marginBottom: 4,
     },
     routine: {
       color: colors.textMuted,
@@ -251,6 +275,7 @@ function makeStyles(colors) {
       fontSize: 12,
       letterSpacing: 2,
       textTransform: 'uppercase',
+      marginBottom: 8,
     },
     stats: { flexDirection: 'row', gap: 10, width: '100%', marginTop: 16 },
     stat: {
