@@ -187,10 +187,11 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         ) : null}
       </View>
 
-      <View style={{ flex: 1, position: 'relative' }}>
+      {!activeInput ? (
       <ScrollView
+        style={{ flex: 1 }}
         scrollEnabled={listScroll}
-        contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 40 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
@@ -378,53 +379,41 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
           <Text style={styles.addExText}>Add Exercise</Text>
         </Pressable>
       </ScrollView>
-
+      ) : (
       <CustomNumpad
-        activeInput={
-          activeInput
-            ? {
-                field: activeInput.field,
-                targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
-                onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
-                onNext: () => {
-                  const ex = exercises[activeInput.eIdx];
-                  if (activeInput.field === 'weight') {
-                    setActiveInput((prev) => ({ ...prev, field: 'reps' }));
-                  } else if (activeInput.sIdx < (ex?.sets?.length || 0) - 1) {
-                    setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
-                  } else if (activeInput.eIdx < exercises.length - 1) {
-                    setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
-                    setExpandedExerciseIndex(activeInput.eIdx + 1);
-                  } else {
-                    setActiveInput(null);
-                  }
-                },
-              }
-            : null
-        }
-        preview={
-          activeInput
-            ? {
-                title: exercises[activeInput.eIdx]?.name,
-                meta: titleCase(exercises[activeInput.eIdx]?.muscleGroup),
-                sets: exercises[activeInput.eIdx]?.sets || [],
-                setIndex: activeInput.sIdx,
-                unit,
-                onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
-              }
-            : null
-        }
-        value={
-          activeInput
-            ? exercises[activeInput.eIdx]?.sets?.[activeInput.sIdx]?.[activeInput.field]
-            : ''
-        }
+        activeInput={{
+          field: activeInput.field,
+          targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
+          onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
+          onNext: () => {
+            const ex = exercises[activeInput.eIdx];
+            if (activeInput.field === 'weight') {
+              setActiveInput((prev) => ({ ...prev, field: 'reps' }));
+            } else if (activeInput.sIdx < (ex?.sets?.length || 0) - 1) {
+              setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
+            } else if (activeInput.eIdx < exercises.length - 1) {
+              setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
+              setExpandedExerciseIndex(activeInput.eIdx + 1);
+            } else {
+              setActiveInput(null);
+            }
+          },
+        }}
+        preview={{
+          title: exercises[activeInput.eIdx]?.name,
+          meta: titleCase(exercises[activeInput.eIdx]?.muscleGroup),
+          sets: exercises[activeInput.eIdx]?.sets || [],
+          setIndex: activeInput.sIdx,
+          unit,
+          onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
+        }}
+        value={exercises[activeInput.eIdx]?.sets?.[activeInput.sIdx]?.[activeInput.field]}
         onUpdate={(val) => {
-          if (activeInput) updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
+          updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
         }}
         onClose={() => setActiveInput(null)}
       />
-      </View>
+      )}
 
       <PrCelebration pr={prEvent} onClose={() => setPrEvent(null)} />
 

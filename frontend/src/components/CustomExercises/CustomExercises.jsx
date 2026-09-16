@@ -243,7 +243,8 @@ export default function CustomExercises({ scrollRef, popRef }) {
             </View>
           }
         />
-        <View style={{ flex: 1, position: 'relative' }}>
+        <View style={{ flex: 1, minHeight: 0 }}>
+        {!keypadOpen ? (
         <ScrollView
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
@@ -317,43 +318,36 @@ export default function CustomExercises({ scrollRef, popRef }) {
             <Text style={styles.addSetText}>Add Default Set</Text>
           </Pressable>
         </ScrollView>
+        ) : (
         <CustomNumpad
-          activeInput={
-            keypadOpen
-              ? {
-                  field: activeInput.field,
-                  targetId: `${activeInput.index}-${activeInput.field}`,
-                  onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
-                  onNext: () => {
-                    if (!activeInput) return;
-                    if (activeInput.field === 'weight') {
-                      setActiveInput((prev) => (prev ? { ...prev, field: 'reps' } : prev));
-                    } else if (activeInput.index < defaultSets.length - 1) {
-                      setActiveInput({ index: activeInput.index + 1, field: 'weight' });
-                    } else setActiveInput(null);
-                  },
-                }
-              : null
-          }
+          activeInput={{
+            field: activeInput.field,
+            targetId: `${activeInput.index}-${activeInput.field}`,
+            onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
+            onNext: () => {
+              if (activeInput.field === 'weight') {
+                setActiveInput((prev) => (prev ? { ...prev, field: 'reps' } : prev));
+              } else if (activeInput.index < defaultSets.length - 1) {
+                setActiveInput({ index: activeInput.index + 1, field: 'weight' });
+              } else setActiveInput(null);
+            },
+          }}
           onClose={() => setActiveInput(null)}
-          preview={
-            keypadOpen
-              ? {
-                  title: newName.trim() || 'Custom exercise',
-                  meta: titleCase(newMuscleGroup),
-                  sets: defaultSets,
-                  setIndex: activeInput.index,
-                  unit,
-                  onSelectCell: (i, field) => setActiveInput({ index: i, field }),
-                }
-              : null
-          }
-          value={keypadOpen ? activeSet[activeInput.field] : ''}
+          preview={{
+            title: newName.trim() || 'Custom exercise',
+            meta: titleCase(newMuscleGroup),
+            sets: defaultSets,
+            setIndex: activeInput.index,
+            unit,
+            onSelectCell: (i, field) => setActiveInput({ index: i, field }),
+          }}
+          value={activeSet?.[activeInput.field] ?? ''}
           onUpdate={(val) => {
             if (!activeInput || activeInput.index == null || activeInput.index >= defaultSets.length) return;
             updateSet(activeInput.index, activeInput.field, val);
           }}
         />
+        )}
         </View>
       </View>
     );

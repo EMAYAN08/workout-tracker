@@ -10,6 +10,45 @@ let lastLiveKey = '';
 let logoAttachment = null;
 let donePresented = false;
 let listenerAttached = false;
+let liveTicksDisabled = false;
+let scheduleWarned = false;
+
+function warnOnce(label, err) {
+  if (scheduleWarned) return;
+  scheduleWarned = true;
+  console.warn(label, err?.message || err);
+}
+
+function doneTrigger(N, seconds) {
+  const wait = Math.max(1, Math.floor(Number(seconds) || 1));
+  const dateType = N.SchedulableTriggerInputTypes?.DATE;
+  if (dateType) {
+    return { type: dateType, date: new Date(Date.now() + wait * 1000), repeats: false };
+  }
+  const intervalType = N.SchedulableTriggerInputTypes?.TIME_INTERVAL || 'timeInterval';
+  return { type: intervalType, seconds: wait, repeats: false };
+}
+
+async function scheduleNow(N, { identifier, content, trigger }) {
+  const payload = { identifier, content, trigger };
+  try {
+    await N.scheduleNotificationAsync(payload);
+    return true;
+  } catch (err) {
+    if (content?.attachments) {
+      const { attachments, ...rest } = content;
+      try {
+        await N.scheduleNotificationAsync({ identifier, content: rest, trigger });
+        return true;
+      } catch (retryErr) {
+        warnOnce('notification schedule', retryErr);
+        return false;
+      }
+    }
+    warnOnce('notification schedule', err);
+    return false;
+  }
+}
 
 async function mod() {
   if (Notifications) return Notifications;
@@ -22,7 +61,6 @@ async function mod() {
           return {
             shouldShowBanner: true,
             shouldShowList: true,
-            shouldShowAlert: true,
             shouldPlaySound: !!done,
             shouldSetBadge: false,
           };
@@ -122,10 +160,11 @@ export async function registerNotificationCategories() {
 }
 
 async function presentLive(content) {
+  if (Platform.OS === 'ios') return;
   const N = await mod();
   if (!N || Platform.OS === 'web') return;
   const logo = await getLogoAttachment();
-  await N.scheduleNotificationAsync({
+  await scheduleNow(N, {
     identifier: LIVE_ID,
     content: {
       ...content,
@@ -134,7 +173,6 @@ async function presentLive(content) {
       autoDismiss: false,
       channelId: CH_LIVE,
       priority: N.AndroidNotificationPriority?.DEFAULT,
-      interruptionLevel: 'passive',
       data: { kind: 'restLive' },
       ...(logo ? { attachments: [logo] } : {}),
     },
@@ -143,6 +181,7 @@ async function presentLive(content) {
 }
 
 export async function tickRestNotification({ remainingSec, totalSec, exerciseName, setLabel } = {}) {
+  if (Platform.OS === 'ios' || liveTicksDisabled) return;
   const N = await mod();
   if (!N || Platform.OS === 'web') return;
   const remaining = Math.max(0, Math.floor(Number(remainingSec) || 0));
@@ -171,7 +210,8 @@ export async function tickRestNotification({ remainingSec, totalSec, exerciseNam
       },
     });
   } catch (err) {
-    console.warn('live rest tick', err?.message || err);
+    liveTicksDisabled = true;
+    warnOnce('live rest tick', err);
   }
 }
 
@@ -190,11 +230,12 @@ export async function scheduleRestNotification({
     const ok = await ensureNotificationPermission();
     if (!ok) return;
     await registerNotificationCategories();
-    await tickRestNotification({ remainingSec: remaining, totalSec: remaining, exerciseName, setLabel });
+    if (Platform.OS !== 'ios') {
+      await tickRestNotification({ remainingSec: remaining, totalSec: remaining, exerciseName, setLabel });
+    }
     if (scheduleDone && remaining > 0) {
       const logo = await getLogoAttachment();
-      const triggerType = N.SchedulableTriggerInputTypes?.TIME_INTERVAL || 'timeInterval';
-      await N.scheduleNotificationAsync({
+      const scheduled = await scheduleNow(N, {
         identifier: DONE_ID,
         content: {
           title: 'Rest is over',
@@ -204,17 +245,26 @@ export async function scheduleRestNotification({
           channelId: CH_DONE,
           interruptionLevel: 'active',
           data: { kind: 'restDone', exerciseName, setLabel },
-          ...(logo ? { attachments: [logo] } : {}),
+          ...(logo && Platform.OS !== 'ios' ? { attachments: [logo] } : {}),
         },
-        trigger: {
-          type: triggerType,
-          seconds: Math.max(1, remaining),
-          repeats: false,
-        },
+        trigger: doneTrigger(N, remaining),
       });
+      if (!scheduled && Platform.OS === 'ios') {
+        await scheduleNow(N, {
+          identifier: DONE_ID,
+          content: {
+            title: 'Rest is over',
+            body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
+            sound: 'default',
+            interruptionLevel: 'active',
+            data: { kind: 'restDone', exerciseName, setLabel },
+          },
+          trigger: { seconds: Math.max(1, remaining), repeats: false },
+        });
+      }
     }
   } catch (err) {
-    console.warn('rest notification failed', err?.message || err);
+    warnOnce('rest notification failed', err);
   }
 }
 
@@ -232,7 +282,7 @@ export async function presentRestDone({ exerciseName, setLabel } = {}) {
     if (!ok) return;
     await registerNotificationCategories();
     const logo = await getLogoAttachment();
-    await N.scheduleNotificationAsync({
+    await scheduleNow(N, {
       identifier: DONE_ID,
       content: {
         title: 'Rest is over',
@@ -242,7 +292,7 @@ export async function presentRestDone({ exerciseName, setLabel } = {}) {
         channelId: CH_DONE,
         interruptionLevel: 'active',
         data: { kind: 'restDone', exerciseName, setLabel },
-        ...(logo ? { attachments: [logo] } : {}),
+        ...(logo && Platform.OS !== 'ios' ? { attachments: [logo] } : {}),
       },
       trigger: null,
     });

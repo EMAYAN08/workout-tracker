@@ -345,7 +345,7 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const keyProps = { colors, styles };
 
   return (
-    <View style={styles.overlay} pointerEvents="auto">
+    <View style={styles.overlay} collapsable={false}>
       <Animated.View
         style={[
           styles.previewWrap,
@@ -449,13 +449,13 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
 function makeStyles(colors) {
   return StyleSheet.create({
     overlay: {
-      ...StyleSheet.absoluteFillObject,
+      flex: 1,
+      minHeight: 0,
       backgroundColor: colors.background,
-      zIndex: 80,
-      elevation: 24,
     },
     previewWrap: {
       flex: 1,
+      minHeight: 0,
       paddingHorizontal: 12,
       paddingTop: 8,
       paddingBottom: 0,
@@ -474,6 +474,7 @@ function makeStyles(colors) {
     },
     previewCard: {
       flex: 1,
+      minHeight: 0,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.borderStrong,
