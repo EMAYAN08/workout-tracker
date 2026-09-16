@@ -24,6 +24,7 @@ export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
       return;
     }
     startWorkoutFromRoutine(routine);
+    haptic('success');
   };
 
   const getRoutineCategories = (exercises) => {
@@ -60,6 +61,7 @@ export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
             return;
           }
           startWorkout();
+          haptic('success');
         }}
         style={styles.emptyStart}
         accessibilityLabel="Start empty workout"

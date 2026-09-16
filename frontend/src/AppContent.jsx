@@ -78,6 +78,7 @@ export default function AppContent() {
     if (workoutStartRef.current !== activeWorkout.startTime) {
       workoutStartRef.current = activeWorkout.startTime;
       setWorkoutDocked(false);
+      setTabBarHidden(false);
     }
   }, [activeWorkout]);
 
@@ -211,7 +212,7 @@ export default function AppContent() {
             style={
               workoutDocked
                 ? styles.workoutHidden
-                : [StyleSheet.absoluteFillObject, { backgroundColor: colors.background, zIndex: 2 }]
+                : [StyleSheet.absoluteFillObject, { backgroundColor: colors.background, zIndex: 2, elevation: 8 }]
             }
           >
             <ActiveWorkout

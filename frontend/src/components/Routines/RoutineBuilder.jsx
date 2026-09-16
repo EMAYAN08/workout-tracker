@@ -204,6 +204,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           </View>
         }
       />
+      <View style={{ flex: 1, position: 'relative' }}>
       <ScrollView
         style={{ flex: 1 }}
         scrollEnabled={listScroll}
@@ -355,6 +356,69 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
         </Pressable>
       </ScrollView>
 
+      <CustomNumpad
+        activeInput={
+          activeInput
+            ? {
+                field: activeInput.field,
+                targetId: `${activeInput.exerciseIndex}-${activeInput.setIndex}-${activeInput.field}`,
+                onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
+                onNext: () => {
+                  const ex = exercises[activeInput.exerciseIndex];
+                  if (!ex) {
+                    setActiveInput(null);
+                    return;
+                  }
+                  const sets = ex.defaultSets || [];
+                  if (activeInput.field === 'weight') {
+                    setActiveInput((prev) => (prev ? { ...prev, field: 'reps' } : prev));
+                  } else if (activeInput.setIndex < sets.length - 1) {
+                    setActiveInput({
+                      exerciseIndex: activeInput.exerciseIndex,
+                      setIndex: activeInput.setIndex + 1,
+                      field: 'weight',
+                    });
+                  } else if (activeInput.exerciseIndex < exercises.length - 1) {
+                    const nextIdx = activeInput.exerciseIndex + 1;
+                    setExpandedExerciseIndex(nextIdx);
+                    setActiveInput({
+                      exerciseIndex: nextIdx,
+                      setIndex: 0,
+                      field: 'weight',
+                    });
+                  } else setActiveInput(null);
+                },
+              }
+            : null
+        }
+        onClose={() => setActiveInput(null)}
+        preview={
+          activeInput
+            ? {
+                title: exercises[activeInput.exerciseIndex]?.name,
+                meta: titleCase(exercises[activeInput.exerciseIndex]?.muscleGroup),
+                sets: exercises[activeInput.exerciseIndex]?.defaultSets || [],
+                setIndex: activeInput.setIndex,
+                unit,
+                onSelectCell: (i, field) =>
+                  setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: i, field }),
+              }
+            : null
+        }
+        value={
+          activeInput
+            ? exercises[activeInput.exerciseIndex]?.defaultSets?.[activeInput.setIndex]?.[activeInput.field]
+            : ''
+        }
+        onUpdate={(val) => {
+          if (!activeInput) return;
+          const ex = exercises[activeInput.exerciseIndex];
+          if (!ex?.defaultSets?.[activeInput.setIndex]) return;
+          updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
+        }}
+      />
+      </View>
+
       <Modal visible={isSearching} animationType="slide" onRequestClose={() => setIsSearching(false)}>
         <View style={[styles.searchRoot, { paddingTop: insets.top }]}>
           <View style={styles.searchBar}>
@@ -453,68 +517,6 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
           </ScrollView>
         </View>
       </Modal>
-
-      <CustomNumpad
-        activeInput={
-          activeInput
-            ? {
-                field: activeInput.field,
-                targetId: `${activeInput.exerciseIndex}-${activeInput.setIndex}-${activeInput.field}`,
-                onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
-                onNext: () => {
-                  const ex = exercises[activeInput.exerciseIndex];
-                  if (!ex) {
-                    setActiveInput(null);
-                    return;
-                  }
-                  const sets = ex.defaultSets || [];
-                  if (activeInput.field === 'weight') {
-                    setActiveInput((prev) => (prev ? { ...prev, field: 'reps' } : prev));
-                  } else if (activeInput.setIndex < sets.length - 1) {
-                    setActiveInput({
-                      exerciseIndex: activeInput.exerciseIndex,
-                      setIndex: activeInput.setIndex + 1,
-                      field: 'weight',
-                    });
-                  } else if (activeInput.exerciseIndex < exercises.length - 1) {
-                    const nextIdx = activeInput.exerciseIndex + 1;
-                    setExpandedExerciseIndex(nextIdx);
-                    setActiveInput({
-                      exerciseIndex: nextIdx,
-                      setIndex: 0,
-                      field: 'weight',
-                    });
-                  } else setActiveInput(null);
-                },
-              }
-            : null
-        }
-        onClose={() => setActiveInput(null)}
-        preview={
-          activeInput
-            ? {
-                title: exercises[activeInput.exerciseIndex]?.name,
-                meta: titleCase(exercises[activeInput.exerciseIndex]?.muscleGroup),
-                sets: exercises[activeInput.exerciseIndex]?.defaultSets || [],
-                setIndex: activeInput.setIndex,
-                unit,
-                onSelectCell: (i, field) =>
-                  setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: i, field }),
-              }
-            : null
-        }
-        value={
-          activeInput
-            ? exercises[activeInput.exerciseIndex]?.defaultSets?.[activeInput.setIndex]?.[activeInput.field]
-            : ''
-        }
-        onUpdate={(val) => {
-          if (!activeInput) return;
-          const ex = exercises[activeInput.exerciseIndex];
-          if (!ex?.defaultSets?.[activeInput.setIndex]) return;
-          updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
-        }}
-      />
     </View>
   );
 }

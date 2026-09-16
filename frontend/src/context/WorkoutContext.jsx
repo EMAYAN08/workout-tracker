@@ -247,6 +247,7 @@ export function WorkoutProvider({ children }) {
 
   const startWorkout = () => {
     cancelRestNotification();
+    setPlayingSet(null);
     setActiveWorkout({
       id: `wk_${Date.now()}`,
       startTime: Date.now(),
@@ -257,49 +258,56 @@ export function WorkoutProvider({ children }) {
   };
 
   const startWorkoutFromRoutine = (routine) => {
-    const populatedExercises = routine.exercises.map((ex) => {
-      const pastWorkout = workoutHistory.find((wk) =>
-        wk.exercises?.some((e) => e.id === ex.id && e.sets?.length > 0)
-      );
-      const prevPerformance = pastWorkout ? pastWorkout.exercises.find((e) => e.id === ex.id) : null;
-      const defaultSetsCount = (ex.defaultSets || []).length || 3;
-      let initialSets = [];
+    if (!routine) return;
+    cancelRestNotification();
+    setPlayingSet(null);
+    const source = Array.isArray(routine.exercises) ? routine.exercises : [];
+    const populatedExercises = source
+      .filter(Boolean)
+      .map((ex) => {
+        const pastWorkout = (workoutHistory || []).find((wk) =>
+          wk.exercises?.some((e) => e.id === ex.id && e.sets?.length > 0)
+        );
+        const prevPerformance = pastWorkout ? pastWorkout.exercises.find((e) => e.id === ex.id) : null;
+        const pastSets = prevPerformance?.sets || [];
+        const defaultSetsCount = (ex.defaultSets || []).length || 3;
+        let initialSets = [];
 
-      if (prevPerformance) {
-        const pastUnit = pastWorkout.unitSaved || 'lbs';
-        for (let i = 0; i < defaultSetsCount; i++) {
-          const pastSet = prevPerformance.sets[i] || prevPerformance.sets[prevPerformance.sets.length - 1];
-          initialSets.push({
-            type: pastSet.type || 'Working',
-            weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
-            reps: pastSet.reps ? String(pastSet.reps) : '',
-            completedAt: null,
-          });
-        }
-      } else {
-        const setsToUse = ex.defaultSets || [];
-        if (setsToUse.length > 0) {
-          initialSets = setsToUse.map((ds) => ({
-            type: ds.type || 'Working',
-            weight: ds.weight ? String(convertWeight(ds.weight, ex.unitSaved || 'lbs', unit)) : '',
-            reps: ds.reps ? String(ds.reps) : '',
-            completedAt: null,
-          }));
+        if (pastSets.length > 0) {
+          const pastUnit = pastWorkout.unitSaved || 'lbs';
+          for (let i = 0; i < defaultSetsCount; i++) {
+            const pastSet = pastSets[i] || pastSets[pastSets.length - 1] || {};
+            initialSets.push({
+              type: pastSet.type || 'Working',
+              weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
+              reps: pastSet.reps ? String(pastSet.reps) : '',
+              completedAt: null,
+            });
+          }
         } else {
-          initialSets = Array(defaultSetsCount)
-            .fill(null)
-            .map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
+          const setsToUse = ex.defaultSets || [];
+          if (setsToUse.length > 0) {
+            initialSets = setsToUse.map((ds) => ({
+              type: ds?.type || 'Working',
+              weight: ds?.weight ? String(convertWeight(ds.weight, ex.unitSaved || 'lbs', unit)) : '',
+              reps: ds?.reps ? String(ds.reps) : '',
+              completedAt: null,
+            }));
+          } else {
+            initialSets = Array(defaultSetsCount)
+              .fill(null)
+              .map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
+          }
         }
-      }
 
-      return {
-        id: ex.id,
-        name: ex.name,
-        muscleGroup: ex.muscleGroup,
-        gifUrl: ex.gifUrl,
-        sets: initialSets,
-      };
-    });
+        return {
+          id: ex.id,
+          name: ex.name,
+          muscleGroup: ex.muscleGroup,
+          gifUrl: ex.gifUrl,
+          sets: initialSets,
+        };
+      });
 
     setActiveWorkout({
       id: `wk_${Date.now()}`,
@@ -310,7 +318,6 @@ export function WorkoutProvider({ children }) {
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
-    cancelRestNotification();
   };
 
   const finishWorkout = async () => {

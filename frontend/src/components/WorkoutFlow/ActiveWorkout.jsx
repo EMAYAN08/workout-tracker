@@ -186,6 +186,7 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         ) : null}
       </View>
 
+      <View style={{ flex: 1, position: 'relative' }}>
       <ScrollView
         scrollEnabled={listScroll}
         contentContainerStyle={{ padding: 16, paddingBottom: activeInput ? 320 : 40 }}
@@ -377,6 +378,55 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         </Pressable>
       </ScrollView>
 
+      <CustomNumpad
+        activeInput={
+          activeInput
+            ? {
+                field: activeInput.field,
+                targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
+                onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
+                onNext: () => {
+                  const ex = activeWorkout.exercises[activeInput.eIdx];
+                  if (activeInput.field === 'weight') {
+                    setActiveInput((prev) => ({ ...prev, field: 'reps' }));
+                  } else if (activeInput.sIdx < ex.sets.length - 1) {
+                    setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
+                  } else if (activeInput.eIdx < activeWorkout.exercises.length - 1) {
+                    setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
+                    setExpandedExerciseIndex(activeInput.eIdx + 1);
+                  } else {
+                    setActiveInput(null);
+                  }
+                },
+              }
+            : null
+        }
+        preview={
+          activeInput
+            ? {
+                title: activeWorkout.exercises[activeInput.eIdx]?.name,
+                meta: titleCase(activeWorkout.exercises[activeInput.eIdx]?.muscleGroup),
+                sets: activeWorkout.exercises[activeInput.eIdx]?.sets || [],
+                setIndex: activeInput.sIdx,
+                unit,
+                onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
+              }
+            : null
+        }
+        value={
+          activeInput
+            ? activeWorkout.exercises[activeInput.eIdx].sets[activeInput.sIdx][activeInput.field]
+            : ''
+        }
+        onUpdate={(val) => {
+          if (activeInput) updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
+        }}
+        onClose={() => setActiveInput(null)}
+      />
+      </View>
+
+      <PrCelebration pr={prEvent} onClose={() => setPrEvent(null)} />
+
       <Modal visible={isSearching} animationType="slide" onRequestClose={() => setIsSearching(false)}>
         <View style={[styles.searchRoot, { paddingTop: insets.top }]}>
           <View style={styles.searchBar}>
@@ -452,54 +502,6 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
           </ScrollView>
         </View>
       </Modal>
-
-      <PrCelebration pr={prEvent} onClose={() => setPrEvent(null)} />
-
-      <CustomNumpad
-        activeInput={
-          activeInput
-            ? {
-                field: activeInput.field,
-                targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
-                onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
-                onNext: () => {
-                  const ex = activeWorkout.exercises[activeInput.eIdx];
-                  if (activeInput.field === 'weight') {
-                    setActiveInput((prev) => ({ ...prev, field: 'reps' }));
-                  } else if (activeInput.sIdx < ex.sets.length - 1) {
-                    setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
-                  } else if (activeInput.eIdx < activeWorkout.exercises.length - 1) {
-                    setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
-                    setExpandedExerciseIndex(activeInput.eIdx + 1);
-                  } else {
-                    setActiveInput(null);
-                  }
-                },
-              }
-            : null
-        }
-        preview={
-          activeInput
-            ? {
-                title: activeWorkout.exercises[activeInput.eIdx]?.name,
-                meta: titleCase(activeWorkout.exercises[activeInput.eIdx]?.muscleGroup),
-                sets: activeWorkout.exercises[activeInput.eIdx]?.sets || [],
-                setIndex: activeInput.sIdx,
-                unit,
-                onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
-              }
-            : null
-        }
-        value={
-          activeInput
-            ? activeWorkout.exercises[activeInput.eIdx].sets[activeInput.sIdx][activeInput.field]
-            : ''
-        }
-        onUpdate={(val) => {
-          if (activeInput) updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
-        }}
-        onClose={() => setActiveInput(null)}
-      />
     </View>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard, Modal, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { BlurView } from 'expo-blur';
 import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -91,7 +92,7 @@ function PreviewCard({ preview, field, value, colors, styles }) {
 
 export default function CustomNumpad({ activeInput, onClose, onUpdate, value, preview }) {
   const insets = useSafeAreaInsets();
-  const { colors, setTabBarHidden } = useTheme();
+  const { colors, isDark, setTabBarHidden } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const freshRef = useRef(true);
   const targetRef = useRef(null);
@@ -362,29 +363,33 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
   const keyProps = { colors, styles };
 
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={close}>
-      <GestureHandlerRootView style={styles.modalRoot}>
-        <Animated.View style={[styles.scrim, { opacity: overlay }]} pointerEvents="none" />
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close editor" />
+    <View style={styles.overlay} pointerEvents="auto">
+      <Animated.View style={[styles.scrim, { opacity: overlay }]} pointerEvents="none" />
+      <Animated.View
+        style={[
+          styles.previewWrap,
+          {
+            opacity: overlay,
+            transform: [{ translateY: cardY }],
+          },
+        ]}
+      >
+        <PreviewCard preview={preview} field={input.field} value={value} colors={colors} styles={styles} />
+      </Animated.View>
+      <Animated.View style={[styles.glassGap, { opacity: overlay }]} pointerEvents="none">
+        <BlurView
+          intensity={isDark ? 48 : 36}
+          tint={isDark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.glassSheen} />
+      </Animated.View>
+      <GestureDetector gesture={pan}>
         <Animated.View
-          pointerEvents="box-none"
-          style={[
-            styles.previewWrap,
-            {
-              paddingTop: insets.top + 8,
-              opacity: overlay,
-              transform: [{ translateY: cardY }],
-            },
-          ]}
+          nativeID="keypad-sheet"
+          collapsable={false}
+          style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
         >
-          <PreviewCard preview={preview} field={input.field} value={value} colors={colors} styles={styles} />
-        </Animated.View>
-        <GestureDetector gesture={pan}>
-          <Animated.View
-            nativeID="keypad-sheet"
-            collapsable={false}
-            style={[styles.sheet, { paddingBottom: 4, transform: [{ translateY }] }]}
-          >
             <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
@@ -459,32 +464,47 @@ export default function CustomNumpad({ activeInput, onClose, onUpdate, value, pr
             <View style={{ height: Math.max(insets.bottom, 16) }} />
           </Animated.View>
         </GestureDetector>
-      </GestureHandlerRootView>
-    </Modal>
+    </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
-    modalRoot: { flex: 1 },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 80,
+      elevation: 24,
+    },
     scrim: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: colors.background,
     },
     previewWrap: {
       flex: 1,
-      justifyContent: 'flex-end',
-      paddingHorizontal: 16,
-      paddingBottom: 12,
+      paddingHorizontal: 12,
+      paddingTop: 8,
+      paddingBottom: 0,
+    },
+    glassGap: {
+      height: 18,
+      overflow: 'hidden',
+      zIndex: 90,
+    },
+    glassSheen: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
     previewCard: {
+      flex: 1,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.borderStrong,
       borderRadius: radius.md,
       padding: 14,
       gap: 8,
-      maxHeight: '100%',
     },
     previewHead: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginBottom: 4 },
     previewTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 20, textTransform: 'capitalize' },
@@ -506,7 +526,7 @@ function makeStyles(colors) {
       letterSpacing: 1,
     },
     previewCols: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, marginTop: 4 },
-    previewSets: { flexGrow: 0, maxHeight: 240 },
+    previewSets: { flex: 1 },
     previewCol: {
       color: colors.textMuted,
       fontSize: 11,

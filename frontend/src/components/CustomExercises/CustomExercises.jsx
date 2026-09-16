@@ -243,6 +243,7 @@ export default function CustomExercises({ scrollRef, popRef }) {
             </View>
           }
         />
+        <View style={{ flex: 1, position: 'relative' }}>
         <ScrollView
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
@@ -353,6 +354,7 @@ export default function CustomExercises({ scrollRef, popRef }) {
             updateSet(activeInput.index, activeInput.field, val);
           }}
         />
+        </View>
       </View>
     );
   }
