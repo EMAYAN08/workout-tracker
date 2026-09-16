@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Clock, Activity, Dumbbell, Moon } from 'lucide-react-native';
+import { Clock, Activity, Dumbbell, Moon, Share2 } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
 import { useWorkout } from '../../context/WorkoutContext';
 import { calculateVolume, convertWeight } from '../../utils/calculations';
@@ -9,6 +9,8 @@ import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { ScreenHeader, hideScroll } from '../ui/primitives';
 import { titleCase } from '../../utils/format';
+import { haptic } from '../../haptics';
+import { shareWorkoutDayPdf } from '../../utils/workoutDayPdf';
 
 const ExerciseImage = ({ src }) => {
   const { colors } = useTheme();
@@ -33,8 +35,9 @@ const ExerciseImage = ({ src }) => {
 
 export default function WorkoutDetailView({ date, onBack }) {
   const { workoutHistory, unit } = useWorkout();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
+  const [sharing, setSharing] = useState(false);
 
   const dayWorkouts = useMemo(() => {
     if (!workoutHistory || !date) return [];
@@ -68,9 +71,34 @@ export default function WorkoutDetailView({ date, onBack }) {
   );
   const displayDate = format(parseISO(date), 'MMM d, yyyy');
 
+  const handleSharePdf = async () => {
+    if (sharing || !dayWorkouts.length) return;
+    setSharing(true);
+    haptic('selection');
+    try {
+      await shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark });
+    } catch (err) {
+      console.error('PDF share failed:', err);
+      Alert.alert('Share', 'Could not create the PDF.');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const shareBtn = (
+    <Pressable
+      onPress={handleSharePdf}
+      disabled={sharing}
+      accessibilityLabel="Share workout PDF"
+      style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center', opacity: sharing ? 0.4 : 1 }}
+    >
+      <Share2 size={20} color={colors.text} />
+    </Pressable>
+  );
+
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader title={displayDate} onBack={onBack} />
+      <ScreenHeader title={displayDate} onBack={onBack} right={shareBtn} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
       <View style={styles.meta}>
         <View style={styles.metaItem}>

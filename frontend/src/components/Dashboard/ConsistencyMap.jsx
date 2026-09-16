@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, Share as RNShare } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -60,6 +60,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
   const mapRef = useRef(null);
   const [monthOffset, setMonthOffset] = useState(0);
   const [areaW, setAreaW] = useState(0);
+  const [capturing, setCapturing] = useState(false);
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -103,20 +104,38 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
     };
   }, [countsMap, monthOffset]);
 
-  const handleShare = async () => {
-    try {
-      if (mapRef.current && Platform.OS !== 'web') {
-        const uri = await captureRef(mapRef, { format: 'png', quality: 1, result: 'tmpfile' });
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'My TrackIt Consistency' });
-          return;
-        }
-      }
-      await RNShare.share({ message: 'Check out my workout consistency on TrackIt!' });
-    } catch (err) {
-      console.error('Failed to share:', err);
-    }
+  const handleShare = () => {
+    if (capturing) return;
+    setCapturing(true);
   };
+
+  useLayoutEffect(() => {
+    if (!capturing) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (mapRef.current && Platform.OS !== 'web') {
+          const uri = await captureRef(mapRef, { format: 'png', quality: 1, result: 'tmpfile' });
+          if (cancelled) return;
+          setCapturing(false);
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'My TrackIt Consistency' });
+            return;
+          }
+        }
+        if (!cancelled) {
+          setCapturing(false);
+          await RNShare.share({ message: 'Check out my workout consistency on TrackIt!' });
+        }
+      } catch (err) {
+        console.error('Failed to share:', err);
+        if (!cancelled) setCapturing(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [capturing]);
 
   const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const cellColor = (day) => {
@@ -165,16 +184,20 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
                 <ChevronRight size={16} color={colors.textMuted} />
               </Pressable>
             </View>
-            <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
-              <Text style={styles.historyText}>History</Text>
-            </Pressable>
-            <Pressable
-              onPress={handleShare}
-              style={styles.iconBtn}
-              accessibilityLabel="Share consistency"
-            >
-              <Share2 size={16} color={colors.textMuted} />
-            </Pressable>
+            {!capturing ? (
+              <>
+                <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
+                  <Text style={styles.historyText}>History</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleShare}
+                  style={styles.iconBtn}
+                  accessibilityLabel="Share consistency"
+                >
+                  <Share2 size={16} color={colors.textMuted} />
+                </Pressable>
+              </>
+            ) : null}
           </View>
         </View>
 
