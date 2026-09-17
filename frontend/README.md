@@ -30,7 +30,7 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 ## 0. What reviewers will still flag if you skip it
 
 - [ ] Production IPA — Expo Go / a dev client **cannot** be submitted. Run `eas build --platform ios --profile production`.
-- [ ] Bundle id `com.trackit.app` — confirm you own it in App Store Connect and lock it.
+- [ ] Bundle id `com.trackhit.app` — confirm you own it in App Store Connect and lock it.
 - [x] Support URL — **hard required** in App Store Connect: https://emayan08.github.io/workout-tracker/support/
 - [x] Privacy Policy URL — **hard required** in App Store Connect: https://emayan08.github.io/workout-tracker/privacy/
 - [ ] Screenshots — 2026 required set is **6.9" iPhone, 1320×2868**. Do not screenshot Mock-on “Demo data”.
@@ -64,7 +64,7 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 - [ ] Bump `buildNumber` on every App Store upload.
 - [ ] Create an **EAS production build** (`npx eas build --platform ios --profile production`). Expo Go cannot be submitted.
 - [ ] Confirm the store binary is **Release** (no `__DEV__` banners, no “development build” warning).
-- [ ] Confirm you own bundle id `com.trackit.app` in the Apple Developer portal / App Store Connect.
+- [ ] Confirm you own bundle id `com.trackhit.app` in the Apple Developer portal / App Store Connect.
 - [ ] In the built archive, confirm **no** Push Notifications entitlement and **no** `remote-notification` background mode.
 - [ ] In the built archive, confirm **no** Photos permission appears in Settings → TrackHit.
 
@@ -172,7 +172,7 @@ App Store Connect → App Privacy:
 ## 4. App Store Connect account setup
 
 - [ ] Apple Developer Program membership (paid), two-factor, agreements accepted.
-- [ ] App record: bundle id matches `com.trackit.app`.
+- [ ] App record: bundle id matches `com.trackhit.app`.
 - [ ] Certificates + provisioning via EAS (`eas credentials`) — distribution cert, App Store profile.
 - [x] **Skip** Push Notifications capability.
 - [x] **Skip** Sign in with Apple. Guideline **4.8** only applies if the app offers a *third-party* login (Google, Facebook, etc.). TrackHit has **no accounts at all**, so SIWA is not required and Apple will **not** reject you for omitting it. Do **not** add Google/Apple login “just in case” — that would *create* a 4.8 obligation.

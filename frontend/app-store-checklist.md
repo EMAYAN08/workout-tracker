@@ -193,17 +193,17 @@ Still on you: Apple Developer account, **paste the privacy + support URLs in Con
 </details>
 
 <details>
-<summary>1.2 Bundle ID <code>com.trackit.app</code></summary>
+<summary>1.2 Bundle ID <code>com.trackhit.app</code></summary>
 
 1. [developer.apple.com](https://developer.apple.com) → Certificates, Identifiers & Profiles → **Identifiers** → **+**
-2. App IDs → App → Description `TrackHit` → Bundle ID **Explicit** `com.trackit.app`
+2. App IDs → App → Description `TrackHit` → Bundle ID **Explicit** `com.trackhit.app`
 3. Capabilities: leave **Push Notifications OFF**. Leave Sign in with Apple OFF. Leave HealthKit OFF.
 4. App Store Connect → My Apps → **+** → New App
    - Platforms: **iOS**
    - Name: `TrackHit` (or `TrackHit Workout Logger` if the name is taken — 30 character cap)
    - Primary language: English (U.S.)
    - Bundle ID: the one you just created
-   - SKU: `trackit-ios` (internal, never shown)
+   - SKU: `trackhit-ios` (internal, never shown)
    - User Access: Full Access
 
 - [ ] Bundle ID created and owned
@@ -528,7 +528,7 @@ cd frontend
 npm i -g eas-cli
 npx eas login
 npx eas init          # link to Expo account / project
-npx eas credentials   # iOS distribution cert + App Store profile for com.trackit.app
+npx eas credentials   # iOS distribution cert + App Store profile for com.trackhit.app
 ```
 
 `eas.json` already has a `production` profile.

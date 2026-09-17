@@ -19,7 +19,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.trackit.app",
+      "bundleIdentifier": "com.trackhit.app",
       "buildNumber": "1",
       "icon": {
         "light": "./assets/icon-light.png",
@@ -53,7 +53,7 @@
         "backgroundColor": "#F4F0E8",
         "monochromeImage": "./assets/icon-tinted.png"
       },
-      "package": "com.trackit.app"
+      "package": "com.trackhit.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
