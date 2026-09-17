@@ -8,7 +8,7 @@ import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { ScreenHeader, hideScroll } from '../ui/primitives';
-import TrackItMark from '../ui/TrackItMark';
+import TrackHitMark from '../ui/TrackHitMark';
 import { titleCase } from '../../utils/format';
 import { haptic } from '../../haptics';
 import { shareWorkoutDayPdf } from '../../utils/workoutDayPdf';
@@ -89,10 +89,10 @@ export default function WorkoutDetailView({ date, onBack }) {
       const uri = await captureHiResPng(shotRef, { pixelRatio: 2 });
       setStamp(false);
       await shareFile(uri, {
-        filename: `TrackIt-${date}`,
+        filename: `TrackHit-${date}`,
         mimeType: 'image/png',
         uti: 'public.png',
-        message: `TrackIt · ${displayDate}`,
+        message: `TrackHit · ${displayDate}`,
       });
     } catch (err) {
       console.error('Share failed:', err);
@@ -193,7 +193,7 @@ export default function WorkoutDetailView({ date, onBack }) {
           </View>
         </View>
       ))}
-      {stamp ? <TrackItMark colors={colors} /> : null}
+      {stamp ? <TrackHitMark colors={colors} /> : null}
       </View>
       </ScrollView>
     </View>

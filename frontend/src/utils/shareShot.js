@@ -104,7 +104,7 @@ export async function shareFile(uri, { filename, mimeType, uti, message } = {}) 
     await Sharing.shareAsync(uri, {
       mimeType: mimeType || 'image/png',
       UTI: uti || 'public.png',
-      dialogTitle: filename || 'TrackIt',
+      dialogTitle: filename || 'TrackHit',
     });
   } else if (message) {
     await RNShare.share({ message, url: uri });
@@ -115,7 +115,7 @@ export async function shareFile(uri, { filename, mimeType, uti, message } = {}) 
 
 export async function shareViewAsPng(viewRef, { filename, message, pixelRatio = 3 } = {}) {
   if (Platform.OS === 'web') {
-    await RNShare.share({ message: message || 'TrackIt' });
+    await RNShare.share({ message: message || 'TrackHit' });
     return { ok: true };
   }
   const uri = await captureHiResPng(viewRef, { pixelRatio });

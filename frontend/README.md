@@ -1,8 +1,8 @@
-# TrackIt — App Store launch checklist
+# TrackHit — App Store launch checklist
 
 **Submit walkthrough (dropdowns + steps):** [app-store-checklist.md](app-store-checklist.md)
 
-TrackIt is a **local-first iOS/Android workout logger** (Expo SDK 57). There is **no account, no server, and no analytics**. Workouts, routines, and custom exercises live in AsyncStorage on the phone. Users can export/import a JSON backup, get **local** rest-timer notifications, and share a summary image.
+TrackHit is a **local-first iOS/Android workout logger** (Expo SDK 57). There is **no account, no server, and no analytics**. Workouts, routines, and custom exercises live in AsyncStorage on the phone. Users can export/import a JSON backup, get **local** rest-timer notifications, and share a summary image.
 
 Tick a box when that item is done. `[x]` is already true in the repo. `[ ]` is still on you (Xcode, App Store Connect, or a physical iPhone). Checking a box on GitHub writes a commit — that is the intended workflow.
 
@@ -44,7 +44,7 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 ## 1. Binary & project
 
 - [x] Remove `UIBackgroundModes: ["audio"]` from [app.json](app.json).
-- [x] Configure `expo-notifications` with `enableBackgroundRemoteNotifications: false`. TrackIt only uses `scheduleNotificationAsync` (time-interval + sticky rest banner).
+- [x] Configure `expo-notifications` with `enableBackgroundRemoteNotifications: false`. TrackHit only uses `scheduleNotificationAsync` (time-interval + sticky rest banner).
 - [x] Remove unused `expo-sqlite` plugin and dependency.
 - [x] Delete dead `Login.jsx` / `config.js` / `ConsistencyMap_old.jsx` / unused Vite assets.
 - [x] `ios.supportsTablet` is **false** (iPhone-only). Revisit only if you later test every tab on iPad and add 13" iPad screenshots (2064×2752).
@@ -66,11 +66,11 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 - [ ] Confirm the store binary is **Release** (no `__DEV__` banners, no “development build” warning).
 - [ ] Confirm you own bundle id `com.trackit.app` in the Apple Developer portal / App Store Connect.
 - [ ] In the built archive, confirm **no** Push Notifications entitlement and **no** `remote-notification` background mode.
-- [ ] In the built archive, confirm **no** Photos permission appears in Settings → TrackIt.
+- [ ] In the built archive, confirm **no** Photos permission appears in Settings → TrackHit.
 
 ---
 
-## 2. App Review Guidelines mapped to TrackIt
+## 2. App Review Guidelines mapped to TrackHit
 
 ### 2.1 Completeness — the app must look finished
 
@@ -84,13 +84,13 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 - [ ] Cancel does not write a session; Finish writes locally and opens summary.
 - [x] Rest-day sessions (empty exercises) still exist in data; they show as rest on the map, not as a workout. There is no giant “Log rest day” button on the active workout screen.
 - [ ] Settings: lb/kg on an **active** workout recalculates weights; rest target persists; accent + chart colors apply to buttons **and** graphs/heatmap.
-- [ ] Backup: Export `trackit-backup-YYYY-MM-DD.json`. Import merge vs replace. Wipe deletes workouts/routines/custom exercises only (theme/units stay).
+- [ ] Backup: Export `trackhit-backup-YYYY-MM-DD.json`. Import merge vs replace. Wipe deletes workouts/routines/custom exercises only (theme/units stay).
 - [ ] Mock ON does not overwrite real data; OFF restores it. Subtitle “Demo data — toggle off in Settings.” must **not** appear in store screenshots.
 - [ ] No “coming soon”, no broken links, no Expo debug menu in the store build.
 
 ### 2.3 Metadata — listing must match the binary
 
-- [ ] Name uniqueness: **TrackIt** (30-char cap). You may need “TrackIt Workout Logger”.
+- [ ] Name uniqueness: **TrackHit** (30-char cap). You may need “TrackHit Workout Logger”.
 - [ ] Subtitle ≤ 30 chars, e.g. `Local workout logger`.
 - [ ] Description is **on-device** only. Do **not** mention accounts, cloud sync, social feed, Apple Health, Dynamic Island Live Activities, or a website backend.
 - [ ] Keywords: workout, gym, lifting, routine, logger — no competitor trademarks.
@@ -141,7 +141,7 @@ App Store Connect → App Privacy:
 ### Health (1.4.1)
 
 - [x] UI says **Est. 1RM** (Brzycki estimate), not a medical 1RM.
-- [ ] Listing copy must not claim TrackIt diagnoses, treats, or prevents injury/disease.
+- [ ] Listing copy must not claim TrackHit diagnoses, treats, or prevents injury/disease.
 - [x] Consistency score is a % of days trained — not VO₂ or readiness. Keep it that way in the listing.
 
 ### 2.3.1 hidden features / 2.5.2
@@ -175,7 +175,7 @@ App Store Connect → App Privacy:
 - [ ] App record: bundle id matches `com.trackit.app`.
 - [ ] Certificates + provisioning via EAS (`eas credentials`) — distribution cert, App Store profile.
 - [x] **Skip** Push Notifications capability.
-- [x] **Skip** Sign in with Apple. Guideline **4.8** only applies if the app offers a *third-party* login (Google, Facebook, etc.). TrackIt has **no accounts at all**, so SIWA is not required and Apple will **not** reject you for omitting it. Do **not** add Google/Apple login “just in case” — that would *create* a 4.8 obligation.
+- [x] **Skip** Sign in with Apple. Guideline **4.8** only applies if the app offers a *third-party* login (Google, Facebook, etc.). TrackHit has **no accounts at all**, so SIWA is not required and Apple will **not** reject you for omitting it. Do **not** add Google/Apple login “just in case” — that would *create* a 4.8 obligation.
 - [ ] **Skip** HealthKit, Game Center, Associated Domains, App Clips, Widgets. (Tick once you have confirmed none of these are on the app record.)
 - [ ] Pricing: Free (or paid up front). If free, no Restore Purchase needed.
 - [ ] Age rating questionnaire answered honestly (4+).
@@ -194,9 +194,9 @@ App Store Connect → App Privacy:
 - [ ] **iPhone 6.9" screenshots (1320×2868)** — currently the required iPhone set. Skipping blocks submit.
 - [ ] **EU Digital Services Act (DSA) trader status** — App Information → App Store Regulations. If you distribute in the EU you must declare trader vs non-trader and (if trader) publish a phone + email on the product page. [Apple’s DSA help](https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-compliance-information/).
 - [ ] **Accessibility Nutrition Labels** (WWDC25, on product pages from iOS 26). Voluntary now, required later. Evaluate: VoiceOver, Voice Control, Larger Text, Sufficient Contrast, Differentiate Without Color, Reduced Motion, Dark Interface. Add an accessibility URL if you have one. [Apple’s overview](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels/). Honest answers only — do not claim VoiceOver if you have not walked every primary task.
-- [ ] **Social media questionnaire** (mandatory for new submissions as of Sep 2026). TrackIt is **not** a social app: no public feeds, DMs, or UGC. Answer **No** to social-media capabilities so you are not pulled into the higher age / Screen Time buckets.
+- [ ] **Social media questionnaire** (mandatory for new submissions as of Sep 2026). TrackHit is **not** a social app: no public feeds, DMs, or UGC. Answer **No** to social-media capabilities so you are not pulled into the higher age / Screen Time buckets.
 - [ ] **App Encryption Documentation** — already flagged in Info.plist; still tap through the Connect questionnaire once.
-- [ ] **Content rights / advertising ID** — TrackIt does not use IDFA. Do not add `NSUserTrackingUsageDescription` “just in case”.
+- [ ] **Content rights / advertising ID** — TrackHit does not use IDFA. Do not add `NSUserTrackingUsageDescription` “just in case”.
 - [ ] **China ICP / additional permits** — only if you enable the China mainland storefront. Default: leave China off unless you have the filings.
 - [ ] **Standard EULA** is fine. Do not attach a custom EULA unless legal writes one.
 - [ ] **Family Sharing** — N/A (no IAP). Leave default.
@@ -209,7 +209,7 @@ App Store Connect → App Privacy:
 
 Tick each line after you paste it in Connect.
 
-- [ ] **Name:** TrackIt
+- [ ] **Name:** TrackHit
 - [ ] **Subtitle:** Private workout log
 - [ ] **Promotional text:** Your sets, rest, and PRs — saved only on this iPhone.
 - [ ] **Description** pasted (text below).
@@ -218,7 +218,7 @@ Tick each line after you paste it in Connect.
 
 **Description:**
 
-> TrackIt is a workout logger that lives on your iPhone. No account. No cloud. Your training never leaves this device.
+> TrackHit is a workout logger that lives on your iPhone. No account. No cloud. Your training never leaves this device.
 >
 > Build routines and custom exercises, then log every set with a dedicated number pad. Rest between sets with an optional lock-screen timer. Hit a personal record and you’ll see it.
 >
@@ -269,7 +269,7 @@ Do this on the **TestFlight** build, not Expo Go.
 - [ ] Toggle Light mode + kg, open Profile charts. Pointers clear if you leave the tab.
 - [ ] Turn Mock on, then off — real data still there.
 - [ ] Force-quit mid-workout, reopen, finish.
-- [ ] Confirm Settings → TrackIt shows **no** Photos / Tracking / Background App Refresh you did not intend.
+- [ ] Confirm Settings → TrackHit shows **no** Photos / Tracking / Background App Refresh you did not intend.
 
 If any step fails, **do not submit**.
 

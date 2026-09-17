@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { fonts } from '../../theme';
 
-export default function TrackItMark({ colors, style }) {
+export default function TrackHitMark({ colors, style }) {
   return (
     <View style={[styles.row, style]}>
       <Image
@@ -11,7 +11,7 @@ export default function TrackItMark({ colors, style }) {
         style={styles.icon}
         contentFit="cover"
       />
-      <Text style={[styles.word, { color: colors?.text || '#F4F4F2' }]}>TrackIt</Text>
+      <Text style={[styles.word, { color: colors?.text || '#F4F4F2' }]}>TrackHit</Text>
     </View>
   );
 }

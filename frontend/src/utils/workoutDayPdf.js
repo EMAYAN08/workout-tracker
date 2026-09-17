@@ -195,7 +195,7 @@ export function buildWorkoutDayPdfString({ date, dayWorkouts, unit, colors, isDa
   });
 
   doc.ensure(24);
-  doc.text('Logged on this device  ·  TrackIt', MARGIN, MARGIN, 9, c.subtle, false);
+  doc.text('Logged on this device  ·  TrackHit', MARGIN, MARGIN, 9, c.subtle, false);
   doc.flush();
 
   const pageStreams = doc.pages;
@@ -322,7 +322,7 @@ export function buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark })
   </style>
 </head>
 <body>
-  <div style="letter-spacing:3px;text-transform:uppercase;color:${subtle};font-size:11px;font-weight:600">TrackIt</div>
+  <div style="letter-spacing:3px;text-transform:uppercase;color:${subtle};font-size:11px;font-weight:600">TrackHit</div>
   <h1 style="margin:8px 0 18px;font-size:26px;letter-spacing:-0.6px">${esc(displayDate)}</h1>
   <div style="color:${muted};font-size:12px;font-weight:600;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid ${border}">
     ${stats.minutes} mins · <span style="color:${accent}">${stats.volume.toLocaleString()} ${esc(unit)}</span> · ${stats.exerciseCount} Exercises
@@ -334,7 +334,7 @@ export function buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark })
 
 export async function shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark }) {
   const stamp = date || format(new Date(), 'yyyy-MM-dd');
-  const filename = `TrackIt-${stamp}.pdf`;
+  const filename = `TrackHit-${stamp}.pdf`;
   const html = buildWorkoutDayHtml({ date, dayWorkouts, unit, colors, isDark });
 
   if (Platform.OS === 'web') {
@@ -345,7 +345,7 @@ export async function shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDa
       w.focus();
       w.print();
     } else {
-      await RNShare.share({ message: `TrackIt workout · ${stamp}` });
+      await RNShare.share({ message: `TrackHit workout · ${stamp}` });
     }
     return { ok: true };
   }

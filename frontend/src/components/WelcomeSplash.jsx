@@ -109,7 +109,7 @@ export default function WelcomeSplash({ onDone }) {
           style={[styles.logo, { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,20,20,0.08)' }]}
           contentFit="cover"
         />
-        <Text style={[styles.mark, { color: colors.text }]}>TrackIt</Text>
+        <Text style={[styles.mark, { color: colors.text }]}>TrackHit</Text>
       </Animated.View>
       <Animated.View style={[styles.lineRow, { opacity: lineOp }]}>
         <Text style={[styles.line, { color: colors.textMuted }]}>{typed}</Text>

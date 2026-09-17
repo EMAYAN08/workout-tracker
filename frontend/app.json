@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "TrackIt",
+    "name": "TrackHit",
     "slug": "trackit",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,7 +25,7 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "CFBundleDisplayName": "TrackIt",
+        "CFBundleDisplayName": "TrackHit",
         "ITSAppUsesNonExemptEncryption": false,
         "UIRequiresFullScreen": true
       },

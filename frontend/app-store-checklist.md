@@ -1,8 +1,8 @@
-# TrackIt — App Store submit checklist
+# TrackHit — App Store submit checklist
 
-Use this file as the **do-this-in-order** guide to ship TrackIt to the iPhone App Store without a rejection.
+Use this file as the **do-this-in-order** guide to ship TrackHit to the iPhone App Store without a rejection.
 
-TrackIt is a **local-first workout logger**. There is **no account, no server, no ads, no IAP, no analytics**. Workouts live in AsyncStorage on the phone. Rest alerts are **local notifications**. Backup is a user-exported JSON file.
+TrackHit is a **local-first workout logger**. There is **no account, no server, no ads, no IAP, no analytics**. Workouts live in AsyncStorage on the phone. Rest alerts are **local notifications**. Backup is a user-exported JSON file.
 
 Tick a box when that step is done. Expand a section for the exact clicks.
 
@@ -19,7 +19,7 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 
 Guideline **4.8** (Login Services) only fires if the app offers a *third-party* login (Google, Facebook, etc.) as the way to create a primary account. Then you **must** also offer Sign in with Apple.
 
-TrackIt has **no accounts at all**. People open the app and lift. Apple will **not** reject you for omitting Sign in with Apple or Google.
+TrackHit has **no accounts at all**. People open the app and lift. Apple will **not** reject you for omitting Sign in with Apple or Google.
 
 Do **not** add Google/Apple login “just in case.” That would *create* a 4.8 duty, plus **5.1.1(v) account deletion**, plus a privacy-label change, plus a backend.
 
@@ -117,11 +117,11 @@ Still on you: Apple Developer account, hosted URLs, screenshots, TestFlight, Con
 <summary>1.2 Bundle ID <code>com.trackit.app</code></summary>
 
 1. [developer.apple.com](https://developer.apple.com) → Certificates, Identifiers & Profiles → **Identifiers** → **+**
-2. App IDs → App → Description `TrackIt` → Bundle ID **Explicit** `com.trackit.app`
+2. App IDs → App → Description `TrackHit` → Bundle ID **Explicit** `com.trackit.app`
 3. Capabilities: leave **Push Notifications OFF**. Leave Sign in with Apple OFF. Leave HealthKit OFF.
 4. App Store Connect → My Apps → **+** → New App
    - Platforms: **iOS**
-   - Name: `TrackIt` (or `TrackIt Workout Logger` if the name is taken — 30 character cap)
+   - Name: `TrackHit` (or `TrackHit Workout Logger` if the name is taken — 30 character cap)
    - Primary language: English (U.S.)
    - Bundle ID: the one you just created
    - SKU: `trackit-ios` (internal, never shown)
@@ -165,7 +165,7 @@ The page **must** say, in plain language:
 - **No data sent to a server**
 - What stays on the phone (workouts, routines, custom exercises, settings)
 - Rest notifications are scheduled **on the device**
-- Export/import is a file the user chooses; TrackIt does not upload it
+- Export/import is a file the user chooses; TrackHit does not upload it
 - How to delete: Settings → Delete all data (wipes workouts/routines/custom exercises on this device)
 - No analytics, no ads, no tracking, no third-party data sale
 - Children: not directed at kids
@@ -174,9 +174,9 @@ The page **must** say, in plain language:
 
 **Starter copy you can paste:**
 
-> **TrackIt Privacy Policy** (last updated September 2026)
+> **TrackHit Privacy Policy** (last updated September 2026)
 >
-> TrackIt is a workout logger that stores data only on your iPhone. We do not create accounts and we do not run a server for this app.
+> TrackHit is a workout logger that stores data only on your iPhone. We do not create accounts and we do not run a server for this app.
 >
 > **Data we collect:** none. Workouts, routines, custom exercises, unit preference, and theme live in on-device storage. They never leave the phone unless **you** export a backup file or share a screenshot/PDF through the iOS share sheet.
 >
@@ -195,7 +195,7 @@ The page **must** say, in plain language:
 </details>
 
 <details>
-<summary>2.2 Link it inside TrackIt (Settings) — do this before the store build</summary>
+<summary>2.2 Link it inside TrackHit (Settings) — do this before the store build</summary>
 
 Guideline **5.1.1(i)** requires the policy **in the app**, not only in Connect.
 
@@ -243,7 +243,7 @@ Reviewers click this. A 404 or a “coming soon” page is a rejection.
 
 Minimum page:
 
-- App name: TrackIt
+- App name: TrackHit
 - One sentence what it does
 - A real email you will read within 24 hours (reviewer questions have a short clock)
 - Link to the privacy policy
@@ -318,11 +318,11 @@ Do **not** add `NSUserTrackingUsageDescription`. You do not track.
 
 | Field | Suggested | Limit |
 |---|---|---|
-| Name | TrackIt | 30 |
+| Name | TrackHit | 30 |
 | Subtitle | Private workout log | 30 |
 | Promotional text | Your sets, rest, and PRs — saved only on this iPhone. | 170 |
 
-If `TrackIt` is taken, use `TrackIt Workout Logger`.
+If `TrackHit` is taken, use `TrackHit Workout Logger`.
 
 **Do not write:** #1, best, Pro, Premium, cloud sync, Apple Health, Live Activities, Dynamic Island, social feed, AI coach, medical, “diagnoses injury.”
 
@@ -335,7 +335,7 @@ If `TrackIt` is taken, use `TrackIt Workout Logger`.
 <details>
 <summary>6.2 Description (paste this)</summary>
 
-> TrackIt is a workout logger that lives on your iPhone. No account. No cloud. Your training never leaves this device.
+> TrackHit is a workout logger that lives on your iPhone. No account. No cloud. Your training never leaves this device.
 >
 > Build routines and custom exercises, then log every set with a dedicated number pad. Rest between sets with an optional lock-screen timer. Hit a personal record and you’ll see it.
 >
@@ -401,7 +401,7 @@ How:
 1. Use a physical Pro Max, or Simulator → iPhone 16 Pro Max / 17 Pro Max.
 2. **Window → Physical Size** off; capture at native resolution.
 3. iOS Simulator: `File → Save Screen` or `Cmd+S`. Confirm the PNG is 1320×2868 (or 1290×2796 — Apple still accepts the older 6.7" size as a fallback, but prefer 1320×2868).
-4. Light **or** Dark is fine; Dark is TrackIt’s default and photographs better. Stay consistent.
+4. Light **or** Dark is fine; Dark is TrackHit’s default and photographs better. Stay consistent.
 5. Guideline **2.3.3**: show the **app in use**, not the splash, not a logo collage.
 
 **Capture these 5–8 frames (Mock data OFF, or a real logged week you created):**
@@ -449,7 +449,7 @@ You still:
 2. Bump `ios.buildNumber` in `app.json` on **every** new upload (`1` → `2` → …). Version `1.0.0` can stay until you change features.
 3. Confirm the store icon is not the Expo default.
 
-- [ ] Icon is the barbell TrackIt mark, not Expo
+- [ ] Icon is the barbell TrackHit mark, not Expo
 - [ ] `buildNumber` plan: increment per upload
 
 </details>
@@ -511,7 +511,7 @@ Expo Go and `preview` / `development` profiles **cannot** go to the App Store.
 1. `npx eas submit --platform ios` (or Transporter)
 2. Connect → TestFlight → wait for processing
 3. Add yourself as an internal tester
-4. **Delete Expo Go TrackIt** from the phone so you are not testing the wrong binary
+4. **Delete Expo Go TrackHit** from the phone so you are not testing the wrong binary
 5. Install the TestFlight build
 6. Run §13 smoke test **offline**
 
@@ -560,7 +560,7 @@ Leaving this blank **blocks** submit for EU distribution.
 
 New apps (as of 2026) get a social-media capabilities form.
 
-TrackIt is **not** a social app: no public feed, DMs, UGC, or profiles.
+TrackHit is **not** a social app: no public feed, DMs, UGC, or profiles.
 
 Answer **No** to social-media capabilities. Do not invent a “community.”
 
@@ -679,7 +679,7 @@ Also fill **Contact** with an email and phone Apple can reach **the same day**.
 <summary>13.3 Data, units, theme, mock</summary>
 
 - [ ] Log in lb, switch to kg mid-workout, finish, reopen history — numbers converted
-- [ ] Export `trackit-backup-YYYY-MM-DD.json`, Wipe, Import, history returns
+- [ ] Export `trackhit-backup-YYYY-MM-DD.json`, Wipe, Import, history returns
 - [ ] Wipe does **not** need an Apple ID
 - [ ] Mock ON does not destroy real data; OFF restores it
 - [ ] Light mode + Dark mode: charts, heatmap, PR card, keypad, Settings
@@ -697,7 +697,7 @@ Also fill **Contact** with an email and phone Apple can reach **the same day**.
 - [ ] Portrait lock (Control Center rotation does not landscape the UI)
 - [ ] Dynamic Type largest: Profile cards and Settings not clipped
 - [ ] VoiceOver: tab bar, New Routine, Complete set, Finish, Wipe have labels
-- [ ] Settings → TrackIt: **no** Photos, Tracking, or Background App Refresh you did not intend
+- [ ] Settings → TrackHit: **no** Photos, Tracking, or Background App Refresh you did not intend
 
 If any of these fail, **do not submit**.
 
@@ -727,7 +727,7 @@ Typical first review: 24–48 hours. Rejection is a conversation — reply in Re
 
 ---
 
-## 15. If Apple rejects — TrackIt-specific replies
+## 15. If Apple rejects — TrackHit-specific replies
 
 <details>
 <summary>Common bounce → what to send back</summary>
@@ -737,7 +737,7 @@ Typical first review: 24–48 hours. Rejection is a conversation — reply in Re
 | 2.1 incomplete / crash | Fix on TestFlight, increment `buildNumber`, new EAS production, reply with the build number |
 | 2.3.3 screenshots | Replace with in-use 1320×2868 shots, Mock off |
 | 5.1.1 no privacy policy in-app | Ship Settings link, new binary, reply with a screenshot of the row |
-| 4.8 Sign in with Apple | Reply: “TrackIt has no accounts and no third-party login. 4.8 does not apply.” |
+| 4.8 Sign in with Apple | Reply: “TrackHit has no accounts and no third-party login. 4.8 does not apply.” |
 | 5.1.1(v) account deletion | Same: no accounts. Wipe is Settings → Delete all data |
 | 2.5.4 / push | Show archive has no `aps-environment`; rest is `scheduleNotificationAsync` local |
 | 4.2 minimum function | Point at routines + live session + history + backup; iPhone-only is intentional |

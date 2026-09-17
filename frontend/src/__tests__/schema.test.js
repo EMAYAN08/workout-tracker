@@ -109,7 +109,7 @@ describe('normalizeRoutine / normalizeCustomExercise', () => {
 });
 
 describe('parseBackup', () => {
-  test('parses a TrackIt envelope (object and JSON string)', () => {
+  test('parses a TrackHit envelope (object and JSON string)', () => {
     const envelope = {
       version: 1,
       app: 'trackit',
@@ -215,7 +215,7 @@ describe('parseBackup', () => {
 });
 
 describe('buildBackup', () => {
-  test('wraps a TrackIt envelope with defaults', () => {
+  test('wraps a TrackHit envelope with defaults', () => {
     const before = Date.now();
     const backup = buildBackup({
       workouts: [{ id: 'w' }],

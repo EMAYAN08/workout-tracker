@@ -66,7 +66,7 @@ describe('workout day PDF html', () => {
         },
       ],
     });
-    expect(html).toContain('TrackIt');
+    expect(html).toContain('TrackHit');
     expect(html).toContain('Push Day');
     expect(html).toContain('Bench Press');
     expect(html).toContain('Chest');

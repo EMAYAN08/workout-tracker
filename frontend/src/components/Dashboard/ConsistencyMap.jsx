@@ -15,7 +15,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { CountUp } from '../ui/primitives';
-import TrackItMark from '../ui/TrackItMark';
+import TrackHitMark from '../ui/TrackHitMark';
 import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
 const GUTTER = 4;
@@ -110,7 +110,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
     setSharing(true);
     try {
       if (Platform.OS === 'web') {
-        await RNShare.share({ message: 'Check out my workout consistency on TrackIt!' });
+        await RNShare.share({ message: 'Check out my workout consistency on TrackHit!' });
         return;
       }
       setStamp(true);
@@ -118,8 +118,8 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
       const uri = await captureHiResPng(mapRef, { pixelRatio: 3 });
       setStamp(false);
       await shareFile(uri, {
-        filename: 'TrackIt Consistency',
-        message: 'My TrackIt consistency',
+        filename: 'TrackHit Consistency',
+        message: 'My TrackHit consistency',
         mimeType: 'image/png',
         uti: 'public.png',
       });
@@ -276,7 +276,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
             ))}
           </View>
         </View>
-        {stamp ? <TrackItMark colors={colors} /> : null}
+        {stamp ? <TrackHitMark colors={colors} /> : null}
       </View>
     </View>
   );

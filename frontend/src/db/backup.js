@@ -10,7 +10,7 @@ function stamp() {
 export async function exportBackup(snapshot) {
   const payload = buildBackup(snapshot);
   const json = JSON.stringify(payload, null, 2);
-  const filename = `trackit-backup-${stamp()}.json`;
+  const filename = `trackhit-backup-${stamp()}.json`;
 
   if (Platform.OS === 'web') {
     const blob = new Blob([json], { type: 'application/json' });
@@ -38,7 +38,7 @@ export async function exportBackup(snapshot) {
   if (canShare) {
     await Sharing.shareAsync(path, {
       mimeType: 'application/json',
-      dialogTitle: 'Export TrackIt data',
+      dialogTitle: 'Export TrackHit data',
       UTI: 'public.json',
     });
   }
@@ -72,7 +72,7 @@ export function confirmImportMode() {
   return new Promise((resolve) => {
     if (Platform.OS === 'web') {
       const ok = typeof window !== 'undefined' && window.confirm
-        ? window.confirm('Import this backup into TrackIt?')
+        ? window.confirm('Import this backup into TrackHit?')
         : false;
       if (!ok) {
         resolve(null);

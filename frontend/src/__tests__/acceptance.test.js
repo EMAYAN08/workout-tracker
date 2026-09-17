@@ -150,7 +150,7 @@ describe('UAT: export / import merge and replace', () => {
     restTargetSec: 75,
   };
 
-  test('export builds a TrackIt envelope that parseBackup understands', async () => {
+  test('export builds a TrackHit envelope that parseBackup understands', async () => {
     await seedPhone();
     const file = buildBackup({
       workouts: localStore.workouts,

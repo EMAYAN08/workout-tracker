@@ -1,4 +1,4 @@
-/** Normalize Mongo dumps, mongoose docs, and TrackIt backups into one shape. */
+/** Normalize Mongo dumps, mongoose docs, and TrackHit backups into one shape. */
 
 function asId(raw, fallbackPrefix = 'id') {
   if (!raw) return `${fallbackPrefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -97,7 +97,7 @@ function pickArray(obj, keys) {
 
 /**
  * Accepts:
- * - TrackIt envelope { version, workouts, routines, customExercises }
+ * - TrackHit envelope { version, workouts, routines, customExercises }
  * - Mongo export { workouts, routines, customexercises }
  * - mongoose { workouts: { documents } }
  * - raw arrays mixed into one object

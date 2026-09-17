@@ -186,7 +186,7 @@ export async function tickRestNotification({ remainingSec, totalSec, exerciseNam
   if (!N || Platform.OS === 'web') return;
   const remaining = Math.max(0, Math.floor(Number(remainingSec) || 0));
   const total = Math.max(remaining, Math.floor(Number(totalSec) || remaining) || 1);
-  const name = exerciseName || 'TrackIt';
+  const name = exerciseName || 'TrackHit';
   const set = setLabel || 'Next set';
   const clock = formatRestClock(remaining);
   const key = `${name}|${set}|${clock}`;
@@ -239,8 +239,8 @@ export async function scheduleRestNotification({
         identifier: DONE_ID,
         content: {
           title: 'Rest is over',
-          subtitle: exerciseName || 'TrackIt',
-          body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
+          subtitle: exerciseName || 'TrackHit',
+          body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackHit'}`,
           sound: 'default',
           channelId: CH_DONE,
           interruptionLevel: 'active',
@@ -254,7 +254,7 @@ export async function scheduleRestNotification({
           identifier: DONE_ID,
           content: {
             title: 'Rest is over',
-            body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
+            body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackHit'}`,
             sound: 'default',
             interruptionLevel: 'active',
             data: { kind: 'restDone', exerciseName, setLabel },
@@ -286,8 +286,8 @@ export async function presentRestDone({ exerciseName, setLabel } = {}) {
       identifier: DONE_ID,
       content: {
         title: 'Rest is over',
-        subtitle: exerciseName || 'TrackIt',
-        body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackIt'}`,
+        subtitle: exerciseName || 'TrackHit',
+        body: `${setLabel || 'Next set'} · ${exerciseName || 'TrackHit'}`,
         sound: 'default',
         channelId: CH_DONE,
         interruptionLevel: 'active',

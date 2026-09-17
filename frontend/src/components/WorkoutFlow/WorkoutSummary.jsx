@@ -73,7 +73,7 @@ export default function WorkoutSummary({ data, onClose, unit }) {
     try {
       if (Platform.OS === 'web') {
         await RNShare.share({
-          message: `Just crushed my ${data.routineName || 'TrackIt'} workout!`,
+          message: `Just crushed my ${data.routineName || 'TrackHit'} workout!`,
         });
         return;
       }
@@ -91,10 +91,10 @@ export default function WorkoutSummary({ data, onClose, unit }) {
         });
       }
       await shareFile(uri, {
-        filename: 'TrackIt Workout',
+        filename: 'TrackHit Workout',
         mimeType: 'image/png',
         uti: 'public.png',
-        message: `Just crushed my ${data.routineName || 'TrackIt'} workout!`,
+        message: `Just crushed my ${data.routineName || 'TrackHit'} workout!`,
       });
     } catch (err) {
       console.error('Failed to share:', err);
@@ -181,7 +181,7 @@ export default function WorkoutSummary({ data, onClose, unit }) {
           <View style={styles.footer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.7 }}>
               <Dumbbell size={14} color={colors.text} />
-              <Text style={styles.brand}>TrackIt</Text>
+              <Text style={styles.brand}>TrackHit</Text>
             </View>
             <Text style={styles.date}>
               {new Date(data.endTime || Date.now()).toLocaleDateString(undefined, {

@@ -439,7 +439,7 @@ export function WorkoutProvider({ children }) {
   const restMeta = (workout = activeWorkout) => {
     const next = findNextIncompleteSet(workout);
     return {
-      exerciseName: next?.name || workout?.exercises?.[workout.exercises.length - 1]?.name || 'TrackIt',
+      exerciseName: next?.name || workout?.exercises?.[workout.exercises.length - 1]?.name || 'TrackHit',
       setLabel: next?.setLabel || 'Next set',
       next,
     };

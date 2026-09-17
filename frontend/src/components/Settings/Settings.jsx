@@ -47,7 +47,7 @@ export default function Settings({ scrollRef }) {
     setBusy(true);
     try {
       const res = await exportData();
-      if (res?.ok) toast('Exported', `${res.count} workouts saved to a TrackIt backup file.`);
+      if (res?.ok) toast('Exported', `${res.count} workouts saved to a TrackHit backup file.`);
     } catch (err) {
       toast('Export failed', err.message || 'Could not write backup.');
     } finally {
@@ -67,7 +67,7 @@ export default function Settings({ scrollRef }) {
         );
       }
     } catch (err) {
-      toast('Import failed', err.message || 'That file does not look like a TrackIt / Mongo backup.');
+      toast('Import failed', err.message || 'That file does not look like a TrackHit / Mongo backup.');
     } finally {
       setBusy(false);
     }
