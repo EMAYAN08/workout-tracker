@@ -233,6 +233,36 @@ footer.site .bar {
 }
 footer.site a { color: var(--muted); }
 footer.site a:hover { color: var(--text); }
+footer.site .end {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.social {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.social-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #000;
+  border-radius: 8px;
+  color: #000;
+  background: #fff;
+}
+.social-btn:hover {
+  background: #000;
+  color: #fff;
+}
+.social-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
 
 .status { color: var(--faint); font-size: 14px; }
 
