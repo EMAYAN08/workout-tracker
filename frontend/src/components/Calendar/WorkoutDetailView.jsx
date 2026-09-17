@@ -88,15 +88,7 @@ export default function WorkoutDetailView({ date, onBack }) {
       setStamp(true);
       await waitFrames(6);
       await new Promise((r) => setTimeout(r, 120));
-      let uri;
-      try {
-        uri = await captureHiResPng(scrollRef, {
-          pixelRatio: 3,
-          snapshotContentContainer: true,
-        });
-      } catch {
-        uri = await captureHiResPng(shotRef, { pixelRatio: 3 });
-      }
+      const uri = await captureHiResPng(shotRef, { pixelRatio: 3 });
       setStamp(false);
       await shareFile(uri, {
         filename: `TrackHit-${date}`,

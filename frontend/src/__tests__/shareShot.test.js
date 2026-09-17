@@ -1,4 +1,7 @@
-import { jpegToPaddedPdf, jpegDimensions } from '../utils/shareShot';
+import { jpegToPaddedPdf, jpegDimensions, captureHiResPng } from '../utils/shareShot';
+import { captureRef } from 'react-native-view-shot';
+import fs from 'fs';
+import path from 'path';
 
 // 8x8 JPEG (SOI + APP0 + SOF0 + SOS + EOI-ish). Dimensions parsed from SOF.
 const TINY_JPEG_B64 =
@@ -12,5 +15,68 @@ describe('jpegToPaddedPdf', () => {
     expect(pdf).toContain('/DCTDecode');
     expect(pdf).toContain('/Im0');
     expect(pdf).toContain('MediaBox');
+  });
+});
+
+describe('jpegDimensions', () => {
+  test('reads SOF width/height', () => {
+    const dim = jpegDimensions(TINY_JPEG_B64);
+    expect(dim.width).toBeGreaterThan(0);
+    expect(dim.height).toBeGreaterThan(0);
+  });
+});
+
+describe('captureHiResPng', () => {
+  beforeEach(() => {
+    captureRef.mockClear();
+  });
+
+  test('throws when the ref is empty', async () => {
+    await expect(captureHiResPng(null)).rejects.toThrow('Nothing to share');
+    await expect(captureHiResPng({ current: null })).rejects.toThrow('Nothing to share');
+    expect(captureRef).not.toHaveBeenCalled();
+  });
+
+  test('does not force useRenderInContext on iOS (blank-shot bug)', async () => {
+    const ref = { current: {} };
+    await captureHiResPng(ref);
+    expect(captureRef).toHaveBeenCalledTimes(1);
+    const opts = captureRef.mock.calls[0][1];
+    expect(opts.useRenderInContext).toBe(false);
+    expect(opts.snapshotContentContainer).toBe(false);
+    expect(opts.format).toBe('png');
+    expect(opts.result).toBe('tmpfile');
+  });
+
+  test('only enables renderInContext when the caller asks', async () => {
+    await captureHiResPng({ current: {} }, { useRenderInContext: true });
+    expect(captureRef.mock.calls[0][1].useRenderInContext).toBe(true);
+  });
+});
+
+describe('export watermark wiring', () => {
+  const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+
+  test('TrackHitMark uses native Image and both theme icons', () => {
+    const src = read('components/ui/TrackHitMark.jsx');
+    expect(src).not.toMatch(/from 'expo-image'/);
+    expect(src).toMatch(/from 'react-native'/);
+    expect(src).toMatch(/icon-light\.png/);
+    expect(src).toMatch(/icon-dark\.png/);
+    expect(src).toMatch(/collapsable=\{false\}/);
+  });
+
+  test('consistency map captures the panel ref, not renderInContext', () => {
+    const src = read('components/Dashboard/ConsistencyMap.jsx');
+    expect(src).toMatch(/captureHiResPng\(mapRef/);
+    expect(src).not.toMatch(/useRenderInContext:\s*true/);
+    expect(src).toMatch(/<TrackHitMark/);
+  });
+
+  test('history export captures shotRef, not the scroll snapshot', () => {
+    const src = read('components/Calendar/WorkoutDetailView.jsx');
+    expect(src).toMatch(/captureHiResPng\(shotRef/);
+    expect(src).not.toMatch(/snapshotContentContainer:\s*true/);
+    expect(src).toMatch(/<TrackHitMark/);
   });
 });
