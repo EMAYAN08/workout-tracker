@@ -409,8 +409,18 @@ export default function CustomExercises({ scrollRef, popRef }) {
       )}
       {filteredExercises.length === 0 ? (
         <View style={styles.empty}>
-          <Dumbbell size={48} color={colors.textMuted} />
-          <Text style={styles.emptyText}>No custom exercises found.</Text>
+          <Dumbbell size={40} color={colors.textSubtle} />
+          {customExercises.length === 0 ? (
+            <>
+              <Text style={styles.emptyTitle}>No custom exercises yet</Text>
+              <Text style={styles.emptySub}>Create your first exercise to reuse in routines.</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.emptyTitle}>No matches</Text>
+              <Text style={styles.emptySub}>Try a different name or muscle group.</Text>
+            </>
+          )}
         </View>
       ) : (
         filteredExercises.map((ex) => (
@@ -542,8 +552,16 @@ function makeStyles(colors) {
     },
     setLbl: { color: colors.textMuted, fontFamily: fonts.bold },
     setVal: { color: colors.text, fontFamily: fonts.bold },
-    empty: { alignItems: 'center', paddingVertical: 48, opacity: 0.5 },
-    emptyText: { color: colors.text, fontFamily: fonts.bold, marginTop: 12 },
+    empty: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 28,
+      alignItems: 'center',
+    },
+    emptyTitle: { color: colors.text, fontFamily: fonts.bold, marginTop: 10 },
+    emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: 4 },
     label: {
       color: colors.textMuted,
       fontSize: 11,
