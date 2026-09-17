@@ -87,7 +87,7 @@ You do **not** re-do these.
 - [x] `ITSAppUsesNonExemptEncryption` = false
 - [x] Privacy manifest: UserDefaults `CA92.1`, file timestamp `C617.1`
 - [x] Violet Sans bundled (no Google Fonts at runtime)
-- [x] 1024×1024 RGB icon, no alpha
+- [x] 1024×1024 RGB icon, no alpha (light + dark + tinted)
 - [x] Mock data defaults **off**
 - [x] Portrait locked
 - [x] Version `1.0.0` / iOS `buildNumber` `1`
@@ -439,8 +439,10 @@ Optional preview video: real device footage only, no Health rings you didn’t s
 
 Already in the repo:
 
-- `assets/icon.png` — 1024×1024, RGB, **no transparency**, no rounded-corner bake-in (Apple rounds it)
-- Splash `#070707`
+- `assets/icon.png` / `icon-light.png` — 1024×1024, RGB, **no transparency**, no rounded-corner bake-in (Apple rounds it). Cream TH print.
+- `assets/icon-dark.png` — 1024×1024 RGB dark-mode pair (wired as `ios.icon.dark`)
+- `assets/icon-tinted.png` — white glyph + alpha (`ios.icon.tinted` + Android `monochromeImage`)
+- Splash `#111111`
 - Notification glyph for Android; iOS uses the app icon
 
 You still:
@@ -449,7 +451,7 @@ You still:
 2. Bump `ios.buildNumber` in `app.json` on **every** new upload (`1` → `2` → …). Version `1.0.0` can stay until you change features.
 3. Confirm the store icon is not the Expo default.
 
-- [ ] Icon is the barbell TrackHit mark, not Expo
+- [ ] Icon is the cream TH-print TrackHit mark (not Expo, not the old barbell plate)
 - [ ] `buildNumber` plan: increment per upload
 
 </details>

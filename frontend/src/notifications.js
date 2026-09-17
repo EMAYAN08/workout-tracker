@@ -92,7 +92,7 @@ async function getLogoAttachment() {
     } catch {
       FileSystem = await import('expo-file-system');
     }
-    const asset = Asset.fromModule(require('../assets/icon.png'));
+    const asset = Asset.fromModule(require('../assets/icon-light.png'));
     await asset.downloadAsync();
     const src = asset.localUri || asset.uri;
     if (!src) return null;

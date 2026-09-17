@@ -23,7 +23,7 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 - [x] Added `ios.privacyManifests` for UserDefaults (`CA92.1`) and file timestamps (`C617.1`).
 - [x] `expo-notifications` plugin sets `enableBackgroundRemoteNotifications: false`.
 - [x] Added production profile in [eas.json](eas.json).
-- [x] App icon `assets/icon.png` is **1024×1024 RGB, no alpha**. Splash is opaque `#070707`. Notification glyph is RGBA (Android small-icon; iOS uses the app icon).
+- [x] App icon `assets/icon.png` / `icon-light.png` is **1024×1024 RGB, no alpha** (cream TH print). `icon-dark.png` is the dark-mode pair. `icon-tinted.png` is the iOS tinted / Android mono glyph. Splash is opaque `#111111`. Notification glyph is RGBA (Android small-icon; iOS uses the app icon).
 
 ---
 
@@ -54,7 +54,7 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 - [x] No Photo Library usage string. Share is share-sheet only. Do not add `NSPhotoLibraryAddUsageDescription` unless you later save into Camera Roll.
 - [x] Notification permission is requested **only when rest starts** (`ensureNotificationPermission`). Do not prompt on first launch.
 - [x] No Tracking / ATT (`NSUserTrackingUsageDescription`) and no HealthKit.
-- [x] App icon: 1024×1024 PNG, no transparency, no baked-in rounded corners, not the Expo default. Splash `#070707`.
+- [x] App icon: 1024×1024 PNG, no transparency, no baked-in rounded corners, not the Expo default. Light + dark + tinted iOS variants. Splash `#111111`.
 - [x] Dark is the default theme; Light exists in Settings.
 - [ ] Test Dark **and** Light on a physical device.
 - [x] Violet Sans is bundled (no Google Fonts network call).

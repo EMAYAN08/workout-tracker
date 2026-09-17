@@ -105,7 +105,7 @@ export default function WelcomeSplash({ onDone }) {
         }}
       >
         <Image
-          source={require('../../assets/icon.png')}
+          source={isDark ? require('../../assets/icon-dark.png') : require('../../assets/icon-light.png')}
           style={[styles.logo, { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,20,20,0.08)' }]}
           contentFit="cover"
         />
