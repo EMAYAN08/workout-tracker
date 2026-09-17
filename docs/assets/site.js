@@ -1,5 +1,10 @@
 (function () {
   const REPO = "EMAYAN08/workout-tracker";
+  document.documentElement.classList.add("js");
+
+  function reducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
 
   function bindMenu() {
     const nav = document.querySelector("nav.top");
@@ -10,7 +15,7 @@
       nav.classList.toggle("open", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
-      toggle.textContent = open ? "✕" : "☰";
+      toggle.textContent = open ? "\u2715" : "\u2630";
       document.body.classList.toggle("nav-open", open);
     };
 
@@ -35,10 +40,160 @@
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bindMenu);
-  } else {
+  function bindReveal() {
+    const els = Array.prototype.slice.call(document.querySelectorAll("[data-reveal]"));
+    if (!els.length) return;
+    if (reducedMotion() || !("IntersectionObserver" in window)) {
+      els.forEach((el) => el.classList.add("in"));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("in");
+          io.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.14, rootMargin: "0px 0px -8% 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+  }
+
+  function bindCarousel() {
+    const root = document.querySelector("[data-carousel]");
+    if (!root) return;
+    const track = root.querySelector(".carousel-track");
+    const slides = Array.prototype.slice.call(root.querySelectorAll(".slide"));
+    const prev = root.querySelector("[data-prev]");
+    const next = root.querySelector("[data-next]");
+    const dotsWrap = root.querySelector("[data-dots]");
+    if (!track || slides.length < 2) return;
+
+    root.querySelectorAll(".viz-map").forEach((map) => {
+      if (map.children.length) return;
+      const pattern = [0,1,2,0,1,2,1,2,1,0,2,1,0,1,1,2,2,1,0,1,2,0,1,2,1,2,0,1,2,1,0,1,2,1,0];
+      map.innerHTML = pattern
+        .map((v) => '<i class="' + (v === 2 ? "on" : v === 1 ? "mid" : "") + '"></i>')
+        .join("");
+    });
+
+    let index = 0;
+    let timer = null;
+    let paused = false;
+    let user = false;
+
+    dotsWrap.innerHTML = slides
+      .map(function (_, n) {
+        return '<button type="button" class="dot" aria-label="Feature ' + (n + 1) + '"></button>';
+      })
+      .join("");
+    const dots = Array.prototype.slice.call(dotsWrap.querySelectorAll(".dot"));
+
+    function paint() {
+      slides.forEach(function (slide, n) {
+        const on = n === index;
+        slide.classList.toggle("is-active", on);
+        slide.setAttribute("aria-hidden", on ? "false" : "true");
+      });
+      dots.forEach(function (dot, n) {
+        if (n === index) dot.setAttribute("aria-current", "true");
+        else dot.removeAttribute("aria-current");
+      });
+    }
+
+    function go(n, fromUser) {
+      index = (n + slides.length) % slides.length;
+      const width = track.clientWidth || 1;
+      track.scrollTo({
+        left: index * width,
+        behavior: reducedMotion() ? "auto" : "smooth",
+      });
+      paint();
+      if (fromUser) {
+        user = true;
+        restart();
+      }
+    }
+
+    function tick() {
+      if (paused || document.hidden || reducedMotion() || user) return;
+      go(index + 1);
+    }
+
+    function restart() {
+      clearInterval(timer);
+      timer = null;
+      if (reducedMotion()) return;
+      timer = setInterval(function () {
+        if (user) {
+          user = false;
+          return;
+        }
+        tick();
+      }, 5200);
+    }
+
+    if (prev) prev.addEventListener("click", function () { go(index - 1, true); });
+    if (next) next.addEventListener("click", function () { go(index + 1, true); });
+    dots.forEach(function (dot, n) {
+      dot.addEventListener("click", function () { go(n, true); });
+    });
+
+    root.addEventListener("mouseenter", function () { paused = true; });
+    root.addEventListener("mouseleave", function () { paused = false; });
+    root.addEventListener("focusin", function () { paused = true; });
+    root.addEventListener("focusout", function () { paused = false; });
+
+    track.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { e.preventDefault(); go(index + 1, true); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(index - 1, true); }
+    });
+
+    let raf = 0;
+    track.addEventListener(
+      "scroll",
+      function () {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(function () {
+          const width = track.clientWidth || 1;
+          const nextIndex = Math.round(track.scrollLeft / width);
+          if (nextIndex !== index && nextIndex >= 0 && nextIndex < slides.length) {
+            index = nextIndex;
+            paint();
+          }
+        });
+      },
+      { passive: true }
+    );
+
+    window.addEventListener("resize", function () {
+      track.scrollTo({ left: index * (track.clientWidth || 1), behavior: "auto" });
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        clearInterval(timer);
+        timer = null;
+      } else {
+        restart();
+      }
+    });
+
+    paint();
+    restart();
+  }
+
+  function start() {
     bindMenu();
+    bindReveal();
+    bindCarousel();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
   }
 
   const year = document.querySelector("[data-year]");
@@ -135,9 +290,9 @@
 
   function escapeHtml(str) {
     return String(str)
-      .replace(/&/g, '\u0026amp;')
-      .replace(/</g, '\u0026lt;')
-      .replace(/>/g, '\u0026gt;')
-      .replace(/"/g, '\u0026quot;');
+      .replace(/&/g, "\u0026amp;")
+      .replace(/</g, "\u0026lt;")
+      .replace(/>/g, "\u0026gt;")
+      .replace(/"/g, "\u0026quot;");
   }
 })();
