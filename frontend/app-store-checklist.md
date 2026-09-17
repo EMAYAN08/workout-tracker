@@ -13,6 +13,52 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 ## Direct answers (read this first)
 
 <details>
+<summary><strong>Do I need Termly / Iubenda / a generated privacy policy?</strong></summary>
+
+**No. Do not regenerate the current page with Termly (or similar).**
+
+Apple does **not** require a lawyer-template or a generator. Guideline **5.1.1(i)** requires a **https** policy that is **specific to this app**, matches the binary, and is linked in Connect **and** in Settings.
+
+Termly/Iubenda/PrivacyPolicies.com pages usually list cookies, IP logs, analytics, advertising partners, and “we collect device identifiers.” That text **does not match** TrackHit. Reviewers reject **mismatches** (policy says you collect; App Privacy says Data Not Collected). A generic template is a **higher** bounce risk than the page you already have.
+
+Keep the hosted policy at https://emayan08.github.io/workout-tracker/privacy/
+
+Only rewrite it if the **app** starts collecting or transmitting data (analytics, accounts, HealthKit, a server). Then update the page **and** App Privacy **before** that binary ships.
+
+</details>
+
+<details>
+<summary><strong>Will Apple reject the current privacy policy?</strong></summary>
+
+**Unlikely, if you paste the URL in Connect and the Settings links open on a real iPhone.** The policy text itself is enough for 5.1.1(i).
+
+Live page: https://emayan08.github.io/workout-tracker/privacy/
+
+| 5.1.1(i) requires | TrackHit page |
+|---|---|
+| Identify what data, if any | **None from the app.** On-device workouts, routines, settings listed |
+| How it is collected / used | Typed by you, stored in the app sandbox, used to log training |
+| Third parties (analytics, ads, SDKs, **including AI** per 5.1.2 2026) | None in the app. GitHub Pages for the site. No third-party AI |
+| Retention / deletion | Settings → Delete all data; deleting the app also wipes |
+| How to revoke consent | No collection to revoke. Notifications: iOS Settings → TrackHit |
+| Contact | emayanramalingam@gmail.com + Halifax developer name |
+| Public https, no login | GitHub Pages, already live |
+| In-app link | Settings → Privacy Policy (already in the binary) |
+
+**What actually gets apps rejected (not “too short” / “not Termly”):**
+
+1. Dead or login-walled URL in Connect
+2. No tappable policy **inside** the app
+3. Policy lists SDKs / “we collect email” while App Privacy = Data Not Collected
+4. App **does** talk to a server and the policy says it does not
+
+You are not in (3) or (4). Finish (1) in Connect and confirm (2) on TestFlight.
+
+PIPEDA / GDPR extra clauses are **not** an App Review checkbox for a no-collection app. Skip generators.
+
+</details>
+
+<details>
 <summary><strong>Do I need Sign in with Apple or Google?</strong></summary>
 
 **No. Do not add either.**
@@ -92,8 +138,11 @@ You do **not** re-do these.
 - [x] Portrait locked
 - [x] Version `1.0.0` / iOS `buildNumber` `1`
 - [x] Est. 1RM labeled as a formula, not medical
+- [x] Public privacy policy hosted (GitHub Pages) — do **not** replace with Termly
+- [x] Public support + feedback pages
+- [x] Settings → Privacy Policy / Support / Feedback open the Pages URLs
 
-Still on you: Apple Developer account, hosted URLs, screenshots, TestFlight, Connect forms, production build.
+Still on you: Apple Developer account, **paste the privacy + support URLs in Connect**, screenshots, TestFlight, Connect forms, production build.
 
 ---
 
@@ -154,70 +203,57 @@ In App Store Connect → Pricing and Availability / iPhone / iPad:
 ## 2. Privacy Policy (required in Connect **and** in the app)
 
 <details>
-<summary>2.1 Host a public policy page</summary>
+<summary>2.1 Host a public policy page — <strong>already done</strong></summary>
 
-Apple needs a **https** URL that loads without a login. GitHub Pages, Notion (public), Carrd, or your own domain all work.
+**Do not generate a new policy with Termly.** The live page is the one to use:
 
-The page **must** say, in plain language:
+**https://emayan08.github.io/workout-tracker/privacy/**
+
+It already states, in plain language:
 
 - What the app is (on-device workout log)
 - **No accounts**
 - **No data sent to a server**
 - What stays on the phone (workouts, routines, custom exercises, settings)
-- Rest notifications are scheduled **on the device**
+- Rest notifications are scheduled **on the device** (and how to turn them off)
 - Export/import is a file the user chooses; TrackHit does not upload it
-- How to delete: Settings → Delete all data (wipes workouts/routines/custom exercises on this device)
-- No analytics, no ads, no tracking, no third-party data sale
+- How to delete: Settings → Delete all data
+- No analytics, no ads, no tracking, no third-party data sale, **no third-party AI**
 - Children: not directed at kids
 - Contact email
 - Last-updated date
 
-**Starter copy you can paste:**
+Regenerate only if you add a backend, analytics, accounts, or HealthKit.
 
-> **TrackHit Privacy Policy** (last updated September 2026)
->
-> TrackHit is a workout logger that stores data only on your iPhone. We do not create accounts and we do not run a server for this app.
->
-> **Data we collect:** none. Workouts, routines, custom exercises, unit preference, and theme live in on-device storage. They never leave the phone unless **you** export a backup file or share a screenshot/PDF through the iOS share sheet.
->
-> **Notifications:** optional rest-timer alerts are scheduled locally. We do not use Apple Push Notification service and we do not send you marketing.
->
-> **Delete:** Settings → Delete all data removes workout history, routines, and custom exercises from this device. Theme and units may remain. Deleting the app also removes local data.
->
-> **Third parties:** no analytics, ads, crash reporters, or social logins.
->
-> **Contact:** you@yourdomain.com
-
-- [ ] Policy hosted at a stable https URL: https://emayan08.github.io/workout-tracker/privacy/
-- [ ] Page loads in Safari without a login
-- [ ] Mentions on-device storage, no accounts, wipe path, contact email
+- [x] Policy hosted at https://emayan08.github.io/workout-tracker/privacy/
+- [x] Page loads in Safari without a login
+- [x] Mentions on-device storage, no accounts, wipe path, contact email
+- [ ] Open the URL in Safari on your iPhone once before submit (catch a Pages 404)
 
 </details>
 
 <details>
-<summary>2.2 Link it inside TrackHit (Settings) — do this before the store build</summary>
+<summary>2.2 Link it inside TrackHit (Settings) — <strong>already in the binary</strong></summary>
 
 Guideline **5.1.1(i)** requires the policy **in the app**, not only in Connect.
 
-1. Open `src/components/Settings/Settings.jsx`.
-2. Add a row **Privacy Policy** that opens your URL:
+`Settings.jsx` already opens:
 
-```js
-import { Linking } from 'react-native';
+- Privacy Policy → `https://emayan08.github.io/workout-tracker/privacy/`
+- Support → `https://emayan08.github.io/workout-tracker/support/`
+- Feedback → `https://emayan08.github.io/workout-tracker/feedback/`
 
-<Pressable onPress={() => Linking.openURL('https://emayan08.github.io/workout-tracker/privacy/')}>
-  <Text>Privacy Policy</Text>
-</Pressable>
-```
+You still:
 
-3. Also add **Support / Contact** that opens `mailto:you@yourdomain.com` or the support page.
-4. Verify both work on a physical iPhone (https, not a localhost URL).
+1. Install a **TestFlight / production** build (not Expo Go).
+2. Tap each row on a physical iPhone. Safari must load the Pages URL, not a 404.
+3. Do not change these to localhost.
 
-Until this ships in the **production** binary, expect a **5.1.1** bounce.
+Until a production binary with these rows is what Review installs, expect a **5.1.1** bounce if you submit Expo Go.
 
-- [ ] Privacy Policy row in Settings
-- [ ] Support / Contact row in Settings
-- [ ] URLs are production https / mailto, tested on device
+- [x] Privacy Policy row in Settings
+- [x] Support / Contact row in Settings
+- [ ] URLs tested on a physical iPhone (production or TestFlight binary)
 
 </details>
 
@@ -237,27 +273,21 @@ Same URL as in Settings.
 ## 3. Support URL (required)
 
 <details>
-<summary>How to satisfy guideline 1.5</summary>
+<summary>How to satisfy guideline 1.5 — <strong>page is live</strong></summary>
 
 Reviewers click this. A 404 or a “coming soon” page is a rejection.
 
-Minimum page:
+**Support URL:** https://emayan08.github.io/workout-tracker/support/
 
-- App name: TrackHit
-- One sentence what it does
-- A real email you will read within 24 hours (reviewer questions have a short clock)
-- Link to the privacy policy
-- Optional: FAQ (offline, backup, rest notifications)
-
-GitHub Pages README is fine. A Google Site is fine. Do not use a link-in-bio that is ads.
+It already has: app name, what it does, contact email (`emayanramalingam@gmail.com`), link to privacy.
 
 Also set **Support URL** on the iOS version page (not only App Information).
 
-Marketing URL is optional. Skip it if you have no marketing site.
+Marketing URL is optional. You may use https://emayan08.github.io/workout-tracker/ or leave it blank.
 
-- [ ] Support page live
-- [ ] Support URL pasted on the version page
-- [ ] Inbox monitored
+- [x] Support page live
+- [ ] Support URL pasted on the version page in Connect
+- [ ] Inbox `emayanramalingam@gmail.com` monitored (reviewer questions have a short clock)
 
 </details>
 
@@ -770,10 +800,10 @@ Until those exist, the listing must not promise them.
 
 ## 17. Final gate (print this)
 
-- [ ] Privacy Policy URL live + **in Settings**
-- [ ] Support URL live
+- [x] Privacy Policy URL live + **in Settings** (still paste the URL in Connect)
+- [x] Support URL live (still paste it on the version page)
 - [ ] App Privacy = Data Not Collected
-- [ ] No Sign in with Apple / Google (correct)
+- [ ] No Sign in with Apple / Google (correct — do not add)
 - [ ] No IAP, Free (or paid up-front)
 - [ ] 6.9" screenshots, Mock off
 - [ ] iPhone-only availability
@@ -783,5 +813,6 @@ Until those exist, the listing must not promise them.
 - [ ] Review Notes pasted
 - [ ] §13 smoke test passed on TestFlight **offline**
 - [ ] Contact email you will answer in 24h
+- [ ] Privacy + Support URLs tested on a physical iPhone
 
 When every line is ticked: **Submit for Review.**
