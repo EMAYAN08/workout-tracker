@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform, Linking, Switch } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform, Linking, Switch, Image } from 'react-native';
 import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, Trash2, Shield, LifeBuoy, MessageCircle, ExternalLink } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
@@ -15,8 +15,13 @@ import {
 } from '../../theme';
 import { haptic } from '../../haptics';
 import { confirmAction } from '../../dialog';
+import Constants from 'expo-constants';
 
 const SITE = 'https://emayan08.github.io/workout-tracker';
+const APP_VERSION =
+  Constants.expoConfig?.version || Constants.manifest?.version || '1.0.0';
+const APP_BUILD =
+  Constants.expoConfig?.ios?.buildNumber || Constants.nativeBuildVersion || null;
 
 export default function Settings({ scrollRef }) {
   const {
@@ -352,6 +357,24 @@ export default function Settings({ scrollRef }) {
           <Text style={styles.wipeText}>Delete all data</Text>
         </Pressable>
       </View>
+
+      <View
+        style={styles.about}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`TrackHit version ${APP_VERSION}${APP_BUILD ? `, build ${APP_BUILD}` : ''}`}
+      >
+        <Image
+          source={isDark ? require('../../../assets/icon-dark.png') : require('../../../assets/icon-light.png')}
+          style={[styles.aboutIcon, { borderColor: colors.border }]}
+          accessibilityIgnoresInvertColors
+        />
+        <Text style={styles.aboutName}>TrackHit</Text>
+        <Text style={styles.aboutVer}>
+          Version {APP_VERSION}
+          {APP_BUILD ? ` (${APP_BUILD})` : ''}
+        </Text>
+      </View>
       </ScrollView>
     </View>
   );
@@ -461,6 +484,30 @@ function makeStyles(colors) {
       minHeight: HIT,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+    },
+    about: {
+      alignItems: 'center',
+      paddingTop: 28,
+      paddingBottom: 8,
+      gap: 8,
+    },
+    aboutIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      borderWidth: 1,
+    },
+    aboutName: {
+      color: colors.text,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: -0.2,
+    },
+    aboutVer: {
+      color: colors.textSubtle,
+      fontFamily: fonts.medium,
+      fontSize: 11,
+      letterSpacing: 0.4,
     },
   });
 }
