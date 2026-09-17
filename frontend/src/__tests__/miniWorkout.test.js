@@ -30,7 +30,7 @@ describe('miniWorkoutCopy', () => {
   });
 
   test('falls back when empty or finished', () => {
-    expect(miniWorkoutCopy({ exercises: [] }, null).detail).toBe('Add an exercise');
+    expect(miniWorkoutCopy({ exercises: [] }, null).detail).toBe('Rest day');
     expect(
       miniWorkoutCopy(
         { exercises: [{ name: 'Squat', sets: [{ completedAt: 1 }] }] },

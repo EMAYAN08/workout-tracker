@@ -143,6 +143,7 @@ export default function AppContent() {
   const showWorkout = !!activeWorkout && !workoutDocked;
   const browsing = !activeWorkout || workoutDocked;
   const navH = 55 + Math.max(insets.bottom, 8);
+  const isRestSession = !!activeWorkout && !(activeWorkout.exercises || []).length;
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
@@ -157,23 +158,24 @@ export default function AppContent() {
           >
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          {activeWorkout.exercises.length > 0 && (
-            <Pressable
-              disabled={isFinishing}
-              onPress={async () => {
-                haptic('success');
-                setIsFinishing(true);
-                await finishWorkout();
-                setIsFinishing(false);
-              }}
-              style={({ pressed }) => [styles.finishBtn, isFinishing && { opacity: 0.5 }, pressed && { opacity: 0.88 }]}
-            >
-              {isFinishing && (
-                <ActivityIndicator size={14} color={colors.accentFg} style={{ marginRight: 6 }} />
-              )}
-              <Text style={styles.finishText}>{isFinishing ? 'Finishing...' : 'Finish'}</Text>
-            </Pressable>
-          )}
+          <Pressable
+            disabled={isFinishing}
+            onPress={async () => {
+              haptic('success');
+              setIsFinishing(true);
+              await finishWorkout();
+              setIsFinishing(false);
+            }}
+            accessibilityLabel={isRestSession ? 'Log rest day' : 'Finish workout'}
+            style={({ pressed }) => [styles.finishBtn, isFinishing && { opacity: 0.5 }, pressed && { opacity: 0.88 }]}
+          >
+            {isFinishing && (
+              <ActivityIndicator size={14} color={colors.accentFg} style={{ marginRight: 6 }} />
+            )}
+            <Text style={styles.finishText}>
+              {isFinishing ? (isRestSession ? 'Logging...' : 'Finishing...') : isRestSession ? 'Log rest' : 'Finish'}
+            </Text>
+          </Pressable>
         </View>
       )}
 

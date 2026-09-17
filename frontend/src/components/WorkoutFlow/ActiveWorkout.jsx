@@ -206,8 +206,10 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
         {exercises.length === 0 && (
           <View style={styles.restCard}>
             <Moon size={28} color={colors.textMuted} style={{ marginBottom: 6 }} />
-            <Text style={styles.restTitle}>Empty session</Text>
-            <Text style={styles.restSub}>Add an exercise to start logging sets.</Text>
+            <Text style={styles.restTitle}>Rest day</Text>
+            <Text style={styles.restSub}>
+              No lifts in this routine. Tap Log rest to mark it on the calendar, or add an exercise if you train after all.
+            </Text>
           </View>
         )}
 

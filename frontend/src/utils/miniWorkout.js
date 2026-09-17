@@ -10,5 +10,5 @@ export function miniWorkoutCopy(workout, playingSet) {
   const next = findNextIncompleteSet(workout);
   if (next) return { heading, detail: `${next.name} · ${next.setLabel}` };
   if (exercises.length) return { heading, detail: 'All sets logged' };
-  return { heading, detail: 'Add an exercise' };
+  return { heading, detail: 'Rest day' };
 }
