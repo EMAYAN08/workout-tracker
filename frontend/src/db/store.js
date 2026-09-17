@@ -25,6 +25,11 @@ class LocalStore {
     this.routines = [];
     this.customExercises = [];
     this.ready = false;
+    try {
+      await this._writeChain;
+    } catch {
+      /* ignore a failed in-flight write */
+    }
     this._writeChain = Promise.resolve();
   }
 
@@ -44,23 +49,32 @@ class LocalStore {
     this.ready = true;
   }
 
+  _enqueue(work) {
+    const next = this._writeChain.then(work, work);
+    this._writeChain = next.catch(() => {});
+    return next;
+  }
+
   persist() {
     clearTimeout(this._timer);
     this._timer = setTimeout(() => {
-      this._writeChain = this._writeChain.then(() => this.flush());
+      this.flush().catch(() => {});
     }, 40);
   }
 
   async flush() {
     clearTimeout(this._timer);
-    await setItem(
-      ASYNC_KEY,
-      JSON.stringify({
-        workouts: this.workouts,
-        routines: this.routines,
-        customExercises: this.customExercises,
-      })
-    );
+    this._timer = null;
+    return this._enqueue(async () => {
+      await setItem(
+        ASYNC_KEY,
+        JSON.stringify({
+          workouts: this.workouts,
+          routines: this.routines,
+          customExercises: this.customExercises,
+        })
+      );
+    });
   }
 
   async upsertWorkout(workout) {
@@ -114,6 +128,13 @@ class LocalStore {
     this.workouts = sortWorkouts((workouts || []).map(normalizeWorkout));
     this.routines = (routines || []).map(normalizeRoutine);
     this.customExercises = (customExercises || []).map(normalizeCustomExercise);
+    await this.flush();
+  }
+
+  async clearAll() {
+    this.workouts = [];
+    this.routines = [];
+    this.customExercises = [];
     await this.flush();
   }
 

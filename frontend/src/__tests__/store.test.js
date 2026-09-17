@@ -174,6 +174,32 @@ describe('replaceAll / mergeAll / persist', () => {
     expect(localStore.customExercises).toEqual([]);
   });
 
+  test('clearAll wipes memory and disk even if a persist is pending', async () => {
+    await localStore.upsertWorkout({ id: 'w1', timestamp: '2024-01-01T00:00:00.000Z' });
+    await localStore.upsertRoutine({ id: 'r1', name: 'Push' });
+    await localStore.upsertCustomExercise({ id: 'c1', name: 'Hex', muscleGroup: 'back' });
+    const wipe = localStore.clearAll();
+    await wipe;
+    await new Promise((r) => setTimeout(r, 80));
+    expect(localStore.workouts).toEqual([]);
+    expect(localStore.routines).toEqual([]);
+    expect(localStore.customExercises).toEqual([]);
+    const disk = JSON.parse(await AsyncStorage.getItem(KEY));
+    expect(disk.workouts).toEqual([]);
+    expect(disk.routines).toEqual([]);
+    expect(disk.customExercises).toEqual([]);
+  });
+
+  test('a later flush cannot resurrect rows after clearAll', async () => {
+    await localStore.upsertWorkout({ id: 'w1', timestamp: '2024-01-01T00:00:00.000Z' });
+    await localStore.flush();
+    await localStore.upsertWorkout({ id: 'w2', timestamp: '2024-02-01T00:00:00.000Z' });
+    await localStore.clearAll();
+    await localStore.flush();
+    const disk = JSON.parse(await AsyncStorage.getItem(KEY));
+    expect(disk.workouts).toEqual([]);
+  });
+
   test('mergeAll upserts by id and keeps unmatched rows', async () => {
     await localStore.upsertWorkout({ id: 'w1', timestamp: '2024-01-01T00:00:00.000Z', routineName: 'A' });
     await localStore.upsertRoutine({ id: 'r1', name: 'Push' });

@@ -593,10 +593,13 @@ export function WorkoutProvider({ children }) {
     setPlayingSet(null);
     setLastSetCompletedAt(null);
     setWorkoutDuration(0);
-    await localStore.replaceAll({ workouts: [], routines: [], customExercises: [] });
+    newlyCreatedCustomExIds.current = [];
     setUseMock(false);
     await setItem('workout_mock_on', '0');
-    syncFromStore();
+    await localStore.clearAll();
+    setWorkoutHistory([]);
+    setRoutines([]);
+    setCustomExercises([]);
     await Promise.all([
       removeItem('workout_active'),
       removeItem('workout_duration'),

@@ -200,6 +200,21 @@ describe('UAT: wipe all data', () => {
     const disk = JSON.parse(await AsyncStorage.getItem('trackit_local_v1'));
     expect(disk.workouts).toEqual([]);
   });
+
+  test('clearAll survives a pending persist from a just-saved workout', async () => {
+    await localStore.upsertWorkout({
+      id: 'live',
+      timestamp: new Date().toISOString(),
+      exercises: [{ id: 'ex_bench', sets: [{ weight: 135, reps: 5 }] }],
+    });
+    await localStore.clearAll();
+    await new Promise((r) => setTimeout(r, 80));
+    expect(localStore.workouts).toEqual([]);
+    const disk = JSON.parse(await AsyncStorage.getItem('trackit_local_v1'));
+    expect(disk.workouts).toEqual([]);
+    expect(disk.routines).toEqual([]);
+    expect(disk.customExercises).toEqual([]);
+  });
 });
 
 describe('UAT: unit conversion', () => {
