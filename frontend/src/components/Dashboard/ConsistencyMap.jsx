@@ -15,7 +15,6 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { CountUp } from '../ui/primitives';
-import TrackHitMark from '../ui/TrackHitMark';
 import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
 const GUTTER = 4;
@@ -61,7 +60,6 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [areaW, setAreaW] = useState(0);
   const [sharing, setSharing] = useState(false);
-  const [stamp, setStamp] = useState(false);
 
   const countsMap = useMemo(() => {
     const map = new Map();
@@ -113,11 +111,8 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
         await RNShare.share({ message: 'Check out my workout consistency on TrackHit!' });
         return;
       }
-      setStamp(true);
-      await waitFrames(6);
-      await new Promise((r) => setTimeout(r, 120));
+      await waitFrames(2);
       const uri = await captureHiResPng(mapRef, { pixelRatio: 3 });
-      setStamp(false);
       await shareFile(uri, {
         filename: 'TrackHit Consistency',
         message: 'My TrackHit consistency',
@@ -127,7 +122,6 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
     } catch (err) {
       console.error('Failed to share:', err);
     } finally {
-      setStamp(false);
       setSharing(false);
     }
   };
@@ -154,7 +148,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
 
   return (
     <View style={{ marginTop: 16 }}>
-      <View ref={mapRef} collapsable={false} style={[styles.panel, stamp && styles.panelStamp]}>
+      <View ref={mapRef} collapsable={false} style={styles.panel}>
         <View style={styles.topRow}>
           <Text style={styles.title}>Consistency</Text>
           <View style={styles.actions}>
@@ -277,7 +271,6 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
             ))}
           </View>
         </View>
-        {stamp ? <TrackHitMark colors={colors} /> : null}
       </View>
     </View>
   );
@@ -292,7 +285,6 @@ function makeStyles(colors) {
       borderColor: colors.border,
       padding: 16,
     },
-    panelStamp: { paddingBottom: 20 },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',

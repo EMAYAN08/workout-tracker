@@ -8,7 +8,6 @@ import { calculateVolume, convertWeight } from '../../utils/calculations';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { ScreenHeader, hideScroll } from '../ui/primitives';
-import TrackHitMark from '../ui/TrackHitMark';
 import { titleCase } from '../../utils/format';
 import { haptic } from '../../haptics';
 import { shareWorkoutDayPdf } from '../../utils/workoutDayPdf';
@@ -40,9 +39,7 @@ export default function WorkoutDetailView({ date, onBack }) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [sharing, setSharing] = useState(false);
-  const [stamp, setStamp] = useState(false);
   const shotRef = useRef(null);
-  const scrollRef = useRef(null);
 
   const dayWorkouts = useMemo(() => {
     if (!workoutHistory || !date) return [];
@@ -85,11 +82,8 @@ export default function WorkoutDetailView({ date, onBack }) {
         await shareWorkoutDayPdf({ date, dayWorkouts, unit, colors, isDark });
         return;
       }
-      setStamp(true);
-      await waitFrames(6);
-      await new Promise((r) => setTimeout(r, 120));
+      await waitFrames(2);
       const uri = await captureHiResPng(shotRef, { pixelRatio: 3 });
-      setStamp(false);
       await shareFile(uri, {
         filename: `TrackHit-${date}`,
         mimeType: 'image/png',
@@ -100,7 +94,6 @@ export default function WorkoutDetailView({ date, onBack }) {
       console.error('Share failed:', err);
       Alert.alert('Share', 'Could not export this workout.');
     } finally {
-      setStamp(false);
       setSharing(false);
     }
   };
@@ -119,15 +112,8 @@ export default function WorkoutDetailView({ date, onBack }) {
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title={displayDate} onBack={onBack} right={shareBtn} />
-      <ScrollView
-        ref={scrollRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scroll}
-        removeClippedSubviews={false}
-        {...hideScroll}
-      >
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
       <View ref={shotRef} collapsable={false} style={styles.shot}>
-      {stamp ? <Text style={styles.shotTitle}>{displayDate}</Text> : null}
       <View style={styles.meta}>
         <View style={styles.metaItem}>
           <Clock size={16} color={colors.textMuted} />
@@ -170,7 +156,7 @@ export default function WorkoutDetailView({ date, onBack }) {
               workout.exercises.map((exercise, eIdx) => (
                 <View key={exercise.id || eIdx} style={{ gap: 10 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <ExerciseImage src={exercise.gifUrl} lite={stamp} />
+                    <ExerciseImage src={exercise.gifUrl} lite={sharing} />
                     <View>
                       <Text style={styles.exName}>{exercise.name}</Text>
                       <Text style={styles.exMg}>{titleCase(exercise.muscleGroup)}</Text>
@@ -201,7 +187,6 @@ export default function WorkoutDetailView({ date, onBack }) {
           </View>
         </View>
       ))}
-      {stamp ? <TrackHitMark colors={colors} /> : null}
       </View>
       </ScrollView>
     </View>
@@ -212,14 +197,6 @@ function makeStyles(colors) {
   return StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 120 },
   shot: { backgroundColor: colors.background },
-  shotTitle: {
-    color: colors.text,
-    fontFamily: fonts.bold,
-    fontSize: 28,
-    letterSpacing: -0.6,
-    lineHeight: 32,
-    marginBottom: 16,
-  },
   emptyWrap: { flex: 1 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

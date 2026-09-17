@@ -54,29 +54,25 @@ describe('captureHiResPng', () => {
   });
 });
 
-describe('export watermark wiring', () => {
+describe('export has no watermark', () => {
   const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
-  test('TrackHitMark uses native Image and both theme icons', () => {
-    const src = read('components/ui/TrackHitMark.jsx');
-    expect(src).not.toMatch(/from 'expo-image'/);
-    expect(src).toMatch(/from 'react-native'/);
-    expect(src).toMatch(/icon-light\.png/);
-    expect(src).toMatch(/icon-dark\.png/);
-    expect(src).toMatch(/collapsable=\{false\}/);
+  test('TrackHitMark component is gone', () => {
+    const mark = path.join(__dirname, '..', 'components/ui/TrackHitMark.jsx');
+    expect(fs.existsSync(mark)).toBe(false);
   });
 
-  test('consistency map captures the panel ref, not renderInContext', () => {
+  test('consistency map export does not stamp a watermark', () => {
     const src = read('components/Dashboard/ConsistencyMap.jsx');
+    expect(src).not.toMatch(/TrackHitMark/);
+    expect(src).not.toMatch(/setStamp/);
     expect(src).toMatch(/captureHiResPng\(mapRef/);
-    expect(src).not.toMatch(/useRenderInContext:\s*true/);
-    expect(src).toMatch(/<TrackHitMark/);
   });
 
-  test('history export captures shotRef, not the scroll snapshot', () => {
+  test('history export does not stamp a watermark', () => {
     const src = read('components/Calendar/WorkoutDetailView.jsx');
+    expect(src).not.toMatch(/TrackHitMark/);
+    expect(src).not.toMatch(/setStamp/);
     expect(src).toMatch(/captureHiResPng\(shotRef/);
-    expect(src).not.toMatch(/snapshotContentContainer:\s*true/);
-    expect(src).toMatch(/<TrackHitMark/);
   });
 });
