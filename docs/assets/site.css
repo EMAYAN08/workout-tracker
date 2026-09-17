@@ -41,7 +41,7 @@ a.inline:hover { text-decoration: underline; }
 nav.top {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 40;
   background: rgba(255,255,255,0.86);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
@@ -76,9 +76,15 @@ nav.top .bar {
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 8px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: #000;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  z-index: 2;
 }
 
 h1, h2, h3 {
@@ -236,19 +242,29 @@ footer.site a:hover { color: var(--text); }
 @media (max-width: 800px) {
   .grid { grid-template-columns: 1fr; }
   .row { grid-template-columns: 1fr; gap: 6px; }
-  .links { display: none; }
-  nav.top.open .links {
-    display: flex;
+  .links {
+    display: none;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     position: absolute;
-    left: 0; right: 0; top: 64px;
+    left: 0;
+    right: 0;
+    top: 100%;
     background: #fff;
     border-bottom: 1px solid var(--line);
-    padding: 12px 24px 20px;
-    gap: 14px;
+    padding: 8px var(--pad) 16px;
+    gap: 0;
+    z-index: 50;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+  }
+  nav.top.open .links { display: flex; }
+  .links a {
+    display: block;
+    padding: 14px 0;
+    min-height: 44px;
   }
   .menu { display: inline-flex; align-items: center; justify-content: center; }
+  body.nav-open { overflow: hidden; }
   .hero { padding: 56px 0 48px; }
   section { padding: 56px 0; }
 }

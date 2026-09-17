@@ -1,12 +1,44 @@
 (function () {
   const REPO = "EMAYAN08/workout-tracker";
-  const nav = document.querySelector("nav.top");
-  const toggle = document.querySelector("[data-menu]");
-  if (toggle && nav) {
-    toggle.addEventListener("click", () => {
-      const open = nav.classList.toggle("open");
+
+  function bindMenu() {
+    const nav = document.querySelector("nav.top");
+    const toggle = document.querySelector("[data-menu]");
+    if (!toggle || !nav) return;
+
+    const setOpen = (open) => {
+      nav.classList.toggle("open", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
+      toggle.textContent = open ? "✕" : "☰";
+      document.body.classList.toggle("nav-open", open);
+    };
+
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(!nav.classList.contains("open"));
     });
+
+    nav.querySelectorAll(".links a").forEach((a) => {
+      a.addEventListener("click", () => setOpen(false));
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!nav.classList.contains("open")) return;
+      if (nav.contains(e.target)) return;
+      setOpen(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindMenu);
+  } else {
+    bindMenu();
   }
 
   const year = document.querySelector("[data-year]");
@@ -103,9 +135,9 @@
 
   function escapeHtml(str) {
     return String(str)
-      .replace(/&/g, "&")
-      .replace(/</g, "<")
-      .replace(/>/g, ">")
-      .replace(/"/g, """);
+      .replace(/&/g, '\u0026amp;')
+      .replace(/</g, '\u0026lt;')
+      .replace(/>/g, '\u0026gt;')
+      .replace(/"/g, '\u0026quot;');
   }
 })();
