@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import {
@@ -19,7 +19,7 @@ import {
 import { useWorkout } from '../../context/WorkoutContext';
 import { fonts, radius, HIT } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
-import { ScreenHeader, hideScroll } from '../ui/primitives';
+import { ScreenHeader } from '../ui/primitives';
 
 export default function CalendarView({ onDayClick, onBack }) {
   const { workoutHistory } = useWorkout();
@@ -64,7 +64,7 @@ export default function CalendarView({ onDayClick, onBack }) {
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title="History" onBack={onBack} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
+      <View style={styles.body}>
 
       <GestureDetector gesture={monthSwipe}>
       <View style={styles.panel} collapsable={false}>
@@ -133,14 +133,14 @@ export default function CalendarView({ onDayClick, onBack }) {
         </View>
       </View>
       </GestureDetector>
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 function makeStyles(colors) {
   return StyleSheet.create({
-  scroll: { padding: 16, paddingBottom: 120 },
+    body: { flex: 1, padding: 16, paddingBottom: 120 },
   panel: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
