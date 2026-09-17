@@ -1,0 +1,22 @@
+name: Feedback
+description: A public note about TrackHit
+title: "Feedback: "
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Public. Do not include medical details or anything you want kept private.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Type
+      options: [Feedback, Bug, Idea, Thank you]
+    validations:
+      required: true
+  - type: textarea
+    id: note
+    attributes:
+      label: Note
+      placeholder: What should TrackHit do next?
+    validations:
+      required: true
