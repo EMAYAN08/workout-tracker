@@ -188,7 +188,7 @@ The page **must** say, in plain language:
 >
 > **Contact:** you@yourdomain.com
 
-- [ ] Policy hosted at a stable https URL
+- [ ] Policy hosted at a stable https URL: https://emayan08.github.io/workout-tracker/privacy/
 - [ ] Page loads in Safari without a login
 - [ ] Mentions on-device storage, no accounts, wipe path, contact email
 
@@ -205,7 +205,7 @@ Guideline **5.1.1(i)** requires the policy **in the app**, not only in Connect.
 ```js
 import { Linking } from 'react-native';
 
-<Pressable onPress={() => Linking.openURL('https://YOUR-DOMAIN/privacy')}>
+<Pressable onPress={() => Linking.openURL('https://emayan08.github.io/workout-tracker/privacy/')}>
   <Text>Privacy Policy</Text>
 </Pressable>
 ```

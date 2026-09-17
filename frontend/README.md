@@ -31,8 +31,8 @@ Apple’s rules: [App Review Guidelines](https://developer.apple.com/app-store/r
 
 - [ ] Production IPA — Expo Go / a dev client **cannot** be submitted. Run `eas build --platform ios --profile production`.
 - [ ] Bundle id `com.trackit.app` — confirm you own it in App Store Connect and lock it.
-- [ ] Support URL — **hard required** in App Store Connect.
-- [ ] Privacy Policy URL — **hard required** in App Store Connect.
+- [x] Support URL — **hard required** in App Store Connect: https://emayan08.github.io/workout-tracker/support/
+- [x] Privacy Policy URL — **hard required** in App Store Connect: https://emayan08.github.io/workout-tracker/privacy/
 - [ ] Screenshots — 2026 required set is **6.9" iPhone, 1320×2868**. Do not screenshot Mock-on “Demo data”.
 - [ ] Device QA on a physical iPhone (reviewers do not use your simulator).
 - [ ] Privacy nutrition labels — declare **Data Not Collected**. Audit the archive’s privacy report.

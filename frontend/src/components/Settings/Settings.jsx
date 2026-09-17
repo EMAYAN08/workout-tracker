@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
-import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, Trash2 } from 'lucide-react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform, Linking } from 'react-native';
+import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, Trash2, Shield, LifeBuoy, MessageCircle } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
@@ -15,6 +15,8 @@ import {
 } from '../../theme';
 import { haptic } from '../../haptics';
 import { confirmAction } from '../../dialog';
+
+const SITE = 'https://emayan08.github.io/workout-tracker';
 
 export default function Settings({ scrollRef }) {
   const {
@@ -294,6 +296,27 @@ export default function Settings({ scrollRef }) {
         </View>
       </View>
 
+      <Text style={styles.section}>Legal</Text>
+      <View style={styles.card}>
+        {[
+          { Icon: Shield, label: 'Privacy Policy', path: '/privacy/' },
+          { Icon: LifeBuoy, label: 'Support', path: '/support/' },
+          { Icon: MessageCircle, label: 'Feedback', path: '/feedback/' },
+        ].map(({ Icon, label, path }, i, arr) => (
+          <Pressable
+            key={path}
+            onPress={() => Linking.openURL(`${SITE}${path}`)}
+            style={[styles.legalRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}
+            accessibilityRole="link"
+            accessibilityLabel={label}
+          >
+            <Icon size={16} color={colors.textMuted} />
+            <Text style={styles.rowLabel}>{label}</Text>
+            <Text style={styles.rowMeta}>Open</Text>
+          </Pressable>
+        ))}
+      </View>
+
       <Text style={styles.section}>Danger</Text>
       <View style={styles.card}>
         <View style={styles.row}>
@@ -423,5 +446,13 @@ function makeStyles(colors) {
       justifyContent: 'center',
     },
     wipeText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 15 },
+    legalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: HIT,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
   });
 }

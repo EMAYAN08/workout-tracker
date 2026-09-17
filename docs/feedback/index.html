@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Feedback — TrackHit</title>
+  <meta name="description" content="Leave a public note about TrackHit. We acknowledge what we can ship." />
+  <link rel="canonical" href="https://emayan08.github.io/workout-tracker/feedback/" />
+  <link rel="icon" href="../assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Inter:opsz,wght@14..32,400..700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/site.css" />
+</head>
+<body>
+  <nav class="top">
+    <div class="wrap bar">
+      <a class="brand" href="../"><img src="../assets/icon.png" alt="" />TrackHit</a>
+      <button class="menu" type="button" data-menu aria-label="Menu" aria-expanded="false">☰</button>
+      <div class="links">
+        <a href="../">App</a>
+        <a href="../privacy/">Privacy</a>
+        <a href="../support/">Support</a>
+        <a href="../feedback/" aria-current="page">Feedback</a>
+      </div>
+    </div>
+  </nav>
+
+  <article class="prose article">
+    <div class="kicker">Notes</div>
+    <h1>Feedback</h1>
+    <p class="lede">Public by design. A short note becomes a GitHub issue so it can be acknowledged in the open. Do not include medical details or anything private — email those.</p>
+
+    <form class="feedback" id="feedback-form">
+      <label for="name">Name <span class="kicker">(optional)</span></label>
+      <input id="name" name="name" maxlength="80" placeholder="How we should address you" />
+      <label for="kind">Type</label>
+      <select id="kind" name="kind">
+        <option>Feedback</option>
+        <option>Bug</option>
+        <option>Idea</option>
+        <option>Thank you</option>
+      </select>
+      <label for="message">Note</label>
+      <textarea id="message" name="message" required maxlength="2000" placeholder="What should TrackHit do next?"></textarea>
+      <div class="cta">
+        <button class="btn" type="submit">Post a public note</button>
+        <a class="btn btn-ghost" href="mailto:emayanramalingam@gmail.com?subject=TrackHit%20private%20note">Email privately</a>
+      </div>
+      <p class="kicker">Posting opens GitHub with the note filled in. You confirm it there. We mark notes Acknowledged when we’ve read them.</p>
+    </form>
+
+    <h2>The board</h2>
+    <p id="feedback-status" class="status">Loading notes…</p>
+    <div id="feedback-wall" class="list"></div>
+  </article>
+
+  <footer class="site">
+    <div class="wrap bar">
+      <span>© <span data-year></span> TrackHit</span>
+      <span><a href="../privacy/">Privacy</a> · <a href="../support/">Support</a></span>
+    </div>
+  </footer>
+  <script src="../assets/site.js"></script>
+</body>
+</html>
