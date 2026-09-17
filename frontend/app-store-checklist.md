@@ -186,9 +186,9 @@ Still on you: Apple Developer account, **paste the privacy + support URLs in Con
 3. App Store Connect → **Agreements, Tax, and Banking**. Accept the Paid Apps agreement even if the app is free (Apple still wants banking on file).
 4. Wait until status is **Active** before creating the app record.
 
-- [ ] Developer Program active
-- [ ] 2FA on
-- [ ] Agreements accepted
+- [x] Developer Program active
+- [x] 2FA on
+- [x] Agreements accepted
 
 </details>
 
@@ -206,8 +206,8 @@ Still on you: Apple Developer account, **paste the privacy + support URLs in Con
    - SKU: `trackhit-ios` (internal, never shown)
    - User Access: Full Access
 
-- [ ] Bundle ID created and owned
-- [ ] App record created, bundle ID matches `app.json`
+- [x] Bundle ID created and owned
+- [x] App record created, bundle ID matches `app.json`
 
 </details>
 
@@ -258,7 +258,7 @@ Regenerate only if you add a backend, analytics, accounts, or HealthKit.
 - [x] Policy hosted at https://emayan08.github.io/workout-tracker/privacy/
 - [x] Page loads in Safari without a login
 - [x] Mentions on-device storage, no accounts, wipe path, contact email
-- [ ] Open the URL in Safari on your iPhone once before submit (catch a Pages 404)
+- [x] Open the URL in Safari on your iPhone once before submit (catch a Pages 404)
 
 </details>
 
@@ -294,7 +294,7 @@ App Store Connect → your app → App Information → **Privacy Policy URL**.
 
 Same URL as in Settings.
 
-- [ ] Privacy Policy URL saved in Connect
+- [x] Privacy Policy URL saved in Connect
 
 </details>
 
@@ -316,8 +316,8 @@ Also set **Support URL** on the iOS version page (not only App Information).
 Marketing URL is optional. You may use https://emayan08.github.io/workout-tracker/ or leave it blank.
 
 - [x] Support page live
-- [ ] Support URL pasted on the version page in Connect
-- [ ] Inbox `emayanramalingam@gmail.com` monitored (reviewer questions have a short clock)
+- [x] Support URL pasted on the version page in Connect
+- [x] Inbox `emayanramalingam@gmail.com` monitored (reviewer questions have a short clock)
 
 </details>
 
@@ -365,7 +365,7 @@ Do **not** add `NSUserTrackingUsageDescription`. You do not track.
 - [x] Skip account deletion UI (no accounts → 5.1.1(v) does not apply)
 - [x] Skip “Delete account” in the privacy policy as a server action — instead document **Settings → Delete all data**
 - [x] Review Notes: “No account. Demo account not required.”
-- [ ] Confirm the App Store Connect app record has **no** Sign in with Apple capability attached
+- [x] Confirm the App Store Connect app record has **no** Sign in with Apple capability attached
 
 </details>
 
@@ -386,9 +386,9 @@ If `TrackHit` is taken, use `TrackHit Workout Logger`.
 
 **Do not write:** #1, best, Pro, Premium, cloud sync, Apple Health, Live Activities, Dynamic Island, social feed, AI coach, medical, “diagnoses injury.”
 
-- [ ] Name unique and reserved
-- [ ] Subtitle pasted
-- [ ] Promotional text pasted
+- [x] Name unique and reserved
+- [x] Subtitle pasted
+- [x] Promotional text pasted
 
 </details>
 
@@ -421,10 +421,10 @@ If `TrackHit` is taken, use `TrackHit Workout Logger`.
 - Copyright: `2026 Emayan Vadivel` (or your legal name)
 - What’s New for 1.0: you can repeat the first paragraph of the description. Do not invent a fake changelog.
 
-- [ ] Keywords
-- [ ] Health & Fitness, not Medical
-- [ ] Age 4+, questionnaire honest
-- [ ] Copyright year + name
+- [x] Keywords
+- [x] Health & Fitness, not Medical
+- [x] Age 4+, questionnaire honest
+- [x] Copyright year + name
 
 </details>
 
