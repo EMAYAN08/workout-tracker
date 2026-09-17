@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Inter:opsz,wght@14..32,400..700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/site.css?v=menu2" />
+  <link rel="stylesheet" href="assets/site.css?v=motion1" />
 </head>
 <body>
   <nav class="top">
@@ -32,60 +32,127 @@
 
   <header class="hero">
     <div class="wrap">
-      <div class="kicker">Local-first workout logger</div>
-      <h1>TrackHit.</h1>
-      <p class="lede">A private training log for people who lift. Routines, sets, rest, and progress — on this phone. No account. No cloud. Yours alone.</p>
-      <div class="cta">
+      <div class="kicker reveal" data-reveal>Local-first workout logger</div>
+      <h1 class="reveal" data-reveal>TrackHit<span class="accent">.</span></h1>
+      <p class="lede reveal" data-reveal>A private training log for people who lift. Routines, sets, rest, and progress — on this phone. No account. No cloud. Yours alone.</p>
+      <div class="cta reveal" data-reveal>
         <a class="btn" href="https://apps.apple.com/search?term=TrackHit">App Store</a>
         <a class="btn btn-ghost" href="feedback/">Leave a note</a>
       </div>
     </div>
   </header>
 
-  <section>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <div class="ticker-run">
+        <span>No accounts</span>
+        <span>No cloud</span>
+        <span>No ads</span>
+        <span>Local rest</span>
+        <span>JSON backup</span>
+        <span>iPhone only</span>
+        <span>On this phone</span>
+      </div>
+      <div class="ticker-run">
+        <span>No accounts</span>
+        <span>No cloud</span>
+        <span>No ads</span>
+        <span>Local rest</span>
+        <span>JSON backup</span>
+        <span>iPhone only</span>
+        <span>On this phone</span>
+      </div>
+    </div>
+  </div>
+
+  <section id="features">
     <div class="wrap">
-      <div class="head">
+      <div class="head reveal" data-reveal>
         <div class="kicker">What it is</div>
         <h2>The log. Nothing else.</h2>
         <p class="lede">TrackHit is built to disappear once the set starts. No feed. No streak guilt from a server. No one watching.</p>
       </div>
-      <div class="grid">
-        <article class="card">
-          <div class="kicker">01</div>
-          <h3>Routines</h3>
-          <p>Build Push / Pull / Legs, Upper Lower, or a custom split. Drag to reorder. Start a session in one tap.</p>
-        </article>
-        <article class="card">
-          <div class="kicker">02</div>
-          <h3>The session</h3>
-          <p>Log weight and reps on a custom keypad. Rest timer on the lock screen. A quiet PR badge when you earn it.</p>
-        </article>
-        <article class="card">
-          <div class="kicker">03</div>
-          <h3>The picture</h3>
-          <p>Consistency map, strength radar, volume and time. Share a day as an image. Export a JSON backup when you switch phones.</p>
-        </article>
+
+      <div class="carousel" data-carousel>
+        <div class="carousel-frame">
+          <div class="carousel-track" tabindex="0" aria-label="TrackHit features">
+            <article class="slide is-active">
+              <div class="viz viz-list" aria-hidden="true">
+                <span class="on"></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="slide-copy">
+                <div class="kicker">01</div>
+                <h3>Routines</h3>
+                <p>Build Push / Pull / Legs, Upper Lower, or a custom split. Drag to reorder. Start a session in one tap.</p>
+              </div>
+            </article>
+            <article class="slide">
+              <div class="viz viz-keys" aria-hidden="true">
+                <i></i><i></i><i></i>
+                <i></i><i></i><i></i>
+                <i></i><i></i><i></i>
+                <i class="wide"></i>
+              </div>
+              <div class="slide-copy">
+                <div class="kicker">02</div>
+                <h3>The session</h3>
+                <p>Log weight and reps on a custom keypad. A quiet PR badge when you earn it. Finish writes locally.</p>
+              </div>
+            </article>
+            <article class="slide">
+              <div class="viz viz-ring" aria-hidden="true"><span>2:00</span></div>
+              <div class="slide-copy">
+                <div class="kicker">03</div>
+                <h3>Rest, locally</h3>
+                <p>Timer on the lock screen. Scheduled on this iPhone — not a push server. Deny permission and the in-app clock still runs.</p>
+              </div>
+            </article>
+            <article class="slide">
+              <div class="viz viz-map" aria-hidden="true"></div>
+              <div class="slide-copy">
+                <div class="kicker">04</div>
+                <h3>The picture</h3>
+                <p>Consistency map, strength radar, volume and time. Share a day as an image. History by month, quarter, or year.</p>
+              </div>
+            </article>
+            <article class="slide">
+              <div class="viz viz-file" aria-hidden="true"></div>
+              <div class="slide-copy">
+                <div class="kicker">05</div>
+                <h3>Your file</h3>
+                <p>Export a JSON backup, import it on another phone, or wipe everything in Settings. We never upload it.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="carousel-bar">
+          <button type="button" class="icon-btn" data-prev aria-label="Previous feature">←</button>
+          <div class="dots" data-dots></div>
+          <button type="button" class="icon-btn" data-next aria-label="Next feature">→</button>
+        </div>
       </div>
     </div>
   </section>
 
   <section>
     <div class="wrap">
-      <div class="head">
+      <div class="head reveal" data-reveal>
         <div class="kicker">Privacy</div>
         <h2>Nothing leaves the phone.</h2>
       </div>
       <div class="rows">
-        <div class="row"><strong>No accounts</strong><p>Open the app and lift. There is no sign-in with Apple or Google because there is nothing to sign in to.</p></div>
-        <div class="row"><strong>No server</strong><p>Workouts, routines, and custom exercises live in on-device storage. We do not run a backend for this app.</p></div>
-        <div class="row"><strong>No tracking</strong><p>No analytics, ads, crash reporters, or advertising ID. Rest alerts are scheduled locally.</p></div>
-        <div class="row"><strong>You own the file</strong><p>Export a JSON backup, import it on another phone, or wipe everything in Settings. Share sheets go through iOS — we never upload the file.</p></div>
+        <div class="row reveal" data-reveal><strong>No accounts</strong><p>Open the app and lift. There is no sign-in with Apple or Google because there is nothing to sign in to.</p></div>
+        <div class="row reveal" data-reveal><strong>No server</strong><p>Workouts, routines, and custom exercises live in on-device storage. We do not run a backend for this app.</p></div>
+        <div class="row reveal" data-reveal><strong>No tracking</strong><p>No analytics, ads, crash reporters, or advertising ID. Rest alerts are scheduled locally.</p></div>
+        <div class="row reveal" data-reveal><strong>You own the file</strong><p>Export a JSON backup, import it on another phone, or wipe everything in Settings. Share sheets go through iOS — we never upload the file.</p></div>
       </div>
     </div>
   </section>
 
   <div class="banner">
-    <div class="wrap">
+    <div class="wrap reveal" data-reveal>
       <h2>Become quieter about training.</h2>
       <p class="lede">Find an alternative to cluttered fitness apps. TrackHit is free, local, and done.</p>
       <div class="cta">
@@ -105,6 +172,6 @@
       </span>
     </div>
   </footer>
-  <script src="assets/site.js?v=menu2"></script>
+  <script src="assets/site.js?v=motion1"></script>
 </body>
 </html>
