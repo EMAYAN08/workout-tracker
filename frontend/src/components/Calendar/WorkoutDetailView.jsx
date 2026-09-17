@@ -42,6 +42,7 @@ export default function WorkoutDetailView({ date, onBack }) {
   const [sharing, setSharing] = useState(false);
   const [stamp, setStamp] = useState(false);
   const shotRef = useRef(null);
+  const scrollRef = useRef(null);
 
   const dayWorkouts = useMemo(() => {
     if (!workoutHistory || !date) return [];
@@ -85,8 +86,17 @@ export default function WorkoutDetailView({ date, onBack }) {
         return;
       }
       setStamp(true);
-      await waitFrames(2);
-      const uri = await captureHiResPng(shotRef, { pixelRatio: 2 });
+      await waitFrames(6);
+      await new Promise((r) => setTimeout(r, 120));
+      let uri;
+      try {
+        uri = await captureHiResPng(scrollRef, {
+          pixelRatio: 3,
+          snapshotContentContainer: true,
+        });
+      } catch {
+        uri = await captureHiResPng(shotRef, { pixelRatio: 3 });
+      }
       setStamp(false);
       await shareFile(uri, {
         filename: `TrackHit-${date}`,
@@ -117,7 +127,13 @@ export default function WorkoutDetailView({ date, onBack }) {
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title={displayDate} onBack={onBack} right={shareBtn} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} {...hideScroll}>
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scroll}
+        removeClippedSubviews={false}
+        {...hideScroll}
+      >
       <View ref={shotRef} collapsable={false} style={styles.shot}>
       {stamp ? <Text style={styles.shotTitle}>{displayDate}</Text> : null}
       <View style={styles.meta}>

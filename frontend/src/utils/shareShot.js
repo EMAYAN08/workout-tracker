@@ -95,7 +95,7 @@ export async function captureHiResPng(
     result: 'tmpfile',
     pixelRatio,
     snapshotContentContainer,
-    useRenderInContext,
+    useRenderInContext: useRenderInContext || Platform.OS === 'ios',
   });
 }
 

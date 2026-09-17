@@ -114,7 +114,8 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
         return;
       }
       setStamp(true);
-      await waitFrames(2);
+      await waitFrames(6);
+      await new Promise((r) => setTimeout(r, 120));
       const uri = await captureHiResPng(mapRef, { pixelRatio: 3 });
       setStamp(false);
       await shareFile(uri, {
