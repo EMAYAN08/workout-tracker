@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform, Linking } from 'react-native';
-import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, Trash2, Shield, LifeBuoy, MessageCircle } from 'lucide-react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Platform, Linking, Switch } from 'react-native';
+import { Moon, Sun, Scale, Palette, ChartLine, Timer, Download, Upload, Beaker, Trash2, Shield, LifeBuoy, MessageCircle, ExternalLink } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Select, ScreenHeader, hideScroll } from '../ui/primitives';
@@ -84,81 +84,82 @@ export default function Settings({ scrollRef }) {
         <View style={styles.row}>
           <Beaker size={16} color={colors.textMuted} />
           <Text style={styles.rowLabel}>Mock data</Text>
+          <Switch
+            value={!!useMock}
+            onValueChange={(on) => {
+              haptic('selection');
+              toggleMock(on);
+            }}
+            trackColor={{ false: colors.borderStrong, true: colors.accent }}
+            thumbColor={Platform.OS === 'android' ? (useMock ? colors.accentFg : colors.surface) : '#FFFFFF'}
+            ios_backgroundColor={colors.surface2}
+            accessibilityLabel="Mock data"
+            style={styles.switch}
+          />
         </View>
-        <Text style={styles.hint}>
+        <Text style={[styles.hint, { marginBottom: 0 }]}>
           Preview a full training log without touching your real workouts. Turn it off anytime — nothing is saved.
         </Text>
-        <View style={styles.seg}>
-          {[false, true].map((on) => (
-            <Pressable
-              key={String(on)}
-              onPress={() => {
-                haptic('selection');
-                toggleMock(on);
-              }}
-              style={[styles.segBtn, useMock === on && { backgroundColor: colors.text }]}
-            >
-              <Text style={[styles.segText, useMock === on && { color: colors.background }]}>
-                {on ? 'On' : 'Off'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
       </View>
 
       <Text style={styles.section}>Appearance</Text>
       <View style={styles.card}>
-        <View style={styles.row}>
+        <View style={styles.rowTight}>
           {isDark ? <Moon size={16} color={colors.textMuted} /> : <Sun size={16} color={colors.textMuted} />}
           <Text style={styles.rowLabel}>Theme</Text>
-        </View>
-        <View style={styles.seg}>
-          {['dark', 'light'].map((mode) => {
-            const on = scheme === mode;
-            return (
-              <Pressable
-                key={mode}
-                onPress={() => {
-                  haptic('selection');
-                  setScheme(mode);
-                }}
-                style={[styles.segBtn, on && { backgroundColor: colors.text }]}
-              >
-                <Text style={[styles.segText, on && { color: colors.background }]}>
-                  {mode === 'dark' ? 'Dark' : 'Light'}
-                </Text>
-              </Pressable>
-            );
-          })}
+          <View style={styles.compactSeg}>
+            {[
+              { value: 'dark', Icon: Moon, label: 'Dark' },
+              { value: 'light', Icon: Sun, label: 'Light' },
+            ].map(({ value, Icon, label }) => {
+              const on = scheme === value;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => {
+                    haptic('selection');
+                    setScheme(value);
+                  }}
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: on }}
+                  style={[styles.compactBtn, on && { backgroundColor: colors.text }]}
+                >
+                  <Icon size={14} color={on ? colors.background : colors.textMuted} strokeWidth={2.2} />
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </View>
 
       <Text style={styles.section}>Units</Text>
       <View style={styles.card}>
-        <View style={styles.row}>
+        <View style={styles.rowTight}>
           <Scale size={16} color={colors.textMuted} />
           <Text style={styles.rowLabel}>Weight</Text>
-        </View>
-        <View style={styles.seg}>
-          {['lbs', 'kgs'].map((u) => {
-            const on = unit === u;
-            return (
-              <Pressable
-                key={u}
-                onPress={() => {
-                  if (unit !== u) {
-                    haptic('selection');
-                    toggleUnit();
-                  }
-                }}
-                style={[styles.segBtn, on && { backgroundColor: colors.text }]}
-              >
-                <Text style={[styles.segText, on && { color: colors.background }]}>
-                  {u === 'lbs' ? 'LB' : 'KG'}
-                </Text>
-              </Pressable>
-            );
-          })}
+          <View style={styles.compactSeg}>
+            {['lbs', 'kgs'].map((u) => {
+              const on = unit === u;
+              return (
+                <Pressable
+                  key={u}
+                  onPress={() => {
+                    if (unit !== u) {
+                      haptic('selection');
+                      toggleUnit();
+                    }
+                  }}
+                  accessibilityLabel={u === 'lbs' ? 'Pounds' : 'Kilograms'}
+                  accessibilityState={{ selected: on }}
+                  style={[styles.compactBtn, on && { backgroundColor: colors.text }]}
+                >
+                  <Text style={[styles.compactText, on && { color: colors.background }]}>
+                    {u === 'lbs' ? 'LB' : 'KG'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </View>
 
@@ -308,11 +309,11 @@ export default function Settings({ scrollRef }) {
             onPress={() => Linking.openURL(`${SITE}${path}`)}
             style={[styles.legalRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}
             accessibilityRole="link"
-            accessibilityLabel={label}
+            accessibilityLabel={`${label}, opens in browser`}
           >
             <Icon size={16} color={colors.textMuted} />
             <Text style={styles.rowLabel}>{label}</Text>
-            <Text style={styles.rowMeta}>Open</Text>
+            <ExternalLink size={16} color={colors.textMuted} />
           </Pressable>
         ))}
       </View>
@@ -375,7 +376,8 @@ function makeStyles(colors) {
       borderColor: colors.border,
       padding: 14,
     },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, minHeight: 22 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, minHeight: 32 },
+    rowTight: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 },
     rowLabel: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, flex: 1 },
     rowMeta: {
       color: colors.textMuted,
@@ -385,17 +387,23 @@ function makeStyles(colors) {
       textTransform: 'uppercase',
     },
     hint: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, marginBottom: 12 },
-    seg: {
+    compactSeg: {
       flexDirection: 'row',
-      height: HIT,
+      height: 32,
       borderRadius: radius.sm,
       borderWidth: 1,
       borderColor: colors.border,
       overflow: 'hidden',
       backgroundColor: colors.surface2,
     },
-    segBtn: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    segText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 14, letterSpacing: 0.4 },
+    compactBtn: {
+      minWidth: 40,
+      paddingHorizontal: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    compactText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 0.4 },
+    switch: { transform: [{ scaleX: 0.86 }, { scaleY: 0.86 }] },
     swatchRow: { gap: 12, paddingVertical: 4, paddingRight: 8, marginTop: 12 },
     swatchItem: { alignItems: 'center', gap: 6, width: 52 },
     swatch: {
