@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useState, useId, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, PanResponder } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Activity } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { smoothLine, pointOnSmoothLine } from '../../utils/chartPath';
+
+function inPlot(x, y, c) {
+  if (!c) return false;
+  return x >= c.padL && x <= c.padL + c.innerW && y >= c.padT - 8 && y <= c.padT + c.innerH + 8;
+}
 
 export default function AreaChart({
   data = [],
@@ -15,6 +20,7 @@ export default function AreaChart({
   emptySubtitle = 'Log this more than once to see progression.',
   averageLine,
   active = true,
+  onLockScroll,
 }) {
   const { colors } = useTheme();
   const stroke = color || colors.chartAccent || colors.text;
@@ -24,10 +30,19 @@ export default function AreaChart({
   const width = Math.max(200, boxW || 0);
   const gid = `fill-${String(useId()).replace(/[^a-zA-Z0-9]/g, '')}`;
   const chartRef = useRef(null);
+  const lockRef = useRef(onLockScroll);
+  lockRef.current = onLockScroll;
+
+  const unlock = () => lockRef.current?.(true);
 
   useEffect(() => {
-    if (!active) setCursor(null);
+    if (!active) {
+      setCursor(null);
+      unlock();
+    }
   }, [active]);
+
+  useEffect(() => () => unlock(), []);
 
   const chart = useMemo(() => {
     if (!data || data.length < 2 || width < 40) return null;
@@ -71,6 +86,29 @@ export default function AreaChart({
     if (next) setCursor(next);
   };
 
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: (e) => {
+          const { locationX, locationY } = e.nativeEvent;
+          return inPlot(locationX, locationY, chartRef.current);
+        },
+        onMoveShouldSetPanResponder: () => false,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderGrant: (e) => {
+          lockRef.current?.(false);
+          moveCursor(e.nativeEvent.locationX);
+        },
+        onPanResponderMove: (e) => {
+          moveCursor(e.nativeEvent.locationX);
+        },
+        onPanResponderRelease: () => unlock(),
+        onPanResponderTerminate: () => unlock(),
+      }),
+    []
+  );
+
   const formatValue = (v) => {
     const n = Number(v);
     if (!Number.isFinite(n)) return v;
@@ -92,12 +130,7 @@ export default function AreaChart({
           <Text style={styles.emptySub}>{emptySubtitle}</Text>
         </View>
       ) : (
-        <View
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={(e) => moveCursor(e.nativeEvent.locationX)}
-          onResponderMove={(e) => moveCursor(e.nativeEvent.locationX)}
-        >
+        <View {...pan.panHandlers}>
           <Svg width={width} height={height} pointerEvents="none">
             <Defs>
               <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">

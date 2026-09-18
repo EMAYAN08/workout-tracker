@@ -182,6 +182,8 @@ export default function BarChart({
     lockRef.current?.(true);
   }, [active]);
 
+  useEffect(() => () => lockRef.current?.(true), []);
+
   const hasBars = (data || []).some((d) => Number(d.value) > 0);
 
   const chart = useMemo(() => {

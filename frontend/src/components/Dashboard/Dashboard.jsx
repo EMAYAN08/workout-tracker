@@ -117,7 +117,10 @@ export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
         scrollEnabled={profileScroll}
-        onScrollBeginDrag={() => durationDismiss.current?.()}
+        onScrollBeginDrag={() => {
+          durationDismiss.current?.();
+          setProfileScroll(true);
+        }}
         keyboardShouldPersistTaps="handled"
         {...hideScroll}
       >
@@ -195,7 +198,7 @@ export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
           <RangePills value={progressRange} onChange={setProgressRange} />
         </View>
         <View style={[styles.panel, { marginTop: 10 }]}>
-          <AreaChart data={chartData} unit={unit} active={visible} />
+          <AreaChart data={chartData} unit={unit} active={visible} onLockScroll={setProfileScroll} />
         </View>
 
         <InfoPopover
@@ -213,7 +216,7 @@ export default function Dashboard({ onMapClick, visible = true, scrollRef }) {
           <RangePills value={weightRange} onChange={setWeightRange} />
         </View>
         <View style={[styles.panel, { marginTop: 10 }]}>
-          <AreaChart data={weightChartData} unit={unit} active={visible} />
+          <AreaChart data={weightChartData} unit={unit} active={visible} onLockScroll={setProfileScroll} />
         </View>
 
         <WorkoutDurationChart
