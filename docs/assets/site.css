@@ -122,8 +122,34 @@ p { margin: 0; color: var(--muted); }
   font-size: 15px;
   border: 2px solid #000;
   cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 .btn:hover { background: #222; }
+.btn-store {
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  isolation: isolate;
+}
+.btn-store::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--link);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: -1;
+}
+.btn-store:hover {
+  background: #000;
+  border-color: var(--link);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.btn-store:hover::before {
+  transform: scaleX(1);
+}
 .btn-ghost {
   background: #fff;
   color: #000;
@@ -244,6 +270,7 @@ footer.site .end {
   align-items: center;
   gap: 8px;
 }
+footer.site .social-btn,
 .social-btn {
   width: 40px;
   height: 40px;
@@ -253,15 +280,20 @@ footer.site .end {
   border-radius: 8px;
   color: #000;
   background: #fff;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
+footer.site .social-btn:hover,
 .social-btn:hover {
-  background: #000;
-  color: #fff;
+  background: #fff;
+  color: var(--link);
+  border-color: var(--link);
+  transform: translateY(-1px);
 }
 .social-btn svg {
   width: 18px;
   height: 18px;
   display: block;
+  fill: currentColor;
 }
 
 .status { color: var(--faint); font-size: 14px; }
@@ -572,5 +604,11 @@ html.js .reveal.in {
     transition: none;
   }
   .carousel-track { scroll-behavior: auto; }
+  .btn-store::before,
+  .btn-store,
+  .social-btn {
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
