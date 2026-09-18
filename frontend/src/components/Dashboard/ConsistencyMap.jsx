@@ -22,7 +22,7 @@ const MONTH_GAP = 24;
 const MONTH_LABEL = 22;
 const MAX_OFFSET = 23;
 const Y_AXIS_W = 16;
-const TARGET_CELL = 11;
+const TARGET_CELL = 16;
 
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
@@ -142,7 +142,7 @@ export default function ConsistencyMap({ onMapClick, play = true }) {
   const fillSize = monthW > 0
     ? Math.floor((monthW - (maxWeeks - 1) * GUTTER) / maxWeeks)
     : TARGET_CELL;
-  const cellSize = Math.max(8, Math.min(TARGET_CELL, fillSize));
+  const cellSize = Math.max(12, Math.min(TARGET_CELL, fillSize));
   const cellRadius = Math.max(3, Math.round(cellSize * 0.28));
   const monthWidth = (weeks) => weeks * cellSize + Math.max(0, weeks - 1) * GUTTER;
 
