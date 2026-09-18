@@ -19,23 +19,11 @@ export default function WelcomeSplash({ onDone }) {
   const logoY = useRef(new Animated.Value(18)).current;
   const logoScale = useRef(new Animated.Value(0.88)).current;
   const lineOp = useRef(new Animated.Value(0)).current;
-  const cursorOp = useRef(new Animated.Value(1)).current;
   const doneRef = useRef(false);
 
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
-
-  useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(cursorOp, { toValue: 0, duration: 420, useNativeDriver: true }),
-        Animated.timing(cursorOp, { toValue: 1, duration: 420, useNativeDriver: true }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [cursorOp]);
 
   useEffect(() => {
     Animated.parallel([
@@ -113,7 +101,6 @@ export default function WelcomeSplash({ onDone }) {
       </Animated.View>
       <Animated.View style={[styles.lineRow, { opacity: lineOp }]}>
         <Text style={[styles.line, { color: colors.textMuted }]}>{typed}</Text>
-        <Animated.Text style={[styles.cursor, { color: colors.accent, opacity: cursorOp }]}>|</Animated.Text>
       </Animated.View>
     </Animated.View>
   );
@@ -151,10 +138,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     letterSpacing: 0.2,
     textAlign: 'center',
-  },
-  cursor: {
-    fontFamily: fonts.regular,
-    fontSize: 17,
-    marginLeft: 1,
   },
 });
