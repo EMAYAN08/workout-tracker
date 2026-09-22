@@ -787,6 +787,8 @@ Typical first review: 24–48 hours. Rejection is a conversation — reply in Re
 
 ## 15. If Apple rejects — TrackHit-specific replies
 
+**1.0.0 (1) — Guideline 2.1 Information Needed (limited review history):** follow **[APP-REVIEW-2.1.md](./APP-REVIEW-2.1.md)**. Same binary. Device recording + Resolution Center reply, then Resubmit. Do not bump the build for that letter.
+
 <details>
 <summary>Common bounce → what to send back</summary>
 
