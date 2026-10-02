@@ -105,7 +105,19 @@ p { margin: 0; color: var(--muted); }
 .hero .kicker { margin-bottom: 18px; }
 .hero h1 { margin-bottom: 18px; }
 .hero .lede { margin-bottom: 28px; }
-.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+.store-badge {
+  display: inline-flex;
+  line-height: 0;
+  transition: transform 0.25s ease;
+}
+.store-badge img {
+  height: 48px;
+  width: auto;
+  display: block;
+}
+.store-badge:hover { transform: translateY(-1px); }
 
 .btn {
   display: inline-flex;
@@ -606,6 +618,7 @@ html.js .reveal.in {
   .carousel-track { scroll-behavior: auto; }
   .btn-store::before,
   .btn-store,
+  .store-badge,
   .social-btn {
     transition: none !important;
     transform: none !important;
