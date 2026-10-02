@@ -339,7 +339,8 @@ footer.site .social-btn:hover,
   .hero { padding: 56px 0 48px; }
   section { padding: 56px 0; }
   .carousel-frame { min-height: 0; }
-  .slide { grid-template-columns: 1fr; padding: 22px; gap: 22px; min-height: 0; }
+  .slide { grid-template-columns: 1fr; padding: 22px; gap: 18px; min-height: 0; }
+  .mockup img { width: min(72vw, 260px); }
   .viz { width: 100%; min-height: 160px; }
 }
 
@@ -402,11 +403,37 @@ footer.site .social-btn:hover,
   flex: 0 0 100%;
   scroll-snap-align: start;
   display: grid;
-  grid-template-columns: minmax(180px, 0.9fr) 1.2fr;
+  grid-template-columns: minmax(200px, 0.85fr) 1.15fr;
   gap: 28px;
   align-items: center;
-  padding: 28px;
-  min-height: 280px;
+  padding: 28px 32px;
+  min-height: 420px;
+}
+.mockup {
+  margin: 0;
+  display: grid;
+  place-items: center;
+}
+.mockup img {
+  width: min(100%, 300px);
+  height: auto;
+  display: block;
+  border-radius: 32px;
+  opacity: 0.88;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.6s cubic-bezier(.2, .7, .2, 1);
+}
+.slide.is-active .mockup img {
+  opacity: 1;
+  animation: deviceIn 0.7s cubic-bezier(.2, .8, .2, 1) both, deviceFloat 5s ease-in-out 0.7s infinite;
+}
+@keyframes deviceIn {
+  from { opacity: 0.35; transform: translateY(22px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes deviceFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 .slide-copy h3 {
   margin: 10px 0 10px;
@@ -607,6 +634,7 @@ html.js .reveal.in {
   html { scroll-behavior: auto; }
   .ticker-track,
   .slide.is-active .slide-copy h3,
+  .slide.is-active .mockup img,
   .row.in strong {
     animation: none !important;
   }
@@ -619,9 +647,11 @@ html.js .reveal.in {
   .btn-store::before,
   .btn-store,
   .store-badge,
+  .mockup img,
   .social-btn {
     transition: none !important;
     transform: none !important;
+    opacity: 1 !important;
   }
 }
 
