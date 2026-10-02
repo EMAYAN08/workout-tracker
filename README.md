@@ -2,7 +2,13 @@
 
 A private, local-first workout logger. Routines, sets, rest, history, and progress stay on the phone. No account. No cloud. No ads.
 
-**App Store:** [TrackHit on the App Store](https://apps.apple.com/ca/app/trackhit/id6813176338)
+<p>
+  <a href="https://apps.apple.com/ca/app/trackhit/id6813176338"><img src="docs/assets/app-store-badge.png" alt="Download on the App Store" height="54"></a>
+  &nbsp;&nbsp;
+  <a href="https://emayan08.github.io/workout-tracker/"><img src="docs/assets/icon.png" alt="TrackHit website" height="54"></a>
+</p>
+
+[App Store](https://apps.apple.com/ca/app/trackhit/id6813176338) · [Website](https://emayan08.github.io/workout-tracker/)
 
 | | |
 |---|---|
