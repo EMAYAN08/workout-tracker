@@ -10,6 +10,49 @@ A private, local-first workout logger. Routines, sets, rest, history, and progre
 
 [App Store](https://apps.apple.com/ca/app/trackhit/id6813176338) · [Website](https://emayan08.github.io/workout-tracker/)
 
+## Screens
+
+Product shots from the demo log.
+
+<table>
+<tr>
+<td width="50%" align="center">
+<img src="docs/assets/mockups/routines.jpg" alt="TrackHit routines" width="340"><br>
+<strong>Routines</strong><br>
+Push, Pull, and Legs. Start a session in one tap.
+</td>
+<td width="50%" align="center">
+<img src="docs/assets/mockups/session.jpg" alt="TrackHit session" width="340"><br>
+<strong>The session</strong><br>
+Weight, reps, and a rest timer that stays on the phone.
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<img src="docs/assets/mockups/history.jpg" alt="TrackHit history" width="340"><br>
+<strong>History</strong><br>
+A calendar of the days you actually lifted.
+</td>
+<td width="50%" align="center">
+<img src="docs/assets/mockups/profile-map.jpg" alt="TrackHit consistency map" width="340"><br>
+<strong>The map</strong><br>
+Streaks, volume, and the consistency heatmap.
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<img src="docs/assets/mockups/profile-radar.jpg" alt="TrackHit strength radar" width="340"><br>
+<strong>Strength</strong><br>
+Volume by muscle, from a month to a year.
+</td>
+<td width="50%" align="center">
+<img src="docs/assets/mockups/profile-chart.jpg" alt="TrackHit progression chart" width="340"><br>
+<strong>The line</strong><br>
+Estimated one-rep max for one lift, over time.
+</td>
+</tr>
+</table>
+
 | | |
 |---|---|
 | Version | 1.0.0 |
