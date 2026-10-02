@@ -338,9 +338,6 @@ footer.site .social-btn:hover,
   body.nav-open { overflow: hidden; }
   .hero { padding: 56px 0 48px; }
   section { padding: 56px 0; }
-  .carousel-frame { min-height: 0; }
-  .slide { grid-template-columns: 1fr; padding: 22px; gap: 18px; min-height: 0; }
-  .mockup img { width: min(72vw, 260px); }
   .viz { width: 100%; min-height: 160px; }
 }
 
@@ -383,13 +380,7 @@ footer.site .social-btn:hover,
   border-radius: 1px;
 }
 
-.carousel { margin-top: 8px; }
-.carousel-frame {
-  border: 2px solid #000;
-  border-radius: 18px;
-  overflow: hidden;
-  background: #fff;
-}
+.carousel { margin-top: 36px; }
 .carousel-track {
   display: flex;
   overflow-x: auto;
@@ -403,11 +394,11 @@ footer.site .social-btn:hover,
   flex: 0 0 100%;
   scroll-snap-align: start;
   display: grid;
-  grid-template-columns: minmax(200px, 0.85fr) 1.15fr;
-  gap: 28px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
+  gap: 40px 56px;
   align-items: center;
-  padding: 28px 32px;
-  min-height: 420px;
+  padding: 8px 0 4px;
+  min-height: 0;
 }
 .mockup {
   margin: 0;
@@ -415,12 +406,12 @@ footer.site .social-btn:hover,
   place-items: center;
 }
 .mockup img {
-  width: min(100%, 300px);
+  width: min(100%, 520px);
   height: auto;
   display: block;
-  border-radius: 32px;
-  opacity: 0.88;
-  transform: translateY(14px);
+  border-radius: 40px;
+  opacity: 0.9;
+  transform: translateY(16px);
   transition: opacity 0.5s ease, transform 0.6s cubic-bezier(.2, .7, .2, 1);
 }
 .slide.is-active .mockup img {
@@ -436,10 +427,19 @@ footer.site .social-btn:hover,
   50% { transform: translateY(-10px); }
 }
 .slide-copy h3 {
-  margin: 10px 0 10px;
+  margin: 12px 0 14px;
+  font-size: clamp(36px, 4.4vw, 52px);
   font-weight: 600;
+  letter-spacing: -0.035em;
 }
-.slide-copy p { font-size: 16px; max-width: 34em; }
+.slide-copy p { font-size: 18px; line-height: 1.5; max-width: 16em; }
+@media (max-width: 800px) {
+  .slide { grid-template-columns: 1fr; gap: 22px; }
+  .slide-copy { text-align: center; max-width: 28em; margin: 0 auto; }
+  .slide-copy h3 { font-size: 36px; }
+  .slide-copy p { max-width: none; }
+  .mockup img { width: min(88vw, 420px); }
+}
 .slide.is-active .slide-copy h3,
 .slide.is-active .slide-copy strong {
   animation: fadeUp 0.55s ease both;
