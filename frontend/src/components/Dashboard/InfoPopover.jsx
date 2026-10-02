@@ -1,77 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { Info, ChevronUp } from 'lucide-react-native';
+import { fonts, radius, HIT } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
-export default function InfoPopover({ title, description, size = 16, className = "", align = "center", color = "primary" }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const popoverRef = useRef(null);
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isOpen]);
+export default function InfoPopover({ title, description, size = 15 }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+  const [open, setOpen] = useState(false);
 
-  const alignmentClass = 
-    align === 'right' ? 'right-0' : 
-    align === 'left' ? 'left-0' : 
-    'left-1/2 -translate-x-1/2';
-
-  const colorMap = {
-    primary: {
-      text: 'text-primary',
-      border: 'border-primary/20',
-      iconActive: 'text-primary'
-    },
-    emerald: {
-      text: 'text-emerald-500',
-      border: 'border-emerald-500/20',
-      iconActive: 'text-emerald-500'
-    },
-    amber: {
-      text: 'text-amber-500',
-      border: 'border-amber-500/20',
-      iconActive: 'text-amber-500'
-    }
+  const toggle = () => {
+    LayoutAnimation.configureNext({
+      duration: 220,
+      update: { type: LayoutAnimation.Types.easeInEaseOut },
+      create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+    });
+    setOpen((v) => !v);
   };
 
-  const theme = colorMap[color] || colorMap.primary;
-
   return (
-    <div className="relative flex items-center" ref={popoverRef}>
-      <button 
-        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
-        className={`transition-colors ${isOpen ? theme.iconActive : 'text-textMuted hover:text-text'} ${className}`}
-        aria-label="More information"
-      >
-        <Info size={size} />
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute ${alignmentClass} top-full mt-2 w-64 p-4 bg-surface border border-border-strong rounded-2xl shadow-2xl z-50 text-left`}
-          >
-            <h4 className={`text-sm font-black mb-1.5 ${theme.text}`}>{title}</h4>
-            <p className="text-xs text-textMuted font-medium leading-relaxed">
-              {description}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <Text style={styles.heading}>{title}</Text>
+        <Pressable
+          onPress={toggle}
+          accessibilityLabel={open ? 'Hide info' : 'Show info'}
+          hitSlop={8}
+          style={styles.infoBtn}
+        >
+          <Info size={size} color={open ? colors.accent : colors.textMuted} />
+        </Pressable>
+      </View>
+      {open ? (
+        <View style={styles.card}>
+          <Text style={styles.body}>{description}</Text>
+          <Pressable onPress={toggle} style={styles.hide} accessibilityLabel="Hide info">
+            <ChevronUp size={14} color={colors.textMuted} />
+            <Text style={styles.hideText}>Hide</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
   );
+}
+
+function makeStyles(colors) {
+  return StyleSheet.create({
+    wrap: { width: '100%', marginBottom: 4 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 32 },
+    heading: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      flexShrink: 1,
+    },
+    infoBtn: { width: HIT * 0.7, height: HIT * 0.7, alignItems: 'center', justifyContent: 'center' },
+    card: {
+      marginTop: 10,
+      marginBottom: 12,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md || radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingTop: 14,
+      paddingBottom: 8,
+    },
+    body: { color: colors.textMuted, fontFamily: fonts.regular, fontSize: 13, lineHeight: 20 },
+    hide: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 10, alignSelf: 'flex-start', minHeight: 36 },
+    hideText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12 },
+  });
 }

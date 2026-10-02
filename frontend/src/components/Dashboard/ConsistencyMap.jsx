@@ -1,61 +1,69 @@
 import React, { useMemo, useState, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform, Share as RNShare } from 'react-native';
+import {
+  parseISO,
+  startOfDay,
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  subMonths,
+  isAfter,
+} from 'date-fns';
+import { ChevronLeft, ChevronRight, Flame, Share2 } from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { parseISO, startOfDay, format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subMonths, isAfter } from 'date-fns';
-import { ChevronLeft, ChevronRight, Target, Flame, Share2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toPng } from 'html-to-image';
+import { fonts, radius, HIT } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
+import { CountUp } from '../ui/primitives';
+import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
-// Helper to get month grid (columns of weeks, rows of days Mon-Sun)
+const GUTTER = 4;
+const MONTH_GAP = 24;
+const MONTH_LABEL = 22;
+const MAX_OFFSET = 23;
+const Y_AXIS_W = 16;
+const TARGET_CELL = 16;
+
 const generateMonthGrid = (date, countsMap) => {
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
   const weeks = [];
   let currentWeek = Array(7).fill(null);
-  
   const today = startOfDay(new Date());
 
-  daysInMonth.forEach(day => {
-    // getDay returns 0 for Sun, 1 for Mon, etc.
+  daysInMonth.forEach((day) => {
     const dayOfWeek = day.getDay();
     const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
     const timestamp = startOfDay(day).getTime();
     const data = countsMap.get(timestamp) || { count: 0, hasRestDay: false, hasRealWorkout: false };
-
     currentWeek[adjustedDay] = {
       date: day,
       hasWorkout: data.count > 0,
       isRestOnly: data.hasRestDay && !data.hasRealWorkout,
-      isFuture: isAfter(day, today)
+      isFuture: isAfter(day, today),
     };
-
     if (adjustedDay === 6) {
       weeks.push([...currentWeek]);
       currentWeek = Array(7).fill(null);
     }
   });
-
-  if (currentWeek.some(d => d !== null)) {
-    weeks.push(currentWeek);
-  }
-
+  if (currentWeek.some((d) => d !== null)) weeks.push(currentWeek);
   return weeks;
 };
 
-export default function ConsistencyMap({ onMapClick }) {
+export default function ConsistencyMap({ onMapClick, play = true }) {
   const { workoutHistory } = useWorkout();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const mapRef = useRef(null);
-  
-  // 0 = current 2 months, 1 = previous 2 months, etc.
-  const [chunkOffset, setChunkOffset] = useState(0);
-
-
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [areaW, setAreaW] = useState(0);
+  const [sharing, setSharing] = useState(false);
 
   const countsMap = useMemo(() => {
     const map = new Map();
-    workoutHistory.forEach(w => {
+    workoutHistory.forEach((w) => {
       const d = startOfDay(parseISO(w.timestamp)).getTime();
       const existing = map.get(d) || { count: 0, hasRestDay: false, hasRealWorkout: false };
       const isRest = w.exercises && w.exercises.length === 0;
@@ -67,249 +75,305 @@ export default function ConsistencyMap({ onMapClick }) {
     return map;
   }, [workoutHistory]);
 
-  const [monthsToShow, setMonthsToShow] = useState(3);
-
-  // Dynamically adjust months based on screen size
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setMonthsToShow(2);
-      } else {
-        setMonthsToShow(3);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const { displayMonths, monthPairs, activeDaysInChunk, score, previousScore, yearLabel } = useMemo(() => {
+  const { displayMonths, activeDaysInChunk, score, yearLabel } = useMemo(() => {
     const now = startOfDay(new Date());
-    
-    const pairs = [];
-    for (let i = 0; i < 6; i++) {
-      const dates = [];
-      for (let j = monthsToShow - 1; j >= 0; j--) {
-        dates.push(subMonths(now, i * monthsToShow + j));
-      }
-      pairs.push({
-        id: i,
-        dates: dates
-      });
-    }
-
-    const activePair = pairs[chunkOffset] || pairs[0];
-    const prevPair = pairs[chunkOffset + 1];
-    
+    const dates = [subMonths(now, monthOffset + 1), subMonths(now, monthOffset)];
     let activeDays = 0;
     let validDays = 0;
-    
-    let prevActiveDays = 0;
-    let prevValidDays = 0;
 
-    const generatedMonths = activePair.dates.map(date => {
+    const generatedMonths = dates.map((date) => {
       const grid = generateMonthGrid(date, countsMap);
-      
-      const monthStart = startOfMonth(date);
-      const monthEnd = endOfMonth(date);
-      const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-      
-      days.forEach(d => {
+      const days = eachDayOfInterval({ start: startOfMonth(date), end: endOfMonth(date) });
+      days.forEach((d) => {
         if (!isAfter(d, now)) {
           const data = countsMap.get(d.getTime());
           const isRestOnly = data && data.hasRestDay && !data.hasRealWorkout;
-          if (!isRestOnly) {
-            validDays++;
-          }
-          if (data && data.hasRealWorkout) {
-            activeDays++;
-          }
+          if (!isRestOnly) validDays++;
+          if (data && data.hasRealWorkout) activeDays++;
         }
       });
-
-      return {
-        name: format(date, 'MMMM'),
-        grid
-      };
+      return { name: format(date, 'MMMM'), grid, year: format(date, 'yyyy') };
     });
-    
-    if (prevPair) {
-      prevPair.dates.forEach(date => {
-        const monthStart = startOfMonth(date);
-        const monthEnd = endOfMonth(date);
-        const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-        days.forEach(d => {
-          if (!isAfter(d, now)) {
-            const data = countsMap.get(d.getTime());
-            const isRestOnly = data && data.hasRestDay && !data.hasRealWorkout;
-            if (!isRestOnly) {
-              prevValidDays++;
-            }
-            if (data && data.hasRealWorkout) {
-              prevActiveDays++;
-            }
-          }
-        });
-      });
-    }
-    
-    const yearLabel = format(activePair.dates[activePair.dates.length - 1], 'yyyy');
-    
-    const calcScore = (act, val) => Math.min(Math.round((act / (val || 1)) * 100), 100);
 
     return {
       displayMonths: generatedMonths,
-      monthPairs: pairs,
       activeDaysInChunk: activeDays,
-      score: calcScore(activeDays, validDays),
-      previousScore: prevPair ? calcScore(prevActiveDays, prevValidDays) : calcScore(activeDays, validDays),
-      yearLabel
+      score: Math.min(Math.round((activeDays / (validDays || 1)) * 100), 100),
+      yearLabel: generatedMonths[generatedMonths.length - 1].year,
     };
-  }, [countsMap, chunkOffset, monthsToShow]);
-
-  // Handle dropdown selection and adjust chunk if switching sizes
-  React.useEffect(() => {
-    if (chunkOffset >= monthPairs.length) {
-      setChunkOffset(0);
-    }
-  }, [monthsToShow, chunkOffset, monthPairs.length]);
-
-  const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-  let trendColor = 'amber';
-  if (score > previousScore) trendColor = 'emerald';
-  else if (score < previousScore) trendColor = 'red';
-
-  const trendClasses = trendColor === 'emerald' 
-    ? 'bg-emerald-500/15 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)] text-emerald-500' 
-    : trendColor === 'red'
-    ? 'bg-red-500/15 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)] text-red-500'
-    : 'bg-amber-500/15 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)] text-amber-500';
+  }, [countsMap, monthOffset]);
 
   const handleShare = async () => {
-    if (!mapRef.current) return;
+    if (sharing) return;
+    setSharing(true);
     try {
-      const image = await toPng(mapRef.current, {
-        backgroundColor: '#0a0a0a',
-        pixelRatio: 2
-      });
-      
-      if (navigator.share) {
-        const blob = await (await fetch(image)).blob();
-        const file = new File([blob], 'consistency.png', { type: 'image/png' });
-        await navigator.share({
-          title: 'My TrackIt Consistency',
-          text: 'Check out my workout consistency on TrackIt!',
-          files: [file]
-        });
-      } else {
-        const link = document.createElement('a');
-        link.download = `trackit-consistency-${Date.now()}.png`;
-        link.href = image;
-        link.click();
+      if (Platform.OS === 'web') {
+        await RNShare.share({ message: 'Check out my workout consistency on TrackHit!' });
+        return;
       }
+      await waitFrames(2);
+      const uri = await captureHiResPng(mapRef, { pixelRatio: 3 });
+      await shareFile(uri, {
+        filename: 'TrackHit Consistency',
+        message: 'My TrackHit consistency',
+        mimeType: 'image/png',
+        uti: 'public.png',
+      });
     } catch (err) {
       console.error('Failed to share:', err);
+    } finally {
+      setSharing(false);
     }
   };
 
+  const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const cellColor = (day) => {
+    if (!day) return 'transparent';
+    if (day.isFuture) return colors.heatmapFuture;
+    if (day.isRestOnly) return colors.heatmapRest;
+    if (day.hasWorkout) return colors.heatmapWork;
+    return colors.heatmapEmpty;
+  };
+
+  const canGoOlder = monthOffset < MAX_OFFSET;
+  const canGoNewer = monthOffset > 0;
+  const maxWeeks = Math.max(1, ...displayMonths.map((m) => m.grid.length));
+  const monthW = areaW > 0 ? (areaW - MONTH_GAP) / 2 : 0;
+  const fillSize = monthW > 0
+    ? Math.floor((monthW - (maxWeeks - 1) * GUTTER) / maxWeeks)
+    : TARGET_CELL;
+  const cellSize = Math.max(12, Math.min(TARGET_CELL, fillSize));
+  const cellRadius = Math.max(3, Math.round(cellSize * 0.28));
+  const monthWidth = (weeks) => weeks * cellSize + Math.max(0, weeks - 1) * GUTTER;
+
   return (
-    <div className="flex flex-col gap-4 mt-4 w-full">
-      <div 
-        ref={mapRef}
-        className="panel p-5 overflow-hidden w-full flex flex-col gap-5 relative cursor-pointer hover:border-primary/50 transition-colors group"
-        onClick={onMapClick}
-      >
-      
-      {/* Header - Using items-start to keep nav on top right on mobile */}
-      <div className="flex justify-between items-start w-full gap-2">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <h2 className="text-text font-black text-lg sm:text-xl tracking-tight whitespace-nowrap flex items-center gap-2">
-              <Target size={20} className="text-primary" />
-              Consistency Map
-            </h2>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleShare(); }}
-              className="p-1.5 text-textMuted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors ml-2"
-              title="Share Map"
+    <View style={{ marginTop: 16 }}>
+      <View ref={mapRef} collapsable={false} style={styles.panel}>
+        <View style={styles.topRow}>
+          <Text style={styles.title}>Consistency</Text>
+          <View style={styles.actions}>
+            <View style={styles.nav}>
+              <Pressable
+                onPress={() => setMonthOffset((p) => Math.min(p + 1, MAX_OFFSET))}
+                disabled={!canGoOlder}
+                accessibilityLabel="Older months"
+                style={[styles.navBtn, !canGoOlder && { opacity: 0.3 }]}
+              >
+                <ChevronLeft size={16} color={colors.textMuted} />
+              </Pressable>
+              <Text style={styles.year} numberOfLines={1}>
+                {yearLabel}
+              </Text>
+              <Pressable
+                onPress={() => setMonthOffset((p) => Math.max(p - 1, 0))}
+                disabled={!canGoNewer}
+                accessibilityLabel="Newer months"
+                style={[styles.navBtn, !canGoNewer && { opacity: 0.3 }]}
+              >
+                <ChevronRight size={16} color={colors.textMuted} />
+              </Pressable>
+            </View>
+            <Pressable onPress={onMapClick} style={styles.historyBtn} accessibilityLabel="History">
+              <Text style={styles.historyText}>History</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleShare}
+              disabled={sharing}
+              style={styles.iconBtn}
+              accessibilityLabel="Share consistency"
             >
-              <Share2 size={16} />
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border backdrop-blur-sm ${trendClasses}`}>
-              <Flame size={14} className="currentColor" />
-              <span className="font-bold text-[11px] uppercase tracking-wide">Score: {score}%</span>
-            </div>
-            <span className="text-textMuted text-xs font-semibold">{activeDaysInChunk} Days</span>
-          </div>
-        </div>
+              <Share2 size={16} color={colors.textMuted} />
+            </Pressable>
+          </View>
+        </View>
 
-        {/* Navigation */}
-        <div className="flex items-center bg-surface-light rounded-xl p-1 border border-border/50 shrink-0">
-          <button 
-            onClick={(e) => { e.stopPropagation(); setChunkOffset(prev => Math.min(prev + 1, monthPairs.length - 1)); }}
-            disabled={chunkOffset >= monthPairs.length - 1}
-            className={`p-1.5 rounded-lg transition-colors ${chunkOffset >= monthPairs.length - 1 ? 'text-textMuted/30 cursor-not-allowed' : 'text-textMuted hover:text-text hover:bg-surface'}`}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-xs font-bold text-text px-3 min-w-[50px] text-center">
-            {yearLabel}
-          </span>
-          <button 
-            onClick={(e) => { e.stopPropagation(); setChunkOffset(prev => Math.max(prev - 1, 0)); }}
-            disabled={chunkOffset <= 0}
-            className={`p-1.5 rounded-lg transition-colors ${chunkOffset <= 0 ? 'text-textMuted/30 cursor-not-allowed' : 'text-textMuted hover:text-text hover:bg-surface'}`}
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <View style={styles.statValRow}>
+              <Flame size={14} color={colors.textMuted} />
+              <Text style={styles.statVal}>
+                <CountUp value={score} style={styles.statVal} play={play} />%
+              </Text>
+            </View>
+            <Text style={styles.statLbl}>Score</Text>
+          </View>
+          <View style={styles.statRule} />
+          <View style={styles.stat}>
+            <CountUp value={activeDaysInChunk} style={styles.statVal} play={play} />
+            <Text style={styles.statLbl}>Days</Text>
+          </View>
+        </View>
 
-      {/* Calendars Container */}
-      <div className="flex pb-2 pt-2 w-full justify-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none">
-        
-        {/* Y-axis labels */}
-        <div className="flex flex-col gap-[6px] pt-[26px] sticky left-0 bg-surface z-10 pr-2">
-          {weekdays.map((day, i) => (
-            <span key={i} className="text-[10px] font-black text-textMuted w-3 h-[16px] flex items-center justify-center leading-none">
-              {i % 2 === 0 ? day : ''}
-            </span>
-          ))}
-        </div>
+        <View style={styles.divider} />
 
-        {/* Months Grids */}
-        <div className="flex gap-6 sm:gap-10">
-          {displayMonths.map((monthData, idx) => (
-            <div key={idx} className="flex flex-col gap-3 min-w-max">
-              <h3 className="text-textMuted text-xs font-bold uppercase tracking-wider">{monthData.name}</h3>
-              <div className="flex gap-[6px]">
-                {monthData.grid.map((week, wIdx) => (
-                  <div key={wIdx} className="flex flex-col gap-[6px]">
-                    {week.map((day, dIdx) => (
-                      <div 
-                        key={dIdx}
-                        title={day ? `${format(day.date, 'MMM do, yyyy')}` : ''}
-                        className={`w-4 h-4 rounded-[4px] transition-all duration-300 ${
-                          !day ? 'bg-transparent' : 
-                          day.isFuture ? 'bg-surface-light/30' :
-                          day.isRestOnly ? 'bg-emerald-500/80 shadow-sm shadow-emerald-500/20' :
-                          day.hasWorkout ? 'bg-primary shadow-sm shadow-primary/40' : 'bg-surface-light hover:bg-surface-light/80'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      </div>
-    </div>
+        <View
+          style={styles.calRow}
+          onLayout={(e) => {
+            const w = e.nativeEvent.layout.width - Y_AXIS_W - 8;
+            if (w > 0 && Math.abs(w - areaW) > 1) setAreaW(w);
+          }}
+        >
+          <View style={[styles.yAxis, { height: MONTH_LABEL + cellSize * 7 + GUTTER * 6 }]}>
+            {weekdays.map((day, i) => (
+              <Text
+                key={i}
+                style={[
+                  styles.yLabel,
+                  {
+                    height: cellSize,
+                    lineHeight: cellSize,
+                    marginBottom: i === weekdays.length - 1 ? 0 : GUTTER,
+                  },
+                ]}
+              >
+                {day}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.months}>
+            {displayMonths.map((monthData, idx) => (
+              <View
+                key={`${monthData.name}-${idx}`}
+                style={[styles.month, { width: monthWidth(monthData.grid.length) }]}
+              >
+                <Text style={styles.monthName}>{monthData.name}</Text>
+                <View style={styles.grid}>
+                  {monthData.grid.map((week, wIdx) => (
+                    <View
+                      key={wIdx}
+                      style={[
+                        styles.weekCol,
+                        {
+                          width: cellSize,
+                          marginRight: wIdx === monthData.grid.length - 1 ? 0 : GUTTER,
+                        },
+                      ]}
+                    >
+                      {week.map((day, dIdx) => (
+                        <View
+                          key={dIdx}
+                          style={[
+                            styles.cell,
+                            {
+                              width: cellSize,
+                              height: cellSize,
+                              borderRadius: cellRadius,
+                              marginBottom: dIdx === week.length - 1 ? 0 : GUTTER,
+                              backgroundColor: cellColor(day),
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    </View>
   );
+}
+
+function makeStyles(colors) {
+  return StyleSheet.create({
+    panel: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: HIT,
+      gap: 8,
+    },
+    title: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      flexShrink: 0,
+    },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+    historyBtn: {
+      minHeight: 32,
+      paddingHorizontal: 10,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    historyText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
+    iconBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+    statsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+      gap: 12,
+    },
+    stat: { gap: 2 },
+    statValRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    statVal: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 20, letterSpacing: -0.4 },
+    statLbl: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 10,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    statRule: { width: 1, height: 28, backgroundColor: colors.border },
+    nav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface2,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 2,
+      minHeight: 32,
+    },
+    navBtn: { width: 28, height: 32, alignItems: 'center', justifyContent: 'center' },
+    year: {
+      color: colors.text,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      minWidth: 40,
+      textAlign: 'center',
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginTop: 14,
+      marginBottom: 14,
+    },
+    calRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 8 },
+    yAxis: { width: Y_AXIS_W, paddingTop: MONTH_LABEL, justifyContent: 'flex-start' },
+    yLabel: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.semibold,
+      textAlign: 'center',
+    },
+    months: { flexDirection: 'row', alignItems: 'flex-start', gap: MONTH_GAP },
+    month: {},
+    monthName: {
+      height: MONTH_LABEL,
+      color: colors.textMuted,
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      letterSpacing: 0.2,
+      lineHeight: MONTH_LABEL,
+      textAlign: 'center',
+    },
+    grid: { flexDirection: 'row', alignItems: 'flex-start' },
+    weekCol: {},
+    cell: {},
+  });
 }

@@ -1,467 +1,805 @@
 import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  Modal,
+  ActivityIndicator,
+  Keyboard,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Search,
+  Plus,
+  Save,
+  X,
+  Dumbbell,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  GripVertical,
+} from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
 import CustomNumpad from '../WorkoutFlow/CustomNumpad';
 import { convertWeight } from '../../utils/calculations';
-import { Search, Plus, Save, X, Dumbbell, Trash2, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Select, ScreenHeader, hideScroll, MuscleTag } from '../ui/primitives';
+import { alertMessage } from '../../dialog';
+import { fonts, radius, HIT } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
+import { titleCase } from '../../utils/format';
+import { moveItem, remapIndex } from '../../utils/reorder';
+import { DragSortList, DragSortItem, DragHandle } from '../ui/DragSort';
 
 export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess }) {
-  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, customExercises, unit } = useWorkout();
+  const { createRoutine, updateRoutine, createCustomExercise, updateCustomExercise, unit, searchExercises } =
+    useWorkout();
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const [name, setName] = useState(initialRoutine?.name || '');
   const [newCustomExIds, setNewCustomExIds] = useState([]);
   const [exercises, setExercises] = useState(() => {
     if (!initialRoutine?.exercises) return [];
-    return initialRoutine.exercises.map(ex => ({
+    return initialRoutine.exercises.map((ex) => ({
       ...ex,
       unitSaved: unit,
-      defaultSets: ex.defaultSets.map(s => ({
+      defaultSets: (ex.defaultSets || []).map((s) => ({
         ...s,
-        weight: convertWeight(s.weight, ex.unitSaved || 'lbs', unit)
-      }))
+        weight: convertWeight(s.weight, ex.unitSaved || 'lbs', unit),
+      })),
     }));
   });
   const prevUnit = React.useRef(unit);
-
-  useEffect(() => {
-    if (prevUnit.current !== unit) {
-      setExercises(prevExercises => prevExercises.map(ex => ({
-        ...ex,
-        unitSaved: unit,
-        defaultSets: ex.defaultSets.map(s => ({
-          ...s,
-          weight: convertWeight(s.weight, prevUnit.current, unit)
-        }))
-      })));
-      prevUnit.current = unit;
-    }
-  }, [unit]);
-
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
-  
+  const [hostH, setHostH] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeInput, setActiveInput] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
-  
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
-
+  const [listScroll, setListScroll] = useState(true);
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length > 2) {
-        try {
-          const query = searchQuery.toLowerCase();
-          const localMatches = (customExercises || []).filter(ex => ex.name.toLowerCase().includes(query) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query)));
-          
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-          const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
-          let data = [];
-          if (res.ok) {
-            data = await res.json();
-          }
-          
-          const localIds = new Set(localMatches.map(l => l.id));
-          const apiMatches = data.filter(apiEx => !localIds.has(apiEx.id));
-          
-          setSearchResults([...localMatches, ...apiMatches]);
-        } catch (err) {
-          console.error("Search failed", err);
-          const query = searchQuery.toLowerCase();
-          const localMatches = (customExercises || []).filter(ex => ex.name.toLowerCase().includes(query) || (ex.muscleGroup && ex.muscleGroup.toLowerCase().includes(query)));
-          setSearchResults(localMatches);
-        }
-      } else {
-        setSearchResults([]);
-      }
-    }, 500);
+    if (prevUnit.current !== unit) {
+      setExercises((prevExercises) =>
+        prevExercises.map((ex) => ({
+          ...ex,
+          unitSaved: unit,
+          defaultSets: (ex.defaultSets || []).map((s) => ({
+            ...s,
+            weight: convertWeight(s.weight, prevUnit.current, unit),
+          })),
+        }))
+      );
+      prevUnit.current = unit;
+    }
+  }, [unit]);
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, customExercises]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchResults(searchQuery.trim().length > 0 ? searchExercises(searchQuery) : []);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [searchQuery, searchExercises]);
 
   const handleAddExercise = (exercise) => {
     let initialSets = [{ reps: 10, weight: 0, type: 'Working' }];
     if (exercise.defaultSets && exercise.defaultSets.length > 0) {
-      initialSets = exercise.defaultSets.map(s => ({
+      initialSets = exercise.defaultSets.map((s) => ({
         reps: s.reps || 10,
         weight: convertWeight(s.weight || 0, exercise.unitSaved || 'lbs', unit),
-        type: 'Working'
+        type: 'Working',
       }));
     }
-
-    setExercises(prev => {
-      const newExercises = [...prev, { ...exercise, unitSaved: unit, defaultSets: initialSets }];
-      setExpandedExerciseIndex(newExercises.length - 1);
-      return newExercises;
-    });
+    const newItem = { ...exercise, unitSaved: unit, defaultSets: initialSets };
+    setExercises((prev) => [...prev, newItem]);
+    setExpandedExerciseIndex(exercises.length);
     setIsSearching(false);
     setSearchQuery('');
     setSearchResults([]);
   };
 
-  const moveExercise = (index, direction) => {
-    setExercises(prev => {
-      const newExercises = [...prev];
-      if (direction === 'up' && index > 0) {
-        [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
-        if (expandedExerciseIndex === index) setExpandedExerciseIndex(index - 1);
-        else if (expandedExerciseIndex === index - 1) setExpandedExerciseIndex(index);
-      } else if (direction === 'down' && index < newExercises.length - 1) {
-        [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
-        if (expandedExerciseIndex === index) setExpandedExerciseIndex(index + 1);
-        else if (expandedExerciseIndex === index + 1) setExpandedExerciseIndex(index);
-      }
-      return newExercises;
-    });
+  const moveExercise = (from, to) => {
+    setActiveInput(null);
+    setExercises((prev) => moveItem(prev, from, to));
+    setExpandedExerciseIndex((cur) => remapIndex(cur, from, to));
   };
 
   const handleCreateCustom = async () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
     setIsCreatingCustom(true);
-    const newEx = await createCustomExercise(searchQuery, newMuscleGroup);
+    const newEx = await createCustomExercise(trimmed, newMuscleGroup);
     if (newEx) {
       handleAddExercise(newEx);
-      setNewCustomExIds(prev => [...prev, newEx.id]);
+      setNewCustomExIds((prev) => [...prev, newEx.id]);
     }
     setIsCreatingCustom(false);
   };
 
   const removeExercise = (index) => {
-    setExercises(prev => prev.filter((_, i) => i !== index));
+    setExercises((prev) => prev.filter((_, i) => i !== index));
+    setExpandedExerciseIndex((cur) => {
+      if (cur < 0) return cur;
+      if (cur === index) return -1;
+      if (cur > index) return cur - 1;
+      return cur;
+    });
   };
 
   const updateSet = (exerciseIndex, setIndex, field, value) => {
-    const newExercises = [...exercises];
-    newExercises[exerciseIndex].defaultSets[setIndex][field] = value;
-    setExercises(newExercises);
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== exerciseIndex
+          ? ex
+          : {
+              ...ex,
+              defaultSets: (ex.defaultSets || []).map((s, j) => (j !== setIndex ? s : { ...s, [field]: value })),
+            }
+      )
+    );
   };
 
   const addSet = (exerciseIndex) => {
-    const newExercises = [...exercises];
-    const prevSets = newExercises[exerciseIndex].defaultSets;
-    const lastSet = prevSets.length > 0 ? prevSets[prevSets.length - 1] : { reps: 10, weight: 0, type: 'Working' };
-    
-    newExercises[exerciseIndex].defaultSets.push({ ...lastSet });
-    setExercises(newExercises);
+    setExercises((prev) =>
+      prev.map((ex, i) => {
+        if (i !== exerciseIndex) return ex;
+        const prevSets = ex.defaultSets || [];
+        const lastSet = prevSets.length > 0 ? prevSets[prevSets.length - 1] : { reps: 10, weight: 0, type: 'Working' };
+        return { ...ex, defaultSets: [...prevSets, { ...lastSet }] };
+      })
+    );
   };
 
   const removeSet = (exerciseIndex, setIndex) => {
-    const newExercises = [...exercises];
-    newExercises[exerciseIndex].defaultSets.splice(setIndex, 1);
-    setExercises(newExercises);
+    setExercises((prev) =>
+      prev.map((ex, i) => {
+        if (i !== exerciseIndex) return ex;
+        const sets = ex.defaultSets || [];
+        if (sets.length <= 1) return ex;
+        return { ...ex, defaultSets: sets.filter((_, j) => j !== setIndex) };
+      })
+    );
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return alert("Please enter a routine name.");
-    // Allowed empty for rest days
-
-    const routineData = { name, exercises };
-    
-    if (initialRoutine) {
-      await updateRoutine(initialRoutine.id, routineData);
-    } else {
-      await createRoutine(routineData);
+    if (!name.trim()) {
+      alertMessage('Routine name', 'Please enter a routine name.');
+      return;
     }
-    
-    // Sync newly created custom exercises' default sets with the defined routine sets
+    setActiveInput(null);
+    const routineData = { name: name.trim(), exercises };
+    if (initialRoutine) await updateRoutine(initialRoutine.id, routineData);
+    else await createRoutine(routineData);
     for (const ex of exercises) {
       if (newCustomExIds.includes(ex.id)) {
         await updateCustomExercise(ex.id, { defaultSets: ex.defaultSets });
       }
     }
-    
     onSaveSuccess();
   };
 
+  const queryEmpty = searchQuery.trim().length === 0;
+  const customDisabled = isCreatingCustom || queryEmpty;
+
   return (
-    <div className={`flex flex-col gap-4 w-full transition-all duration-300 ${activeInput ? 'pb-[300px]' : ''}`}>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-2xl font-black text-text tracking-tight">
-          {initialRoutine ? 'Edit Routine' : 'New Routine'}
-        </h2>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-textMuted font-bold hover:bg-surface-light transition-colors"
-          >
-            Cancel
-          </button>
-            <button 
-              onClick={handleSave}
-              className="px-5 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 backdrop-blur-md font-black transition-all active:scale-95 flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-            >
-              <Save size={18} /> Save
-            </button>
-        </div>
-      </div>
+    <View style={{ flex: 1, position: 'relative' }}>
+      <ScreenHeader
+        title={initialRoutine ? 'Edit Routine' : 'New Routine'}
+        right={
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable onPress={onCancel} style={styles.cancel} accessibilityLabel="Cancel">
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSave} style={styles.save} accessibilityLabel="Save">
+              <Save size={16} color={colors.accentFg} />
+              <Text style={styles.saveText}>Save</Text>
+            </Pressable>
+          </View>
+        }
+      />
+      <View
+        style={{ flex: 1, position: 'relative' }}
+        onLayout={(e) => {
+          const next = Math.round(e.nativeEvent.layout.height);
+          if (next > 0 && next !== hostH) setHostH(next);
+        }}
+      >
+      <ScrollView
+        style={{ flex: 1 }}
+        scrollEnabled={listScroll && !activeInput}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
+        {...hideScroll}
+      >
 
-      <div className="panel p-4">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-2 block">Routine Name</label>
-        <input 
-          type="text" 
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="e.g. Push Day, Full Body"
-          className="w-full bg-surface-light border border-border rounded-xl px-4 py-3 text-text font-bold focus:outline-none focus:border-primary transition-colors text-base"
-        />
-      </div>
+        <View style={styles.panel}>
+          <Text style={styles.label}>Routine Name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Push Day, Full Body"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+          />
+        </View>
 
-      <div className="flex flex-col gap-3">
         {exercises.length === 0 && (
-          <div className="panel p-4 bg-emerald-500/10 border-emerald-500/20 text-center">
-            <p className="text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
-              <span className="text-lg">🛋️</span> Saving with 0 exercises will create a Rest Day routine
-            </p>
-          </div>
+          <View style={styles.restHint}>
+            <Text style={styles.restHintText}>Saving with 0 exercises will create a Rest Day routine</Text>
+          </View>
         )}
+
+        <DragSortList
+          onReorder={moveExercise}
+          onDraggingChange={(on) => {
+            setListScroll(!on);
+            if (on) setActiveInput(null);
+          }}
+        >
         {exercises.map((ex, exIdx) => {
           const isExpanded = expandedExerciseIndex === exIdx;
+          const sets = ex.defaultSets || [];
           return (
-            <div key={`${ex.id}-${exIdx}`} className="panel overflow-hidden relative">
-              <div 
-                className="p-4 flex items-center justify-between bg-surface-light/50 border-b border-border cursor-pointer"
-                onClick={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
-              >
-                <div className="flex items-center gap-3">
-                  {ex.gifUrl ? (
-                    <img src={ex.gifUrl} alt={ex.name} className="w-10 h-10 rounded-full object-cover bg-white" loading="lazy" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center shrink-0">
-                      <Dumbbell size={16} className="text-textMuted" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-bold text-text capitalize line-clamp-1">{ex.name}</h3>
-                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">{ex.muscleGroup}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                  {exIdx > 0 && (
-                    <button onClick={() => moveExercise(exIdx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                      <ArrowUp size={16} />
-                    </button>
-                  )}
-                  {exIdx < exercises.length - 1 && (
-                    <button onClick={() => moveExercise(exIdx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                      <ArrowDown size={16} />
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => removeExercise(exIdx)} 
-                    className="p-1.5 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-lg ml-1"
-                    title="Delete Exercise"
+            <DragSortItem key={`${ex.id}-${exIdx}`} index={exIdx}>
+            <View style={styles.card}>
+              <View style={styles.cardHead}>
+                <DragHandle style={styles.cardHeadMain}>
+                  <GripVertical size={16} color={colors.textSubtle} />
+                  <Pressable
+                    onPress={() => setExpandedExerciseIndex(isExpanded ? -1 : exIdx)}
+                    style={styles.cardHeadTap}
+                    accessibilityLabel={isExpanded ? 'Collapse exercise' : 'Expand exercise'}
                   >
-                    <Trash2 size={16} />
-                  </button>
-                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
-                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-4 flex flex-col gap-2">
-                      <div className="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-textMuted px-2 mb-1">
-                        <div className="col-span-1 text-center">SET</div>
-                        <div className="col-span-5 text-center">LBS/KGS</div>
-                        <div className="col-span-5 text-center">REPS</div>
-                        <div className="col-span-1 text-center"></div>
-                      </div>
-                      
-                      {ex.defaultSets?.map((set, sIdx) => (
-                        <div key={sIdx} className="grid grid-cols-12 gap-2 items-center">
-                          <div className="col-span-1 text-center font-mono font-bold text-textMuted">{sIdx + 1}</div>
-                          <div className="col-span-5">
-                            <div 
-  onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' })}
-  className={`w-full rounded-lg px-3 py-2 text-center font-mono font-bold flex items-center justify-center cursor-pointer transition-colors border ${activeInput?.exerciseIndex === exIdx && activeInput?.setIndex === sIdx && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'bg-surface-light border-border/50 text-text'}`}
->
-  {set.weight ? set.weight : <span className="text-textMuted/50">Weight</span>}
-</div>
-                          </div>
-                          <div className="col-span-5">
-                            <div 
-  onClick={() => setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' })}
-  className={`w-full rounded-lg px-3 py-2 text-center font-mono font-bold flex items-center justify-center cursor-pointer transition-colors border ${activeInput?.exerciseIndex === exIdx && activeInput?.setIndex === sIdx && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'bg-surface-light border-border/50 text-text'}`}
->
-  {set.reps ? set.reps : <span className="text-textMuted/50">Reps</span>}
-</div>
-                          </div>
-                          <div className="col-span-1 flex justify-center">
-                            <button 
-                              onClick={() => removeSet(exIdx, sIdx)}
-                              className="p-1.5 text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 backdrop-blur-md transition-all rounded-md flex items-center justify-center"
-                              title="Delete Set"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      <button 
-                        onClick={() => addSet(exIdx)}
-                        className="mt-2 text-primary font-bold text-sm hover:text-primary-light transition-colors py-1 w-full flex items-center justify-center gap-1 bg-primary/5 rounded-lg border border-primary/10"
-                      >
-                        <Plus size={16} /> Add Set
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    {ex.gifUrl ? (
+                      <Image source={{ uri: ex.gifUrl }} style={styles.thumb} contentFit="cover" />
+                    ) : (
+                      <View style={styles.thumbFallback}>
+                        <Dumbbell size={16} color={colors.textMuted} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.exName} numberOfLines={1}>
+                        {ex.name}
+                      </Text>
+                      <Text style={styles.exMg}>{titleCase(ex.muscleGroup)}</Text>
+                    </View>
+                    {isExpanded ? (
+                      <ChevronUp size={18} color={colors.textMuted} />
+                    ) : (
+                      <ChevronDown size={18} color={colors.textMuted} />
+                    )}
+                  </Pressable>
+                </DragHandle>
+                <Pressable
+                  onPress={() => removeExercise(exIdx)}
+                  accessibilityLabel="Remove exercise"
+                  style={styles.delEx}
+                >
+                  <Trash2 size={16} color={colors.danger} />
+                </Pressable>
+              </View>
+              {isExpanded && (
+                <View style={{ padding: 14, gap: 8 }}>
+                  <View style={styles.setHead}>
+                    <Text style={[styles.th, { width: 32 }]}>SET</Text>
+                    <Text style={[styles.th, { flex: 1 }]}>{unit === 'kgs' ? 'KG' : 'LB'}</Text>
+                    <Text style={[styles.th, { flex: 1 }]}>REPS</Text>
+                    <View style={{ width: 32 }} />
+                  </View>
+                  {sets.map((set, sIdx) => {
+                    const wOn =
+                      activeInput?.exerciseIndex === exIdx &&
+                      activeInput?.setIndex === sIdx &&
+                      activeInput?.field === 'weight';
+                    const rOn =
+                      activeInput?.exerciseIndex === exIdx &&
+                      activeInput?.setIndex === sIdx &&
+                      activeInput?.field === 'reps';
+                    const lastSet = sets.length <= 1;
+                    const weightEmpty =
+                      set.weight === '' || set.weight === null || set.weight === undefined || Number(set.weight) === 0;
+                    const repsEmpty = set.reps === '' || set.reps === null || set.reps === undefined;
+                    return (
+                      <View key={sIdx} style={styles.setRow}>
+                        <Text style={styles.setIdx}>{sIdx + 1}</Text>
+                        <Pressable
+                          onPress={() => {
+                            Keyboard.dismiss();
+                            setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'weight' });
+                          }}
+                          style={[styles.cell, wOn && styles.cellOn]}
+                          accessibilityLabel="Weight"
+                        >
+                          <Text style={[styles.cellText, weightEmpty && { color: colors.textSubtle }]}>
+                            {weightEmpty ? 'Weight' : String(set.weight)}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            Keyboard.dismiss();
+                            setActiveInput({ exerciseIndex: exIdx, setIndex: sIdx, field: 'reps' });
+                          }}
+                          style={[styles.cell, rOn && styles.cellOn]}
+                          accessibilityLabel="Reps"
+                        >
+                          <Text style={[styles.cellText, repsEmpty && { color: colors.textSubtle }]}>
+                            {repsEmpty ? 'Reps' : String(set.reps)}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => removeSet(exIdx, sIdx)}
+                          disabled={lastSet}
+                          accessibilityLabel="Remove set"
+                          style={[styles.delSet, lastSet && { opacity: 0.35 }]}
+                        >
+                          <Trash2 size={14} color={colors.danger} />
+                        </Pressable>
+                      </View>
+                    );
+                  })}
+                  <Pressable onPress={() => addSet(exIdx)} style={styles.addSet} accessibilityLabel="Add Set">
+                    <Plus size={16} color={colors.text} />
+                    <Text style={styles.addSetText}>Add Set</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+            </DragSortItem>
           );
         })}
-      </div>
+        </DragSortList>
 
-      {/* Add Exercise Trigger */}
-      {!isSearching ? (
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setIsSearching(true)}
-          className="mt-2 w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl p-4 flex items-center justify-center gap-2 font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.1)]"
-        >
-          <Plus size={24} /> Add Exercise
-        </motion.button>
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed inset-0 z-40 bg-background flex flex-col pb-24 sm:pb-6"
-        >
-          <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex gap-3 items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-              <input 
-                autoFocus
-                type="text" 
-                placeholder="Search exercise..." 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-surface-light border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text font-bold focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <button 
-              onClick={() => setIsSearching(false)}
-              className="p-3.5 text-textMuted hover:text-text rounded-2xl bg-surface-light border border-border/50 min-w-touch min-h-touch flex items-center justify-center shrink-0"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative">
-            {/* Scrollable Container strictly maxed to ~5 items */}
-            {searchResults.length > 0 && (
-              <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
-                {searchResults.map(ex => (
-                  <button 
-                    key={ex.id}
-                    onClick={() => handleAddExercise(ex)}
-                    className="w-full flex items-center justify-between gap-4 p-4 bg-surface-light/40 hover:bg-surface-light rounded-3xl transition-all text-left min-h-touch group shrink-0 border border-border/10"
-                  >
-                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm overflow-hidden">
-                        {ex.gifUrl ? (
-                          <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover mix-blend-screen opacity-90" loading="lazy" style={{ filter: 'grayscale(100%) contrast(1.2)' }} />
-                        ) : (
-                          <Dumbbell size={24} className="text-primary opacity-80" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-text font-bold text-base leading-snug truncate">{ex.name}</h4>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Dumbbell size={12} className="text-textMuted" />
-                          <span className="text-xs font-semibold text-textMuted truncate">Dumbbell</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="shrink-0 flex items-center gap-3">
-                      <span className="px-2.5 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-black uppercase tracking-widest">{ex.muscleGroup}</span>
-                      <ChevronDown size={16} className="text-textMuted -rotate-90 opacity-50" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {searchResults.length === 0 && searchQuery.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 opacity-50">
-                <Search size={48} className="text-textMuted mb-4" />
-                <p className="text-text font-bold">Search for an exercise</p>
-                <p className="text-textMuted text-sm mt-1">Type at least 1 character</p>
-              </div>
-            )}
-
-            {/* Add Custom Exercise strictly below the list */}
-            {searchQuery.length > 0 && (
-              <div className="shrink-0 bg-surface-light p-4 rounded-2xl border border-border/50">
-                <div className="flex items-center gap-3 w-full">
-                  <select
-                    value={newMuscleGroup}
-                    onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-1/3 bg-background border border-border/50 rounded-xl px-3 py-3.5 text-sm text-text font-bold focus:outline-none focus:border-primary capitalize min-h-touch"
-                  >
-                    {muscleGroups.map(mg => (
-                      <option key={mg} value={mg}>{mg}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleCreateCustom}
-                    disabled={isCreatingCustom || searchQuery.trim().length < 1}
-                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-touch shadow-lg shadow-primary/20"
-                  >
-                    {isCreatingCustom ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={18} className="shrink-0" />}
-                    <span className="truncate">Add Custom Exercise</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
-    
-      {/* Custom Numpad */}
-      <CustomNumpad 
-          activeInput={activeInput ? {
-            field: activeInput.field,
-            onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
-            onNext: () => {
-              const ex = exercises[activeInput.exerciseIndex];
-              if (activeInput.field === 'weight') {
-                setActiveInput(prev => ({ ...prev, field: 'reps' }));
-              } else if (activeInput.setIndex < ex.defaultSets.length - 1) {
-                setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: activeInput.setIndex + 1, field: 'weight' });
-              } else if (activeInput.exerciseIndex < exercises.length - 1) {
-                setActiveInput({ exerciseIndex: activeInput.exerciseIndex + 1, setIndex: 0, field: 'weight' });
-              } else {
-                setActiveInput(null);
+        <Pressable onPress={() => setIsSearching(true)} style={styles.addEx} accessibilityLabel="Add Exercise">
+          <Plus size={22} color={colors.text} />
+          <Text style={styles.addExText}>Add Exercise</Text>
+        </Pressable>
+      </ScrollView>
+      <CustomNumpad
+        activeInput={
+          activeInput
+            ? {
+                field: activeInput.field,
+                targetId: `${activeInput.exerciseIndex}-${activeInput.setIndex}-${activeInput.field}`,
+                onChangeField: (field) => setActiveInput((prev) => (prev ? { ...prev, field } : prev)),
+                onNext: () => {
+                  const ex = exercises[activeInput.exerciseIndex];
+                  if (!ex) {
+                    setActiveInput(null);
+                    return;
+                  }
+                  const sets = ex.defaultSets || [];
+                  if (activeInput.field === 'weight') {
+                    setActiveInput((prev) => (prev ? { ...prev, field: 'reps' } : prev));
+                  } else if (activeInput.setIndex < sets.length - 1) {
+                    setActiveInput({
+                      exerciseIndex: activeInput.exerciseIndex,
+                      setIndex: activeInput.setIndex + 1,
+                      field: 'weight',
+                    });
+                  } else if (activeInput.exerciseIndex < exercises.length - 1) {
+                    const nextIdx = activeInput.exerciseIndex + 1;
+                    setExpandedExerciseIndex(nextIdx);
+                    setActiveInput({
+                      exerciseIndex: nextIdx,
+                      setIndex: 0,
+                      field: 'weight',
+                    });
+                  } else setActiveInput(null);
+                },
               }
-            }
-          } : null}
-          onClose={() => setActiveInput(null)}
-          value={
-            activeInput
-              ? exercises[activeInput.exerciseIndex]?.defaultSets[activeInput.setIndex]?.[activeInput.field]
-              : ''
-          }
-          onUpdate={(val) => {
-            if (activeInput) {
-              updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
-            }
-          }}
-        />
-    </div>
+            : null
+        }
+        onClose={() => setActiveInput(null)}
+        preview={
+          activeInput
+            ? {
+                title: exercises[activeInput.exerciseIndex]?.name,
+                meta: titleCase(exercises[activeInput.exerciseIndex]?.muscleGroup),
+                sets: exercises[activeInput.exerciseIndex]?.defaultSets || [],
+                setIndex: activeInput.setIndex,
+                unit,
+                onSelectCell: (i, field) =>
+                  setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: i, field }),
+              }
+            : null
+        }
+        value={
+          activeInput
+            ? exercises[activeInput.exerciseIndex]?.defaultSets?.[activeInput.setIndex]?.[activeInput.field]
+            : ''
+        }
+        onUpdate={(val) => {
+          if (!activeInput) return;
+          const ex = exercises[activeInput.exerciseIndex];
+          if (!ex?.defaultSets?.[activeInput.setIndex]) return;
+          updateSet(activeInput.exerciseIndex, activeInput.setIndex, activeInput.field, val);
+        }}
+        hostHeight={hostH}
+      />
+      </View>
+
+      <Modal visible={isSearching} animationType="slide" onRequestClose={() => setIsSearching(false)}>
+        <View style={[styles.searchRoot, { paddingTop: insets.top }]}>
+          <View style={styles.searchBar}>
+            <View style={styles.searchWrap}>
+              <Search size={20} color={colors.textMuted} />
+              <TextInput
+                autoFocus
+                placeholder="Search exercise..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
+              />
+            </View>
+            <Pressable
+              onPress={() => setIsSearching(false)}
+              style={styles.searchClose}
+              accessibilityLabel="Close search"
+            >
+              <X size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView
+            contentContainerStyle={{ padding: 16 }}
+            keyboardShouldPersistTaps="handled"
+            {...hideScroll}
+          >
+            {searchResults.map((ex, i) => (
+              <Pressable
+                key={`${ex.id}-${i}`}
+                onPress={() => handleAddExercise(ex)}
+                style={styles.searchItem}
+                accessibilityLabel={`Add ${ex.name}`}
+              >
+                <View style={styles.searchThumb}>
+                  {ex.gifUrl ? (
+                    <Image source={{ uri: ex.gifUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  ) : (
+                    <Dumbbell size={24} color={colors.textMuted} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.searchName} numberOfLines={1}>
+                    {ex.name}
+                  </Text>
+                  <Text style={styles.searchMeta}>{titleCase(ex.muscleGroup) || 'Exercise'}</Text>
+                </View>
+                <MuscleTag group={ex.muscleGroup} />
+              </Pressable>
+            ))}
+            {searchResults.length === 0 && queryEmpty && (
+              <View style={styles.emptySearch}>
+                <Search size={48} color={colors.textMuted} />
+                <Text style={{ color: colors.text, fontFamily: fonts.bold, marginTop: 12 }}>
+                  Search for an exercise
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>Type at least 1 character</Text>
+              </View>
+            )}
+            {searchResults.length === 0 && !queryEmpty && (
+              <View style={styles.emptySearch}>
+                <Search size={48} color={colors.textMuted} />
+                <Text style={{ color: colors.text, fontFamily: fonts.bold, marginTop: 12 }}>No results</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4, textAlign: 'center' }}>
+                  Try another search or add a custom exercise
+                </Text>
+              </View>
+            )}
+            {searchQuery.length > 0 && (
+            <View style={styles.customBox}>
+              <Select
+                value={newMuscleGroup}
+                onChange={setNewMuscleGroup}
+                options={muscleGroups.map((mg) => ({ value: mg, label: titleCase(mg) }))}
+                style={{ width: 120 }}
+              />
+              <Pressable
+                onPress={handleCreateCustom}
+                disabled={customDisabled}
+                accessibilityLabel="Add Custom Exercise"
+                style={[styles.customAdd, customDisabled && { opacity: 0.5 }]}
+              >
+                {isCreatingCustom ? (
+                  <ActivityIndicator color={colors.accentFg} />
+                ) : (
+                  <>
+                    <Plus size={18} color={colors.accentFg} />
+                    <Text style={{ color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 }}>
+                      Add Custom Exercise
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
   );
+}
+
+function makeStyles(colors) {
+  return StyleSheet.create({
+    head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    title: { color: colors.text, fontFamily: fonts.black, fontSize: 24 },
+    cancel: {
+      paddingHorizontal: 14,
+      minHeight: HIT,
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: radius.sm,
+    },
+    cancelText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    save: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.accent,
+      paddingHorizontal: 14,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+    },
+    saveText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
+    panel: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      marginBottom: 12,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.bold,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      minHeight: HIT,
+      color: colors.text,
+      fontFamily: fonts.bold,
+      fontSize: 16,
+    },
+    restHint: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      padding: 14,
+      marginBottom: 10,
+    },
+    restHintText: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center' },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 10,
+    },
+    cardHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      padding: 8,
+      paddingLeft: 8,
+      backgroundColor: colors.surface2,
+    },
+    cardHeadMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: HIT,
+    },
+    cardHeadTap: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      minHeight: HIT,
+    },
+    cardActions: { flexDirection: 'row', alignItems: 'center' },
+    iconHit: {
+      width: HIT,
+      height: HIT,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    thumb: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.surface },
+    thumbFallback: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surfaceLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    exName: { color: colors.text, fontFamily: fonts.bold, textTransform: 'capitalize' },
+    exMg: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.bold,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    delEx: {
+      width: HIT,
+      height: HIT,
+      marginLeft: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    setHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+    th: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.bold,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+    },
+    setRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    setIdx: { width: 32, textAlign: 'center', color: colors.textMuted, fontFamily: fonts.bold },
+    cell: {
+      flex: 1,
+      backgroundColor: colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingVertical: 10,
+      minHeight: HIT,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cellOn: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
+    cellText: { color: colors.text, fontFamily: fonts.monoBold },
+    delSet: {
+      width: HIT,
+      height: HIT,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+      borderRadius: radius.sm,
+    },
+    addSet: {
+      marginTop: 6,
+      paddingVertical: 8,
+      minHeight: HIT,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: radius.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+    },
+    addSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
+    addEx: {
+      marginTop: 8,
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    addExText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
+    searchRoot: { flex: 1, backgroundColor: colors.background },
+    searchBar: {
+      flexDirection: 'row',
+      gap: 10,
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      alignItems: 'center',
+    },
+    searchWrap: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: colors.surfaceLight,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 12,
+    },
+    searchInput: { flex: 1, color: colors.text, fontFamily: fonts.bold, fontSize: 16, paddingVertical: 12 },
+    searchClose: {
+      width: HIT,
+      height: HIT,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceLight,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    searchItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 14,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.sm,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    searchThumb: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface3,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    searchName: { color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
+    searchMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+    mgBadge: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: radius.xs,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    mgBadgeText: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.black,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    emptySearch: { alignItems: 'center', paddingVertical: 48, opacity: 0.6 },
+    customBox: {
+      marginTop: 8,
+      backgroundColor: colors.surfaceLight,
+      borderRadius: radius.sm,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      flexDirection: 'row',
+      gap: 10,
+      alignItems: 'center',
+    },
+    customAdd: {
+      flex: 1,
+      backgroundColor: colors.accent,
+      borderRadius: radius.sm,
+      paddingVertical: 14,
+      minHeight: HIT,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+  });
 }

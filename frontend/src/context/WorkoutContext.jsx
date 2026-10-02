@@ -1,79 +1,107 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
+import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
-import { differenceInDays, parseISO, startOfDay, isSameDay } from 'date-fns';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { moveItem } from '../utils/reorder';
+import { differenceInDays, parseISO, startOfDay, subDays } from 'date-fns';
+import { getItem, setItem, removeItem } from '../storage';
+import { localStore } from '../db/store';
+import { searchCatalog } from '../data/catalog';
+import { buildMockSnapshot } from '../data/mockData';
+import { exportBackup, pickBackupFile, confirmImportMode } from '../db/backup';
+import {
+  scheduleRestNotification,
+  cancelRestNotification,
+  tickRestNotification,
+  presentRestDone,
+  findNextIncompleteSet,
+} from '../notifications';
 
 const WorkoutContext = createContext();
 
-export function WorkoutProvider({ children }) {
-  const [username, setUsername] = useState(() => localStorage.getItem('workout_username') || null);
-
-  const login = (user) => {
-    localStorage.setItem('workout_username', user);
-    setUsername(user);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('workout_username');
-    setUsername(null);
-  };
-
-  const apiFetch = async (endpoint, options = {}) => {
-    const user = username || localStorage.getItem('workout_username');
-    const url = new URL(API_URL + endpoint);
-    if (user) url.searchParams.append('username', user);
-    
-    if (options.body && typeof options.body === 'string') {
-       const bodyObj = JSON.parse(options.body);
-       if (user) bodyObj.username = user;
-       options.body = JSON.stringify(bodyObj);
-    }
-    
-    return fetch(url.toString(), options);
-  };
-
-  
-
-  // Global preferences
-  const [unit, setUnit] = useState(() => {
-    return localStorage.getItem('workout_unit') || 'lbs';
-  });
-
-  // Active workout state
-  const [activeWorkout, setActiveWorkout] = useState(() => {
-    const saved = localStorage.getItem('workout_active');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [completedWorkout, setCompletedWorkout] = useState(null);
-
-  // Global Timer
-  const [workoutDuration, setWorkoutDuration] = useState(() => {
-    const saved = localStorage.getItem('workout_duration');
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  // Rest Timer
-  const [lastSetCompletedAt, setLastSetCompletedAt] = useState(() => {
-    const saved = localStorage.getItem('workout_last_set_time');
-    return saved ? parseInt(saved, 10) : null;
-  });
-  const [restTimer, setRestTimer] = useState(0);
-
-  // Set Timer
-  const [playingSet, setPlayingSet] = useState(() => {
-    const saved = localStorage.getItem('workout_playing_set');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [setTimer, setSetTimer] = useState(0);
-  
-  useEffect(() => {
-    if (playingSet) {
-      localStorage.setItem('workout_playing_set', JSON.stringify(playingSet));
+async function vibrate(pattern = 'light') {
+  try {
+    if (pattern === 'success') {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
-      localStorage.removeItem('workout_playing_set');
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-  }, [playingSet]);
+  } catch {
+    // web / simulator
+  }
+}
+
+function snapshotFromStore() {
+  return {
+    workouts: localStore.workouts,
+    routines: localStore.routines,
+    customExercises: localStore.customExercises,
+  };
+}
+
+export function WorkoutProvider({ children }) {
+  const [hydrated, setHydrated] = useState(false);
+  const [unit, setUnit] = useState('lbs');
+  const [restTargetSec, setRestTargetSec] = useState(90);
+  const [activeWorkout, setActiveWorkout] = useState(null);
+  const [completedWorkout, setCompletedWorkout] = useState(null);
+  const [workoutDuration, setWorkoutDuration] = useState(0);
+  const [lastSetCompletedAt, setLastSetCompletedAt] = useState(null);
+  const [restTimer, setRestTimer] = useState(0);
+  const [playingSet, setPlayingSet] = useState(null);
+  const [setTimer, setSetTimer] = useState(0);
+  const [workoutHistory, setWorkoutHistory] = useState([]);
+  const [customExercises, setCustomExercises] = useState([]);
+  const newlyCreatedCustomExIds = useRef([]);
+  const [routines, setRoutines] = useState([]);
+  const [useMock, setUseMock] = useState(false);
+
+  const mockSnap = useMemo(() => buildMockSnapshot(unit), [unit]);
+  const shownHistory = useMock ? mockSnap.workouts : workoutHistory;
+  const shownRoutines = useMock ? mockSnap.routines : routines;
+  const shownExercises = useMock ? mockSnap.customExercises : customExercises;
+
+  const syncFromStore = () => {
+    const snap = snapshotFromStore();
+    setWorkoutHistory(snap.workouts);
+    setRoutines(snap.routines);
+    setCustomExercises(snap.customExercises);
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await localStore.init();
+        syncFromStore();
+        const [savedUnit, savedActive, savedDuration, savedLastSet, savedPlaying, savedRest, savedMock] =
+          await Promise.all([
+            getItem('workout_unit'),
+            getItem('workout_active'),
+            getItem('workout_duration'),
+            getItem('workout_last_set_time'),
+            getItem('workout_playing_set'),
+            getItem('workout_rest_target'),
+            getItem('workout_mock_on'),
+          ]);
+        if (savedUnit) setUnit(savedUnit);
+        if (savedActive) setActiveWorkout(JSON.parse(savedActive));
+        if (savedDuration) setWorkoutDuration(parseInt(savedDuration, 10));
+        if (savedLastSet) setLastSetCompletedAt(parseInt(savedLastSet, 10));
+        if (savedPlaying) setPlayingSet(JSON.parse(savedPlaying));
+        if (savedRest) setRestTargetSec(parseInt(savedRest, 10) || 90);
+        if (savedMock === '1') setUseMock(true);
+      } catch (err) {
+        console.error('hydrate failed', err);
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (playingSet) setItem('workout_playing_set', JSON.stringify(playingSet));
+    else removeItem('workout_playing_set');
+  }, [playingSet, hydrated]);
 
   useEffect(() => {
     let interval;
@@ -89,192 +117,94 @@ export function WorkoutProvider({ children }) {
     return () => clearInterval(interval);
   }, [playingSet]);
 
-  // Workout History
-  const [workoutHistory, setWorkoutHistory] = useState([]);
-  
-  // Custom Exercises
-  const [customExercises, setCustomExercises] = useState([]);
-  const newlyCreatedCustomExIds = useRef([]);
-
-  // Routines
-  const [routines, setRoutines] = useState([]);
-
-  const fetchHistory = async () => {
-    try {
-      const res = await apiFetch(`/api/workouts`);
-      const data = await res.json();
-      setWorkoutHistory(data);
-    } catch (err) {
-      console.error("Failed to fetch history", err);
-    }
-  };
-
-  const fetchCustomExercises = async () => {
-    try {
-      const res = await apiFetch(`/api/exercises/custom`);
-      const data = await res.json();
-      setCustomExercises(data);
-    } catch (err) {
-      console.error("Failed to fetch custom exercises", err);
-    }
-  };
-
-  const fetchRoutines = async () => {
-    try {
-      const res = await apiFetch(`/api/routines`);
-      const data = await res.json();
-      setRoutines(data);
-    } catch (err) {
-      console.error("Failed to fetch routines", err);
-    }
-  };
-
   const createCustomExercise = async (name, muscleGroup, defaultSets = []) => {
-    try {
-      const setsToSave = defaultSets.length > 0 ? defaultSets : [{ reps: 10, weight: 0, type: 'Working' }];
-      // Generate a client-side ID since the backend expects one
-      const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
-      const payload = { id: tempId, name, muscleGroup, defaultSets: setsToSave, unitSaved: unit };
-
-      const res = await apiFetch(`/api/exercises/custom`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const newEx = await res.json();
-      setCustomExercises(prev => [...prev, newEx]);
-      newlyCreatedCustomExIds.current.push(newEx.id);
-      return newEx;
-    } catch (err) {
-      console.error("Failed to create custom exercise", err);
-      return null;
-    }
+    const setsToSave = defaultSets.length > 0 ? defaultSets : [{ reps: 10, weight: 0, type: 'Working' }];
+    const tempId = 'c_' + Math.random().toString(36).substr(2, 9);
+    const saved = await localStore.upsertCustomExercise({
+      id: tempId,
+      name,
+      muscleGroup,
+      defaultSets: setsToSave,
+      unitSaved: unit,
+    });
+    setCustomExercises([...localStore.customExercises]);
+    newlyCreatedCustomExIds.current.push(saved.id);
+    return saved;
   };
 
   const deleteCustomExercise = async (id) => {
-    try {
-      await apiFetch(`/api/exercises/custom/${id}`, {
-        method: 'DELETE'
-      });
-      setCustomExercises(prev => prev.filter(ex => ex.id !== id));
-      
-      // Keep routines perfectly in sync visually
-      setRoutines(prev => prev.map(routine => ({
-        ...routine,
-        exercises: routine.exercises.filter(ex => ex.id !== id)
-      })));
-    } catch (err) {
-      console.error("Failed to delete custom exercise", err);
-    }
+    await localStore.deleteCustomExercise(id);
+    setCustomExercises([...localStore.customExercises]);
+    setRoutines([...localStore.routines]);
   };
 
   const updateCustomExercise = async (id, payload) => {
-    try {
-      const res = await apiFetch(`/api/exercises/custom/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error('Update failed');
-      const updatedEx = await res.json();
-      setCustomExercises(prev => prev.map(ex => ex.id === id ? updatedEx : ex));
-      
-      // Keep routines perfectly in sync visually
-      setRoutines(prev => prev.map(routine => {
-        if (!routine.exercises.some(ex => ex.id === id)) return routine;
-        return {
-          ...routine,
-          exercises: routine.exercises.map(ex => ex.id === id ? { ...ex, ...updatedEx } : ex)
-        };
-      }));
-      
-      return updatedEx;
-    } catch (err) {
-      console.error("Failed to update custom exercise", err);
-      return null;
-    }
+    const current = localStore.customExercises.find((e) => e.id === id) || { id };
+    const saved = await localStore.upsertCustomExercise({ ...current, ...payload, id });
+    setCustomExercises([...localStore.customExercises]);
+    const nextRoutines = localStore.routines.map((routine) => {
+      if (!routine.exercises.some((ex) => ex.id === id)) return routine;
+      const updated = {
+        ...routine,
+        exercises: routine.exercises.map((ex) => (ex.id === id ? { ...ex, ...saved } : ex)),
+      };
+      localStore.upsertRoutine(updated);
+      return updated;
+    });
+    setRoutines(nextRoutines);
+    return saved;
   };
 
   const createRoutine = async (routineData) => {
-    try {
-      const res = await apiFetch(`/api/routines`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineData)
-      });
-      if (!res.ok) throw new Error('Create failed');
-      const newRoutine = await res.json();
-      setRoutines(prev => [...prev, newRoutine]);
-      return newRoutine;
-    } catch (err) {
-      console.error("Failed to create routine", err);
-      return null;
-    }
+    const saved = await localStore.upsertRoutine({
+      ...routineData,
+      id: routineData.id || `rt_${Date.now()}`,
+    });
+    setRoutines([...localStore.routines]);
+    return saved;
   };
 
   const deleteRoutine = async (id) => {
-    try {
-      await apiFetch(`/api/routines/${id}`, {
-        method: 'DELETE'
-      });
-      setRoutines(prev => prev.filter(r => r.id !== id));
-    } catch (err) {
-      console.error("Failed to delete routine", err);
-    }
+    await localStore.deleteRoutine(id);
+    setRoutines([...localStore.routines]);
   };
 
   const updateRoutine = async (id, routineData) => {
-    try {
-      const res = await apiFetch(`/api/routines/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineData)
-      });
-      const updatedRoutine = await res.json();
-      setRoutines(prev => prev.map(r => r.id === id ? updatedRoutine : r));
-      return updatedRoutine;
-    } catch (err) {
-      console.error("Failed to update routine", err);
-      return null;
-    }
+    const saved = await localStore.upsertRoutine({ ...routineData, id });
+    setRoutines([...localStore.routines]);
+    return saved;
   };
 
   useEffect(() => {
-    fetchHistory();
-    fetchCustomExercises();
-    fetchRoutines();
-  }, []);
-
-  // Persist Data
-  useEffect(() => {
-    localStorage.setItem('workout_unit', unit);
-  }, [unit]);
+    if (hydrated) setItem('workout_unit', unit);
+  }, [unit, hydrated]);
 
   useEffect(() => {
-    if (activeWorkout) {
-      localStorage.setItem('workout_active', JSON.stringify(activeWorkout));
-    } else {
-      localStorage.removeItem('workout_active');
-    }
-  }, [activeWorkout]);
+    if (hydrated) setItem('workout_rest_target', String(restTargetSec));
+  }, [restTargetSec, hydrated]);
 
   useEffect(() => {
-    localStorage.setItem('workout_duration', workoutDuration.toString());
-  }, [workoutDuration]);
+    if (!hydrated) return;
+    const t = setTimeout(() => {
+      if (activeWorkout) setItem('workout_active', JSON.stringify(activeWorkout));
+      else removeItem('workout_active');
+    }, 400);
+    return () => clearTimeout(t);
+  }, [activeWorkout, hydrated]);
 
   useEffect(() => {
-    if (lastSetCompletedAt) {
-      localStorage.setItem('workout_last_set_time', lastSetCompletedAt.toString());
-    } else {
-      localStorage.removeItem('workout_last_set_time');
-    }
-  }, [lastSetCompletedAt]);
+    if (hydrated) setItem('workout_duration', workoutDuration.toString());
+  }, [workoutDuration, hydrated]);
 
-  // Timers
+  useEffect(() => {
+    if (!hydrated) return;
+    if (lastSetCompletedAt) setItem('workout_last_set_time', lastSetCompletedAt.toString());
+    else removeItem('workout_last_set_time');
+  }, [lastSetCompletedAt, hydrated]);
+
   useEffect(() => {
     let interval;
     if (activeWorkout && activeWorkout.startTime) {
-      // Initialize it immediately in case of refresh
       setWorkoutDuration(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
       interval = setInterval(() => {
         setWorkoutDuration(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
@@ -298,176 +228,136 @@ export function WorkoutProvider({ children }) {
     return () => clearInterval(interval);
   }, [lastSetCompletedAt]);
 
-  const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
-  const subscribeToPush = async () => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        let subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY)
-          });
-        }
-        return subscription;
-      } catch (e) {
-        console.error('Push subscription failed', e);
-        return null;
-      }
-    }
-    return null;
-  };
-
-  // Toggle Unit
   const toggleUnit = () => {
     const newUnit = unit === 'lbs' ? 'kgs' : 'lbs';
-    
     if (activeWorkout) {
-      setActiveWorkout(prev => ({
+      setActiveWorkout((prev) => ({
         ...prev,
-        exercises: prev.exercises.map(ex => ({
+        exercises: prev.exercises.map((ex) => ({
           ...ex,
-          sets: ex.sets.map(s => ({
+          sets: ex.sets.map((s) => ({
             ...s,
-            weight: convertWeight(s.weight, unit, newUnit)
-          }))
-        }))
+            weight: convertWeight(s.weight, unit, newUnit),
+          })),
+        })),
       }));
     }
-    
     setUnit(newUnit);
   };
 
   const startWorkout = () => {
+    cancelRestNotification();
+    setPlayingSet(null);
     setActiveWorkout({
       id: `wk_${Date.now()}`,
       startTime: Date.now(),
-      exercises: []
+      exercises: [],
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
   };
 
   const startWorkoutFromRoutine = (routine) => {
-    const populatedExercises = routine.exercises.map(ex => {
-      const pastWorkout = workoutHistory.find(wk => wk.exercises?.some(e => e.id === ex.id && e.sets?.length > 0));
-      const prevPerformance = pastWorkout ? pastWorkout.exercises.find(e => e.id === ex.id) : null;
-      
-      const defaultSetsCount = (ex.defaultSets || []).length || 3;
-      let initialSets = [];
-      
-      if (prevPerformance) {
-        const pastUnit = pastWorkout.unitSaved || 'lbs';
-        for (let i = 0; i < defaultSetsCount; i++) {
-          const pastSet = prevPerformance.sets[i] || prevPerformance.sets[prevPerformance.sets.length - 1];
-          initialSets.push({
-            type: pastSet.type || 'Working',
-            weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
-            reps: pastSet.reps ? String(pastSet.reps) : '',
-            completedAt: null
-          });
-        }
-      } else {
-        const setsToUse = ex.defaultSets || [];
-        if (setsToUse.length > 0) {
-          initialSets = setsToUse.map(ds => ({
-            type: ds.type || 'Working',
-            weight: ds.weight ? String(convertWeight(ds.weight, ex.unitSaved || 'lbs', unit)) : '',
-            reps: ds.reps ? String(ds.reps) : '',
-            completedAt: null
-          }));
-        } else {
-          initialSets = Array(defaultSetsCount).fill(null).map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
-        }
-      }
+    if (!routine) return;
+    cancelRestNotification();
+    setPlayingSet(null);
+    const source = Array.isArray(routine.exercises) ? routine.exercises : [];
+    const populatedExercises = source
+      .filter(Boolean)
+      .map((ex) => {
+        const pastWorkout = (workoutHistory || []).find((wk) =>
+          wk.exercises?.some((e) => e.id === ex.id && e.sets?.length > 0)
+        );
+        const prevPerformance = pastWorkout ? pastWorkout.exercises.find((e) => e.id === ex.id) : null;
+        const pastSets = prevPerformance?.sets || [];
+        const defaultSetsCount = (ex.defaultSets || []).length || 3;
+        let initialSets = [];
 
-      return {
-        id: ex.id,
-        name: ex.name,
-        muscleGroup: ex.muscleGroup,
-        gifUrl: ex.gifUrl,
-        sets: initialSets
-      };
-    });
+        if (pastSets.length > 0) {
+          const pastUnit = pastWorkout.unitSaved || 'lbs';
+          for (let i = 0; i < defaultSetsCount; i++) {
+            const pastSet = pastSets[i] || pastSets[pastSets.length - 1] || {};
+            initialSets.push({
+              type: pastSet.type || 'Working',
+              weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
+              reps: pastSet.reps ? String(pastSet.reps) : '',
+              completedAt: null,
+            });
+          }
+        } else {
+          const setsToUse = ex.defaultSets || [];
+          if (setsToUse.length > 0) {
+            initialSets = setsToUse.map((ds) => ({
+              type: ds?.type || 'Working',
+              weight: ds?.weight ? String(convertWeight(ds.weight, ex.unitSaved || 'lbs', unit)) : '',
+              reps: ds?.reps ? String(ds.reps) : '',
+              completedAt: null,
+            }));
+          } else {
+            initialSets = Array(defaultSetsCount)
+              .fill(null)
+              .map(() => ({ type: 'Working', weight: '', reps: '', completedAt: null }));
+          }
+        }
+
+        return {
+          id: ex.id,
+          name: ex.name,
+          muscleGroup: ex.muscleGroup,
+          gifUrl: ex.gifUrl,
+          sets: initialSets,
+        };
+      });
 
     setActiveWorkout({
       id: `wk_${Date.now()}`,
       startTime: Date.now(),
       routineId: routine.id,
       routineName: routine.name,
-      exercises: populatedExercises
+      exercises: populatedExercises,
     });
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
   };
 
-  const cancelPushNotification = async () => {
-    if (pushTaskIdRef.current) {
-      try {
-        await apiFetch(`/api/push/cancel`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taskId: pushTaskIdRef.current })
-        });
-      } catch (err) {
-        console.error('Failed to cancel push', err);
-      }
-      pushTaskIdRef.current = null;
-    }
-  };
-
-  const finishWorkout = async () => { if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+  const finishWorkout = async () => {
+    await vibrate('success');
+    await cancelRestNotification();
     try {
       const payload = {
         ...activeWorkout,
+        timestamp: new Date(activeWorkout.startTime || Date.now()).toISOString(),
         endTime: Date.now(),
         duration: workoutDuration,
-        unitSaved: unit
+        unitSaved: unit,
       };
-      
-      const res = await apiFetch(`/api/workouts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const savedWorkout = await res.json();
-      
-      // Sync newly created custom exercises' default sets with what was actually performed
-      for (const ex of activeWorkout.exercises) {
+      const savedWorkout = await localStore.upsertWorkout(payload);
+      for (const ex of activeWorkout.exercises || []) {
         if (newlyCreatedCustomExIds.current.includes(ex.id)) {
-          // Map the active workout 'sets' to 'defaultSets' for the custom exercise template
-          const mappedSets = ex.sets.map(s => ({ reps: s.reps, weight: s.weight, type: s.type || 'Working' }));
+          const mappedSets = ex.sets.map((s) => ({
+            reps: s.reps,
+            weight: s.weight,
+            type: s.type || 'Working',
+          }));
           if (mappedSets.length > 0) {
             await updateCustomExercise(ex.id, { defaultSets: mappedSets });
           }
         }
       }
-      
-      await fetchHistory();
-      setCompletedWorkout(savedWorkout.workout || payload);
-    } catch (e) {
-      console.error("Failed to save workout", e);
-    }
-      
+      setWorkoutHistory([...localStore.workouts]);
+      setCompletedWorkout(savedWorkout);
       setActiveWorkout(null);
       setWorkoutDuration(0);
       setLastSetCompletedAt(null);
-      localStorage.removeItem('workout_active');
+      await cancelRestNotification();
+      await removeItem('workout_active');
+    } catch (e) {
+      console.error('Failed to save workout', e);
+    }
   };
 
   const cancelWorkout = async () => {
+    await cancelRestNotification();
     setActiveWorkout(null);
     setWorkoutDuration(0);
     setLastSetCompletedAt(null);
@@ -475,13 +365,13 @@ export function WorkoutProvider({ children }) {
 
   const addExercise = (exercise) => {
     if (!activeWorkout) return;
-    
-    const pastWorkout = workoutHistory.find(wk => wk.exercises?.some(e => e.id === exercise.id && e.sets?.length > 0));
-    const prevPerformance = pastWorkout ? pastWorkout.exercises.find(e => e.id === exercise.id) : null;
-    
+    const pastWorkout = workoutHistory.find((wk) =>
+      wk.exercises?.some((e) => e.id === exercise.id && e.sets?.length > 0)
+    );
+    const prevPerformance = pastWorkout ? pastWorkout.exercises.find((e) => e.id === exercise.id) : null;
     let initialSets = [];
     const defaultSetsCount = (exercise.defaultSets || []).length || 1;
-    
+
     if (prevPerformance) {
       const pastUnit = pastWorkout.unitSaved || 'lbs';
       for (let i = 0; i < defaultSetsCount; i++) {
@@ -490,100 +380,123 @@ export function WorkoutProvider({ children }) {
           type: pastSet.type || 'Working',
           weight: pastSet.weight ? String(convertWeight(pastSet.weight, pastUnit, unit)) : '',
           reps: pastSet.reps ? String(pastSet.reps) : '',
-          completedAt: null
+          completedAt: null,
         });
       }
+    } else if (exercise.defaultSets && exercise.defaultSets.length > 0) {
+      initialSets = exercise.defaultSets.map((s) => ({
+        reps: s.reps ? String(s.reps) : '',
+        weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : '',
+        type: s.type || 'Working',
+        completedAt: null,
+      }));
     } else {
-      if (exercise.defaultSets && exercise.defaultSets.length > 0) {
-        initialSets = exercise.defaultSets.map(s => ({
-          reps: s.reps ? String(s.reps) : '',
-          weight: s.weight ? String(convertWeight(s.weight, exercise.unitSaved || 'lbs', unit)) : '',
-          type: s.type || 'Working',
-          completedAt: null
-        }));
-      } else {
-        initialSets = [{ reps: '', weight: '', type: 'Working', completedAt: null }];
-      }
+      initialSets = [{ reps: '', weight: '', type: 'Working', completedAt: null }];
     }
 
-    setActiveWorkout(prev => ({
+    setActiveWorkout((prev) => ({
       ...prev,
-      exercises: [...prev.exercises, { 
-        ...exercise, 
-        sets: initialSets 
-      }]
+      exercises: [...prev.exercises, { ...exercise, sets: initialSets }],
     }));
   };
 
   const updateSet = (exerciseIndex, setIndex, field, value) => {
-    if (!activeWorkout) return;
-    const newExercises = [...activeWorkout.exercises];
-    newExercises[exerciseIndex].sets[setIndex][field] = value;
-    
-    // Auto-cascade edits from the first set to subsequent uncompleted sets
-    if (setIndex === 0) {
-      for (let i = 1; i < newExercises[exerciseIndex].sets.length; i++) {
-        if (!newExercises[exerciseIndex].sets[i].completedAt) {
-          newExercises[exerciseIndex].sets[i][field] = value;
-        }
-      }
-    }
-    
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
-  };
-
-  const reorderActiveExercise = (index, direction) => {
-    if (!activeWorkout) return;
-    setActiveWorkout(prev => {
-      const newExercises = [...prev.exercises];
-      if (direction === 'up' && index > 0) {
-        [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
-      } else if (direction === 'down' && index < newExercises.length - 1) {
-        [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
-      }
-      return { ...prev, exercises: newExercises };
+    setActiveWorkout((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        exercises: prev.exercises.map((ex, ei) => {
+          if (ei !== exerciseIndex) return ex;
+          return {
+            ...ex,
+            sets: ex.sets.map((s, si) => {
+              if (si === setIndex) return { ...s, [field]: value };
+              if (setIndex === 0 && si > 0 && !s.completedAt) return { ...s, [field]: value };
+              return s;
+            }),
+          };
+        }),
+      };
     });
   };
 
+  const reorderActiveExercise = (from, to) => {
+    if (!activeWorkout) return;
+    if (typeof to !== 'number') {
+      const direction = to;
+      const index = from;
+      const target = direction === 'up' ? index - 1 : index + 1;
+      to = target;
+      from = index;
+    }
+    setActiveWorkout((prev) => {
+      const next = moveItem(prev.exercises, from, to);
+      if (next === prev.exercises) return prev;
+      return { ...prev, exercises: next };
+    });
+  };
+
+  const restMeta = (workout = activeWorkout) => {
+    const next = findNextIncompleteSet(workout);
+    return {
+      exerciseName: next?.name || workout?.exercises?.[workout.exercises.length - 1]?.name || 'TrackHit',
+      setLabel: next?.setLabel || 'Next set',
+      next,
+    };
+  };
+
+  const pushRestNotice = (seconds, workout = activeWorkout) => {
+    const meta = restMeta(workout);
+    return scheduleRestNotification({
+      seconds,
+      exerciseName: meta.exerciseName,
+      setLabel: meta.setLabel,
+    });
+  };
 
   const startSet = (exerciseIndex, setIndex) => {
-    if (navigator.vibrate) navigator.vibrate(40);
-    setLastSetCompletedAt(null); // stop rest timer
+    vibrate();
+    cancelRestNotification();
+    setLastSetCompletedAt(null);
     setPlayingSet({ exerciseIndex, setIndex, startTime: Date.now() });
   };
-  
+
   const cancelSet = () => {
     setPlayingSet(null);
   };
 
   const completeSet = async (exerciseIndex, setIndex) => {
-
-    if (navigator.vibrate) navigator.vibrate(40);
+    vibrate();
     if (!activeWorkout) return;
-    const newExercises = [...activeWorkout.exercises];
-    
-    // Default weight to 0 if not entered (e.g. for bodyweight exercises)
-    if (!newExercises[exerciseIndex].sets[setIndex].weight) {
-      newExercises[exerciseIndex].sets[setIndex].weight = 0;
-    }
-
-    // Track rest time taken before this set
-    const restTimeTaken = lastSetCompletedAt ? Math.floor((Date.now() - lastSetCompletedAt) / 1000) : 0;
-    newExercises[exerciseIndex].sets[setIndex].restTimeTaken = restTimeTaken;
-    
-    newExercises[exerciseIndex].sets[setIndex].completedAt = Date.now();
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
-    
+    const now = Date.now();
+    const restTimeTaken = lastSetCompletedAt ? Math.floor((now - lastSetCompletedAt) / 1000) : 0;
+    const newExercises = activeWorkout.exercises.map((ex, ei) => {
+      if (ei !== exerciseIndex) return ex;
+      return {
+        ...ex,
+        sets: ex.sets.map((s, si) => {
+          if (si !== setIndex) return s;
+          return {
+            ...s,
+            weight: s.weight === '' || s.weight == null ? 0 : s.weight,
+            restTimeTaken,
+            completedAt: now,
+          };
+        }),
+      };
+    });
+    const nextWorkout = { ...activeWorkout, exercises: newExercises };
+    setActiveWorkout(nextWorkout);
     setPlayingSet(null);
-    // Start tracking rest for the *next* set
-    setLastSetCompletedAt(Date.now());
+    setLastSetCompletedAt(now);
+    pushRestNotice(restTargetSec, nextWorkout);
   };
 
   const uncompleteSet = (exerciseIndex, setIndex) => {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets[setIndex].completedAt = null;
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const addSetToExercise = (exerciseIndex) => {
@@ -591,63 +504,64 @@ export function WorkoutProvider({ children }) {
     const newExercises = [...activeWorkout.exercises];
     const sets = newExercises[exerciseIndex].sets;
     const lastSet = sets.length > 0 ? sets[sets.length - 1] : { reps: '', weight: '', type: 'Working' };
-    
     newExercises[exerciseIndex].sets.push({
       reps: lastSet.reps,
       weight: lastSet.weight,
       type: lastSet.type,
-      completedAt: null
+      completedAt: null,
     });
-    
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const removeActiveExercise = (exerciseIndex) => {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises.splice(exerciseIndex, 1);
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const removeSet = (exerciseIndex, setIndex) => {
     if (!activeWorkout) return;
     const newExercises = [...activeWorkout.exercises];
     newExercises[exerciseIndex].sets.splice(setIndex, 1);
-    setActiveWorkout(prev => ({ ...prev, exercises: newExercises }));
+    setActiveWorkout((prev) => ({ ...prev, exercises: newExercises }));
   };
 
-  // Streak Calculation
   const getStreaks = () => {
-    if (workoutHistory.length === 0) return { current: 0, best: 0 };
-    
-    const dates = [...new Set(workoutHistory.map(w => startOfDay(parseISO(w.timestamp)).getTime()))].sort((a, b) => b - a);
-    
+    if (shownHistory.length === 0) return { current: 0, best: 0 };
+    const dates = [
+      ...new Set(
+        shownHistory.map((w) => {
+          try {
+            return startOfDay(parseISO(w.timestamp)).getTime();
+          } catch {
+            return startOfDay(new Date(w.timestamp)).getTime();
+          }
+        })
+      ),
+    ].sort((a, b) => b - a);
+
     let currentStreak = 0;
     let bestStreak = 0;
     let tempStreak = 0;
-    
     const today = startOfDay(new Date()).getTime();
-    
-    // Calculate current streak
-    let expectedDate = today;
-    if (dates[0] === today || dates[0] === today - 86400000) {
-      expectedDate = dates[0];
-      for (let i = 0; i < dates.length; i++) {
-        if (dates[i] === expectedDate) {
+    const yesterday = startOfDay(subDays(new Date(), 1)).getTime();
+    if (dates[0] === today || dates[0] === yesterday) {
+      currentStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        if (differenceInDays(dates[i - 1], dates[i]) === 1) {
           currentStreak++;
-          expectedDate -= 86400000; // minus 1 day
         } else {
           break;
         }
       }
     }
 
-    // Calculate best streak
     for (let i = 0; i < dates.length; i++) {
       if (i === 0) {
         tempStreak = 1;
       } else {
-        const diff = differenceInDays(dates[i-1], dates[i]);
+        const diff = differenceInDays(dates[i - 1], dates[i]);
         if (diff === 1) {
           tempStreak++;
         } else {
@@ -657,34 +571,162 @@ export function WorkoutProvider({ children }) {
       }
     }
     if (tempStreak > bestStreak) bestStreak = tempStreak;
-
     return { current: currentStreak, best: bestStreak };
   };
 
   const stopRestTimer = () => {
+    cancelRestNotification();
     setLastSetCompletedAt(null);
   };
 
+  const searchExercises = (query) => searchCatalog(query, shownExercises);
+
+  const toggleMock = async (on) => {
+    setUseMock(!!on);
+    await setItem('workout_mock_on', on ? '1' : '0');
+  };
+
+  const wipeAllData = async () => {
+    await cancelRestNotification();
+    setActiveWorkout(null);
+    setCompletedWorkout(null);
+    setPlayingSet(null);
+    setLastSetCompletedAt(null);
+    setWorkoutDuration(0);
+    newlyCreatedCustomExIds.current = [];
+    setUseMock(false);
+    await setItem('workout_mock_on', '0');
+    await localStore.clearAll();
+    setWorkoutHistory([]);
+    setRoutines([]);
+    setCustomExercises([]);
+    await Promise.all([
+      removeItem('workout_active'),
+      removeItem('workout_duration'),
+      removeItem('workout_last_set_time'),
+      removeItem('workout_playing_set'),
+    ]);
+    return { ok: true };
+  };
+
+  const exportData = async () =>
+    exportBackup({
+      workouts: workoutHistory,
+      routines,
+      customExercises,
+      unit,
+      restTargetSec,
+    });
+
+  const importData = async () => {
+    const parsed = await pickBackupFile();
+    if (!parsed) return { ok: false, cancelled: true };
+    const mode = await confirmImportMode();
+    if (!mode) return { ok: false, cancelled: true };
+    if (mode === 'replace') {
+      await localStore.replaceAll(parsed);
+    } else {
+      await localStore.mergeAll(parsed);
+    }
+    syncFromStore();
+    if (parsed.unit) setUnit(parsed.unit);
+    if (parsed.restTargetSec) setRestTargetSec(parsed.restTargetSec);
+    return {
+      ok: true,
+      mode,
+      workouts: parsed.workouts.length,
+      routines: parsed.routines.length,
+      customExercises: parsed.customExercises.length,
+    };
+  };
+
+  const refreshAll = async () => {
+    syncFromStore();
+  };
+
+  useEffect(() => {
+    if (!lastSetCompletedAt || playingSet) return undefined;
+    const meta = restMeta();
+    let liveCleared = false;
+    const tick = () => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - lastSetCompletedAt) / 1000));
+      const remaining = restTargetSec - elapsed;
+      if (remaining <= 0) {
+        if (!liveCleared) {
+          liveCleared = true;
+          presentRestDone({
+            exerciseName: meta.exerciseName,
+            setLabel: meta.setLabel,
+          });
+          vibrate('success');
+        }
+        return;
+      }
+      tickRestNotification({
+        remainingSec: remaining,
+        totalSec: restTargetSec,
+        exerciseName: meta.exerciseName,
+        setLabel: meta.setLabel,
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lastSetCompletedAt, restTargetSec, playingSet, activeWorkout]);
+
   return (
-    <WorkoutContext.Provider value={{
-      username, login, logout, unit, toggleUnit,
-      activeWorkout, startWorkout, startWorkoutFromRoutine, finishWorkout, cancelWorkout,
-      addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet,
-    removeActiveExercise,
-      workoutDuration,
-      restTimer, stopRestTimer,
-      playingSet, setTimer, startSet, cancelSet,
-      workoutHistory,
-      customExercises, createCustomExercise, deleteCustomExercise, updateCustomExercise,
-      routines, createRoutine, updateRoutine, deleteRoutine,
-      getStreaks,
-      completedWorkout, setCompletedWorkout
-    }}>
+    <WorkoutContext.Provider
+      value={{
+        hydrated,
+        unit,
+        toggleUnit,
+        restTargetSec,
+        setRestTargetSec,
+        activeWorkout,
+        startWorkout,
+        startWorkoutFromRoutine,
+        finishWorkout,
+        cancelWorkout,
+        addExercise,
+        updateSet,
+        reorderActiveExercise,
+        completeSet,
+        uncompleteSet,
+        addSetToExercise,
+        removeSet,
+        removeActiveExercise,
+        workoutDuration,
+        restTimer,
+        isResting: !!lastSetCompletedAt && !playingSet,
+        stopRestTimer,
+        playingSet,
+        setTimer,
+        startSet,
+        cancelSet,
+        workoutHistory: shownHistory,
+        customExercises: shownExercises,
+        createCustomExercise,
+        deleteCustomExercise,
+        updateCustomExercise,
+        routines: shownRoutines,
+        createRoutine,
+        updateRoutine,
+        deleteRoutine,
+        getStreaks,
+        completedWorkout,
+        setCompletedWorkout,
+        refreshAll,
+        searchExercises,
+        exportData,
+        importData,
+        useMock,
+        toggleMock,
+        wipeAllData,
+      }}
+    >
       {children}
     </WorkoutContext.Provider>
   );
 }
 
 export const useWorkout = () => useContext(WorkoutContext);
-
-

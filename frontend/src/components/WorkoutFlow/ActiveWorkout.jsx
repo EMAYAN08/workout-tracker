@@ -1,9 +1,42 @@
 import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Modal,
+  ActivityIndicator,
+  TextInput,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Play,
+  Plus,
+  Timer,
+  Trash2,
+  Check,
+  Dumbbell,
+  Search,
+  X,
+  ChevronUp,
+  ChevronDown,
+  Moon,
+  GripVertical,
+} from 'lucide-react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { Play, Plus, Minus, Timer, History, Trash2, Check, Dumbbell, Search, X, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { getPreviousPerformance } from '../../utils/calculations';
+import { detectPersonalRecord } from '../../utils/pr';
 import CustomNumpad from './CustomNumpad';
+import PrCelebration from './PrCelebration';
+import { fonts, radius, HIT } from '../../theme';
+import { Select, MuscleTag } from '../ui/primitives';
+import { useTheme } from '../../context/ThemeContext';
+import { titleCase } from '../../utils/format';
+import { haptic } from '../../haptics';
+import { remapIndex } from '../../utils/reorder';
+import { DragSortList, DragSortItem, DragHandle } from '../ui/DragSort';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -11,30 +44,33 @@ const formatTime = (seconds) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const StepperInput = ({ value, onChange, step = 1, placeholder }) => (
-  <div className="flex items-center w-full bg-surface-light rounded-lg overflow-hidden border border-border focus-within:border-primary transition-colors">
-    <button onClick={() => onChange(String(Number(value || 0) - step))} className="w-8 shrink-0 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none flex items-center justify-center">-</button>
-    <input 
-      type="number" 
-      inputMode="decimal"
-      pattern="[0-9]*"
-      value={value} 
-      onChange={(e) => onChange(e.target.value)}
-      className="flex-1 w-full bg-transparent text-center font-mono font-bold py-2 text-text focus:outline-none placeholder-textMuted/50 hide-arrows text-sm sm:text-base px-0"
-      placeholder={placeholder}
-    />
-    <button onClick={() => onChange(String(Number(value || 0) + step))} className="w-8 shrink-0 py-2 text-textMuted hover:text-text hover:bg-white/5 active:bg-white/10 transition-colors font-bold text-lg select-none flex items-center justify-center">+</button>
-  </div>
-);
-
-export default function ActiveWorkout() {
-  const { 
-    activeWorkout, workoutDuration, 
-    addExercise, updateSet, reorderActiveExercise, completeSet, uncompleteSet, addSetToExercise, removeSet, removeActiveExercise, 
-    restTimer, stopRestTimer, unit, workoutHistory,
-    playingSet, setTimer, startSet, cancelSet,
-    createCustomExercise
+export default function ActiveWorkout({ minimized = false, onMinimize }) {
+  const {
+    activeWorkout,
+    workoutDuration,
+    addExercise,
+    updateSet,
+    reorderActiveExercise,
+    completeSet,
+    uncompleteSet,
+    addSetToExercise,
+    removeSet,
+    removeActiveExercise,
+    restTimer,
+    restTargetSec,
+    isResting,
+    stopRestTimer,
+    unit,
+    workoutHistory,
+    playingSet,
+    setTimer,
+    startSet,
+    createCustomExercise,
+    searchExercises,
   } = useWorkout();
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(0);
   const [activeInput, setActiveInput] = useState(null);
@@ -43,35 +79,47 @@ export default function ActiveWorkout() {
   const [searchResults, setSearchResults] = useState([]);
   const [newMuscleGroup, setNewMuscleGroup] = useState('chest');
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
-  
+  const [prEvent, setPrEvent] = useState(null);
+  const [listScroll, setListScroll] = useState(true);
+  const [hostH, setHostH] = useState(0);
   const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio', 'other'];
 
-  React.useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length > 2) {
-        try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-          const res = await fetch(`${API_URL}/api/exercises/search?q=${encodeURIComponent(searchQuery)}`);
-          if (!res.ok) throw new Error('Network response was not ok');
-          const data = await res.json();
-          setSearchResults(data);
-        } catch (err) {
-          console.error("Search failed", err);
-          setSearchResults([]);
-        }
-      } else {
-        setSearchResults([]);
-      }
-    }, 500);
+  const markSetComplete = (idx, sIdx) => {
+    const ex = activeWorkout?.exercises?.[idx];
+    const set = ex?.sets?.[sIdx];
+    if (!ex || !set || !set.reps) return;
+    const pr = detectPersonalRecord({
+      exercise: ex,
+      set,
+      setIndex: sIdx,
+      history: workoutHistory,
+      currentExercises: activeWorkout.exercises,
+      unit,
+    });
+    setActiveInput(null);
+    completeSet(idx, sIdx);
+    if (pr) {
+      haptic('success');
+      setPrEvent({ ...pr, id: Date.now() });
+    }
+  };
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  React.useEffect(() => {
+    if (minimized) setActiveInput(null);
+  }, [minimized]);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchResults(searchQuery.length > 0 ? searchExercises(searchQuery) : []);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [searchQuery, searchExercises]);
 
   if (!activeWorkout) return null;
 
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
+  const exercises = Array.isArray(activeWorkout.exercises) ? activeWorkout.exercises : [];
+  const restRemaining = Math.max(0, restTargetSec - restTimer);
+  const showRest = isResting && restRemaining > 0;
 
   const handleAddExercise = (exercise) => {
     addExercise(exercise);
@@ -83,433 +131,633 @@ export default function ActiveWorkout() {
   const handleCreateCustom = async () => {
     setIsCreatingCustom(true);
     const newEx = await createCustomExercise(searchQuery, newMuscleGroup);
-    if (newEx) {
-      handleAddExercise(newEx);
-    }
+    if (newEx) handleAddExercise(newEx);
     setIsCreatingCustom(false);
   };
 
+  const Thumb = ({ uri }) =>
+    uri ? (
+      <Image source={{ uri }} style={styles.thumb} contentFit="cover" />
+    ) : (
+      <View style={[styles.thumb, styles.thumbFallback]}>
+        <Dumbbell size={20} color={colors.textMuted} />
+      </View>
+    );
+
   return (
-    <div className={`px-4 flex flex-col gap-4 w-full relative transition-all duration-300 ${activeInput ? 'pb-[300px]' : 'pb-0'}`}>
-      
-            {/* Global Timer Ribbon */}
-      <div className="sticky top-0 z-40 -mx-4 px-6 py-2 mb-2 bg-background/95 backdrop-blur-md border-b border-white/5 flex justify-between items-center shadow-sm">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-0.5">Workout</span>
-          <div className="flex items-center gap-1.5 text-primary">
-            <Timer size={14} />
-            <span className="font-mono font-bold text-base leading-none">{formatTime(workoutDuration)}</span>
-          </div>
-        </div>
-        
+    <View style={{ flex: 1, position: 'relative' }}>
+      <View style={styles.timerBar}>
+        <View>
+          <Text style={styles.timerLabel}>Workout</Text>
+          <View style={styles.timerRow}>
+            <Timer size={14} color={colors.textMuted} />
+            <Text style={styles.timerValue}>{formatTime(workoutDuration)}</Text>
+          </View>
+        </View>
+        <View style={{ flex: 1 }} />
         {playingSet ? (
-            <div className="flex flex-col items-end animate-in fade-in zoom-in duration-300">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/80 mb-0.5">Set Time</span>
-              <div className="flex items-center gap-2 text-emerald-400">
-                <Timer size={14} />
-                <span className="font-mono font-bold text-base leading-none">{formatTime(setTimer)}</span>
-              </div>
-            </div>
-          ) : restTimer > 0 ? (
-            <div className="flex flex-col items-end animate-in fade-in zoom-in duration-300">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400/80 mb-0.5">Resting</span>
-              <div className="flex items-center gap-2 text-blue-400">
-                <Timer size={14} />
-                <span className="font-mono font-bold text-base leading-none">{formatTime(restTimer)}</span>
-                <button 
-                  onClick={() => stopRestTimer()} 
-                  className="p-1 rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors ml-1"
-                >
-                  <X size={12} strokeWidth={3} />
-                </button>
-              </div>
-            </div>
-          ) : null}
-      </div>
-
-      {activeWorkout.exercises.length === 0 && (
-        <div className="mx-2 panel p-4 bg-emerald-500/10 border-emerald-500/20 text-center flex flex-col items-center justify-center gap-2 rounded-2xl shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/20 rounded-full blur-[40px] pointer-events-none" />
-          <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mb-1 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-            <span className="text-2xl">🛋️</span>
-          </div>
-          <h3 className="text-emerald-400 font-black text-lg tracking-tight">Rest Day Logging</h3>
-          <p className="text-emerald-500/80 font-bold text-sm leading-snug max-w-[200px]">
-            Tap "Log Rest Day" above to record a recovery day.
-          </p>
-        </div>
-      )}
-
-      {/* Exercises */}
-      {activeWorkout.exercises.map((ex, idx) => {
-        const prevPerformance = getPreviousPerformance(ex.id, workoutHistory, unit);
-        const isExpanded = idx === expandedExerciseIndex;
-        const completedSetsCount = ex.sets.filter(s => s.completedAt).length;
-
-        if (!isExpanded) {
-          return (
-            <motion.div 
-              key={idx} 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              onClick={() => setExpandedExerciseIndex(idx)}
-              className="panel p-3 flex items-center gap-3 cursor-pointer hover:bg-surface-light/50 transition-colors border border-transparent hover:border-white/5 group"
-            >
-              {ex.gifUrl ? (
-                <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-lg object-cover bg-white/5 opacity-70 group-hover:opacity-100 transition-opacity" loading="lazy" />
-              ) : (
-                <div className="w-12 h-12 rounded-lg bg-surface-light flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
-                  <Dumbbell size={20} className="text-textMuted" />
-                </div>
-              )}
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-text capitalize line-clamp-1 group-hover:text-primary transition-colors">{ex.name}</h3>
-                  
-                </div>
-                <p className="text-xs font-semibold text-textMuted mt-0.5">
-                  <span className={completedSetsCount === ex.sets.length && ex.sets.length > 0 ? "text-green-500" : ""}>{completedSetsCount}</span> / {ex.sets.length} Sets Completed
-                </p>
-              </div>
-              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                {idx > 0 && (
-                  <button onClick={() => reorderActiveExercise(idx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                    <ArrowUp size={16} />
-                  </button>
-                )}
-                {idx < activeWorkout.exercises.length - 1 && (
-                  <button onClick={() => reorderActiveExercise(idx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                    <ArrowDown size={16} />
-                  </button>
-                )}
-                <button 
-                    onClick={(e) => { e.stopPropagation(); removeActiveExercise(idx); }}
-                    className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
-                    title="Remove Exercise"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
-                    <ChevronDown size={18} />
-                  </button>
-              </div>
-            </motion.div>
-          );
-        }
-
-        return (
-          <motion.div 
-            key={idx} 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="panel overflow-hidden relative ring-1 ring-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+          <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
+            <Text style={styles.timerLabel}>Set Time</Text>
+            <View style={styles.timerRow}>
+              <Timer size={14} color={colors.textMuted} />
+              <Text style={styles.timerValue}>{formatTime(setTimer)}</Text>
+            </View>
+          </View>
+        ) : showRest ? (
+          <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
+            <Text style={styles.timerLabel}>Rest</Text>
+            <View style={styles.timerRow}>
+              <Text style={[styles.timerValue, { color: colors.accent }]}>{formatTime(restRemaining)}</Text>
+              <Pressable onPress={stopRestTimer} style={styles.skipRest} accessibilityLabel="Skip rest">
+                <Text style={styles.skipRestText}>Skip</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+        {onMinimize ? (
+          <Pressable
+            onPress={() => {
+              haptic('selection');
+              onMinimize();
+            }}
+            accessibilityLabel="Minimize workout"
+            style={styles.minBtn}
           >
-            {/* Header */}
-            <div 
-              onClick={() => setExpandedExerciseIndex(null)}
-              className="p-4 flex items-center gap-3 cursor-pointer hover:bg-surface-light/30 transition-colors group"
-            >
-              {ex.gifUrl ? (
-                <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-surface-light" loading="lazy" />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center ring-2 ring-surface-light">
-                  <Dumbbell size={20} className="text-textMuted" />
-                </div>
-              )}
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-text capitalize leading-tight group-hover:text-primary transition-colors">{ex.name}</h3>
-                  
-                </div>
-                {prevPerformance ? (
-                  <p className="text-xs font-semibold text-textMuted mt-0.5 flex flex-wrap gap-x-2 gap-y-1 items-center">
-                    <span className="text-primary font-bold">PR: {prevPerformance.allTimePR} {unit}</span>
-                    <span className="text-textMuted/50">|</span>
-                    <span className="text-text">Last: {prevPerformance.lastSessionHeaviest} {unit}</span>
-                    <span className="text-textMuted/50">|</span>
-                    <span className="text-textMuted">Est 1RM: {prevPerformance.allTime1RM} {unit}</span>
-                  </p>
-                ) : (
-                  <p className="text-xs font-semibold text-textMuted mt-0.5 capitalize">{ex.muscleGroup}</p>
-                )}
-                </div>
-                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                  {idx > 0 && (
-                    <button onClick={() => reorderActiveExercise(idx, 'up')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                      <ArrowUp size={16} />
-                    </button>
-                  )}
-                  {idx < activeWorkout.exercises.length - 1 && (
-                    <button onClick={() => reorderActiveExercise(idx, 'down')} className="p-1.5 text-textMuted hover:text-text transition-colors">
-                      <ArrowDown size={16} />
-                    </button>
-                  )}
-                  <button 
-                      onClick={(e) => { e.stopPropagation(); removeActiveExercise(idx); }}
-                      className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
-                      title="Remove Exercise"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    <button className="p-1.5 text-textMuted transition-colors ml-1" style={{ pointerEvents: 'none' }}>
-                      <ChevronUp size={18} />
-                    </button>
-                </div>
-              </div>
-            
-            <div className="px-2 pb-4">
-              {/* Sets Table Header */}
-              <div className="flex items-center px-4 py-2 text-xs font-bold text-textMuted uppercase tracking-wider mb-1">
-                <div className="w-12 text-center">Set</div>
-                <div className="flex-1 text-center">kg/lbs</div>
-                <div className="flex-1 text-center">Reps</div>
-                <div className="w-16 text-center"><Check size={16} className="mx-auto" /></div>
-              </div>
+            <ChevronDown size={22} color={colors.text} />
+          </Pressable>
+        ) : null}
+      </View>
 
-              {/* Sets */}
+      <View
+        style={{ flex: 1, position: 'relative' }}
+        onLayout={(e) => {
+          const next = Math.round(e.nativeEvent.layout.height);
+          if (next > 0 && next !== hostH) setHostH(next);
+        }}
+      >
+      <ScrollView
+        style={{ flex: 1 }}
+        scrollEnabled={listScroll && !activeInput}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+      >
+        {exercises.length === 0 && (
+          <View style={styles.restCard}>
+            <Moon size={28} color={colors.textMuted} style={{ marginBottom: 6 }} />
+            <Text style={styles.restTitle}>Rest day</Text>
+            <Text style={styles.restSub}>
+              No lifts in this routine. Tap Log rest to mark it on the calendar, or add an exercise if you train after all.
+            </Text>
+          </View>
+        )}
+
+        <DragSortList
+          onReorder={(from, to) => {
+            reorderActiveExercise(from, to);
+            setExpandedExerciseIndex((cur) => remapIndex(cur, from, to));
+          }}
+          onDraggingChange={(on) => {
+            setListScroll(!on);
+            if (on) setActiveInput(null);
+          }}
+        >
+        {exercises.map((ex, idx) => {
+          const prevPerformance = getPreviousPerformance(ex.id, workoutHistory, unit);
+          const isExpanded = idx === expandedExerciseIndex;
+          const completedSetsCount = ex.sets.filter((s) => s.completedAt).length;
+
+          const header = (
+            <View style={styles.exHeader}>
+              <DragHandle style={styles.dragHandle}>
+                <GripVertical size={16} color={colors.textSubtle} />
+                <Pressable
+                  onPress={() => setExpandedExerciseIndex(isExpanded ? null : idx)}
+                  style={styles.dragTap}
+                  accessibilityLabel={isExpanded ? 'Collapse exercise' : 'Expand exercise'}
+                >
+                  <Thumb uri={ex.gifUrl} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.exName} numberOfLines={1}>
+                      {ex.name}
+                    </Text>
+                    {isExpanded ? (
+                      prevPerformance ? (
+                        <Text style={styles.exMeta}>
+                          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>
+                            PR: {prevPerformance.allTimePR} {unit}
+                          </Text>
+                          {'  |  '}Last: {prevPerformance.lastSessionHeaviest} {unit}
+                          {'  |  '}Est 1RM: {prevPerformance.allTime1RM} {unit}
+                        </Text>
+                      ) : (
+                        <Text style={styles.exMeta}>{titleCase(ex.muscleGroup)}</Text>
+                      )
+                    ) : (
+                      <Text style={styles.exMeta}>
+                        {completedSetsCount}
+                        {' / '}
+                        {ex.sets.length} Sets Completed
+                      </Text>
+                    )}
+                  </View>
+                  {isExpanded ? (
+                    <ChevronUp size={18} color={colors.textMuted} />
+                  ) : (
+                    <ChevronDown size={18} color={colors.textMuted} />
+                  )}
+                </Pressable>
+              </DragHandle>
+              <Pressable
+                onPress={() => removeActiveExercise(idx)}
+                style={styles.iconHit}
+                accessibilityLabel="Remove exercise"
+              >
+                <Trash2 size={16} color={colors.danger} />
+              </Pressable>
+            </View>
+          );
+
+          if (!isExpanded) {
+            return (
+              <DragSortItem key={`${ex.id}-${idx}`} index={idx}>
+                <View style={styles.card}>{header}</View>
+              </DragSortItem>
+            );
+          }
+
+          return (
+            <DragSortItem key={`${ex.id}-${idx}`} index={idx}>
+            <View style={[styles.card, styles.cardExpanded]}>
+              {header}
+
+              <View style={styles.setHead}>
+                <Text style={[styles.setHeadText, { width: 36, textAlign: 'center' }]}>Set</Text>
+                <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>{unit}</Text>
+                <Text style={[styles.setHeadText, { flex: 1, textAlign: 'center' }]}>Reps</Text>
+                <View style={{ width: 88, alignItems: 'center' }}>
+                  <Check size={16} color={colors.textMuted} />
+                </View>
+              </View>
+
               {ex.sets.map((set, sIdx) => {
                 if (set.completedAt) {
                   return (
-                    <div key={sIdx} className="flex items-center px-4 py-1.5 mb-1 bg-accent/10 rounded-lg group">
-                      <div className="w-12 text-center font-bold text-sm text-textMuted">{sIdx + 1}</div>
-                      <div className="flex-1 text-center font-mono font-bold text-text bg-transparent">{set.weight}</div>
-                      <div className="flex-1 text-center font-mono font-bold text-text bg-transparent">{set.reps}</div>
-                      <div className="w-16 flex justify-center items-center gap-1">
-                        <button 
-                          onClick={() => uncompleteSet(idx, sIdx)}
-                          className="w-6 h-6 rounded flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                          title="Undo Set"
-                        >
-                          <X size={14} />
-                        </button>
-                        <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-background shadow-sm">
-                          <Check size={18} strokeWidth={3} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div key={sIdx} className="flex items-center px-4 py-2 mt-1 bg-surface-light/30 rounded-lg">
-                      <div className="w-12 text-center font-bold text-sm text-textMuted">{sIdx + 1}</div>
-                      <div className="flex-1 px-1">
-                        <div 
-    onClick={() => setActiveInput({ eIdx: idx, sIdx: sIdx, field: 'weight' })}
-    className={`flex items-center justify-center w-full bg-surface-light rounded-lg border transition-colors h-10 cursor-pointer ${activeInput?.eIdx === idx && activeInput?.sIdx === sIdx && activeInput?.field === 'weight' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border text-text'}`}
-  >
-    <span className="font-mono font-bold text-base">{set.weight || <span className="text-textMuted/50">-</span>}</span>
-  </div>
-                      </div>
-                      <div className="flex-1 px-1">
-                        <div 
-    onClick={() => setActiveInput({ eIdx: idx, sIdx: sIdx, field: 'reps' })}
-    className={`flex items-center justify-center w-full bg-surface-light rounded-lg border transition-colors h-10 cursor-pointer ${activeInput?.eIdx === idx && activeInput?.sIdx === sIdx && activeInput?.field === 'reps' ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/10' : 'border-border text-text'}`}
-  >
-    <span className="font-mono font-bold text-base">{set.reps || <span className="text-textMuted/50">-</span>}</span>
-  </div>
-                      </div>
-                      <div className="w-16 flex justify-center items-center gap-1">
-                          {playingSet && playingSet.exerciseIndex === idx && playingSet.setIndex === sIdx ? (
-                            <>
-                              <button 
-                                onClick={() => removeSet(idx, sIdx)}
-                                className="w-6 h-6 rounded flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                                title="Remove Set"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                              <button 
-                                onClick={() => { if (set.reps) completeSet(idx, sIdx); }}
-                                className={`w-8 h-8 rounded flex items-center justify-center transition-colors shadow-sm ${set.reps ? 'bg-emerald-500/20 hover:bg-emerald-500 hover:text-white text-emerald-500' : 'bg-surface text-textMuted/30 cursor-not-allowed'}`}
-                                title="Finish Set"
-                              >
-                                <Check size={18} strokeWidth={3} />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button 
-                                onClick={() => removeSet(idx, sIdx)}
-                                className="w-6 h-6 rounded flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                                title="Remove Set"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                              <button 
-                                onClick={() => startSet(idx, sIdx)}
-                                className="w-8 h-8 rounded bg-primary/20 hover:bg-primary hover:text-white flex items-center justify-center text-primary transition-colors"
-                                title="Start Set"
-                              >
-                                <Play size={16} strokeWidth={3} className="ml-0.5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                    </div>
+                    <View key={sIdx} style={[styles.setRow, { backgroundColor: colors.accentSoftFill || colors.surface2 }]}>
+                      <Text style={styles.setIdx}>{sIdx + 1}</Text>
+                      <Text style={styles.setVal}>{String(set.weight)}</Text>
+                      <Text style={styles.setVal}>{String(set.reps)}</Text>
+                      <View style={styles.setActions}>
+                        <Pressable onPress={() => uncompleteSet(idx, sIdx)} style={styles.iconHit}>
+                          <X size={14} color={colors.danger} />
+                        </Pressable>
+                        <View style={styles.doneMark}>
+                          <Check size={18} color={colors.background} strokeWidth={3} />
+                        </View>
+                      </View>
+                    </View>
                   );
                 }
+                const isPlaying = playingSet && playingSet.exerciseIndex === idx && playingSet.setIndex === sIdx;
+                const wActive = activeInput?.eIdx === idx && activeInput?.sIdx === sIdx && activeInput?.field === 'weight';
+                const rActive = activeInput?.eIdx === idx && activeInput?.sIdx === sIdx && activeInput?.field === 'reps';
+                return (
+                  <View key={sIdx} style={styles.setRow}>
+                    <Text style={styles.setIdx}>{sIdx + 1}</Text>
+                    <Pressable
+                      onPress={() => setActiveInput({ eIdx: idx, sIdx, field: 'weight' })}
+                      style={[styles.cell, wActive && styles.cellActive]}
+                    >
+                      <Text style={[styles.cellText, !set.weight && { color: colors.textSubtle }]}>
+                        {set.weight || '-'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setActiveInput({ eIdx: idx, sIdx, field: 'reps' })}
+                      style={[styles.cell, rActive && styles.cellActive]}
+                    >
+                      <Text style={[styles.cellText, !set.reps && { color: colors.textSubtle }]}>
+                        {set.reps || '-'}
+                      </Text>
+                    </Pressable>
+                    <View style={styles.setActions}>
+                      <Pressable onPress={() => removeSet(idx, sIdx)} style={styles.iconHit}>
+                        <Trash2 size={14} color={colors.danger} />
+                      </Pressable>
+                      {isPlaying ? (
+                        <Pressable
+                          onPress={() => markSetComplete(idx, sIdx)}
+                          accessibilityLabel="Complete set"
+                          style={[styles.playBtn, set.reps ? styles.playReady : styles.playDisabled]}
+                        >
+                          <Check size={18} color={set.reps ? colors.accent : colors.textSubtle} strokeWidth={3} />
+                        </Pressable>
+                      ) : (
+                        <Pressable onPress={() => startSet(idx, sIdx)} style={styles.playBtn} accessibilityLabel="Start set">
+                          <Play size={16} color={colors.text} strokeWidth={3} />
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                );
               })}
 
-              <div className="px-4 mt-4 mb-2 flex gap-2">
-                <button 
-                  onClick={() => addSetToExercise(idx)}
-                  className="flex-1 py-3 text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 backdrop-blur-md rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(59,130,246,0.1)]"
-                >
-                  <Plus size={16} /> New Set
-                </button>
-                {idx < activeWorkout.exercises.length - 1 && (
-                  <button 
-                    onClick={() => {
-                      setExpandedExerciseIndex(idx + 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="flex-1 py-3 text-sm font-bold text-primary bg-primary/10 border border-primary/30 hover:bg-primary/20 hover:border-primary/50 backdrop-blur-md rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+              <View style={styles.addRow}>
+                <Pressable onPress={() => addSetToExercise(idx)} style={styles.addSetBtn}>
+                  <Plus size={16} color={colors.text} />
+                  <Text style={styles.addSetText}>New Set</Text>
+                </Pressable>
+                {idx < exercises.length - 1 && (
+                  <Pressable
+                    onPress={() => setExpandedExerciseIndex(idx + 1)}
+                    style={styles.addSetBtn}
                   >
-                    Next Exercise
-                  </button>
+                    <Text style={styles.addSetText}>Next Exercise</Text>
+                  </Pressable>
                 )}
-              </div>
-            </div>
-          </motion.div>
-        );
-      })}
+              </View>
+            </View>
+            </DragSortItem>
+          );
+        })}
+        </DragSortList>
 
-      {/* Add Exercise Area */}
-        {!isSearching ? (
-          <motion.button 
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsSearching(true)}
-            className="w-full py-4 mt-2 rounded-xl flex items-center justify-center gap-2 font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 backdrop-blur-md transition-all shadow-[0_0_12px_rgba(59,130,246,0.1)]"
-          >
-            <Plus size={20} /> Add Exercise
-          </motion.button>
-        ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed inset-0 z-40 bg-background flex flex-col pb-24 sm:pb-6"
-        >
-          <div className="p-4 pt-safe shrink-0 border-b border-border/50 bg-surface/50 backdrop-blur-xl flex gap-3 items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={20} />
-              <input 
-                autoFocus
-                type="text" 
-                value={searchQuery}
-                onChange={handleSearch}
-                placeholder="Search exercise..."
-                className="w-full bg-surface-light border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text font-bold focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <button 
-              onClick={() => setIsSearching(false)}
-              className="p-3.5 text-textMuted hover:text-text rounded-2xl bg-surface-light border border-border/50 min-w-touch min-h-touch flex items-center justify-center shrink-0"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative">
-            {/* Scrollable Container strictly maxed to ~5 items */}
-            {searchResults.length > 0 && (
-              <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
-                {searchResults.map(ex => (
-                  <button 
-                    key={ex.id}
-                    onClick={() => handleAddExercise(ex)}
-                    className="w-full flex items-center justify-between gap-4 p-4 bg-surface-light/40 hover:bg-surface-light rounded-3xl transition-all text-left min-h-touch group shrink-0 border border-border/10"
-                  >
-                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm overflow-hidden">
-                        {ex.gifUrl ? (
-                          <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover mix-blend-screen opacity-90" loading="lazy" style={{ filter: 'grayscale(100%) contrast(1.2)' }} />
-                        ) : (
-                          <Dumbbell size={24} className="text-primary opacity-80" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-text font-bold text-base leading-snug truncate">{ex.name}</h4>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Dumbbell size={12} className="text-textMuted" />
-                          <span className="text-xs font-semibold text-textMuted truncate">Dumbbell</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="shrink-0 flex items-center gap-3">
-                      <span className="px-2.5 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-black uppercase tracking-widest">{ex.muscleGroup}</span>
-                      <ChevronDown size={16} className="text-textMuted -rotate-90 opacity-50" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {searchResults.length === 0 && searchQuery.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 opacity-50">
-                <Search size={48} className="text-textMuted mb-4" />
-                <p className="text-text font-bold">Search for an exercise</p>
-                <p className="text-textMuted text-sm mt-1">Type at least 1 character</p>
-              </div>
-            )}
-
-            {/* Add Custom Exercise strictly below the list */}
-            {searchQuery.length > 0 && (
-              <div className="shrink-0 bg-surface-light p-4 rounded-2xl border border-border/50">
-                <div className="flex items-center gap-3 w-full">
-                  <select
-                    value={newMuscleGroup}
-                    onChange={(e) => setNewMuscleGroup(e.target.value)}
-                    className="w-1/3 bg-background border border-border/50 rounded-xl px-3 py-3.5 text-sm text-text font-bold focus:outline-none focus:border-primary capitalize min-h-touch"
-                  >
-                    {muscleGroups.map(mg => (
-                      <option key={mg} value={mg}>{mg}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleCreateCustom}
-                    disabled={isCreatingCustom || searchQuery.trim().length < 1}
-                    className="flex-1 bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-touch shadow-lg shadow-primary/20"
-                  >
-                    {isCreatingCustom ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={18} className="shrink-0" />}
-                    <span className="truncate">Add Custom Exercise</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
-
-      
-      <CustomNumpad 
-        activeInput={activeInput ? {
-          field: activeInput.field,
-          onChangeField: (field) => setActiveInput(prev => ({ ...prev, field })),
-          onNext: () => {
-            const ex = activeWorkout.exercises[activeInput.eIdx];
-            if (activeInput.field === 'weight') {
-              setActiveInput(prev => ({ ...prev, field: 'reps' }));
-            } else if (activeInput.sIdx < ex.sets.length - 1) {
-              setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
-            } else if (activeInput.eIdx < activeWorkout.exercises.length - 1) {
-              setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
-              setExpandedExerciseIndex(activeInput.eIdx + 1);
-            } else {
-              setActiveInput(null);
-            }
-          }
-        } : null}
-        value={activeInput ? activeWorkout.exercises[activeInput.eIdx].sets[activeInput.sIdx][activeInput.field] : ''}
+        <Pressable onPress={() => setIsSearching(true)} style={styles.addExBtn}>
+          <Plus size={20} color={colors.text} />
+          <Text style={styles.addExText}>Add Exercise</Text>
+        </Pressable>
+      </ScrollView>
+      <CustomNumpad
+        activeInput={
+          activeInput
+            ? {
+                field: activeInput.field,
+                targetId: `${activeInput.eIdx}-${activeInput.sIdx}-${activeInput.field}`,
+                onChangeField: (field) => setActiveInput((prev) => ({ ...prev, field })),
+                onNext: () => {
+                  const ex = exercises[activeInput.eIdx];
+                  if (activeInput.field === 'weight') {
+                    setActiveInput((prev) => ({ ...prev, field: 'reps' }));
+                  } else if (activeInput.sIdx < (ex?.sets?.length || 0) - 1) {
+                    setActiveInput({ eIdx: activeInput.eIdx, sIdx: activeInput.sIdx + 1, field: 'weight' });
+                  } else if (activeInput.eIdx < exercises.length - 1) {
+                    setActiveInput({ eIdx: activeInput.eIdx + 1, sIdx: 0, field: 'weight' });
+                    setExpandedExerciseIndex(activeInput.eIdx + 1);
+                  } else {
+                    setActiveInput(null);
+                  }
+                },
+              }
+            : null
+        }
+        preview={
+          activeInput
+            ? {
+                title: exercises[activeInput.eIdx]?.name,
+                meta: titleCase(exercises[activeInput.eIdx]?.muscleGroup),
+                sets: exercises[activeInput.eIdx]?.sets || [],
+                setIndex: activeInput.sIdx,
+                unit,
+                onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
+              }
+            : null
+        }
+        value={activeInput ? exercises[activeInput.eIdx]?.sets?.[activeInput.sIdx]?.[activeInput.field] : ''}
         onUpdate={(val) => {
-          if (activeInput) {
-            updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
-          }
+          if (activeInput) updateSet(activeInput.eIdx, activeInput.sIdx, activeInput.field, val);
         }}
         onClose={() => setActiveInput(null)}
+        hostHeight={hostH}
       />
-    </div>
+      </View>
+
+      <PrCelebration pr={prEvent} onClose={() => setPrEvent(null)} />
+
+      <Modal visible={isSearching} animationType="slide" onRequestClose={() => setIsSearching(false)}>
+        <View style={[styles.searchRoot, { paddingTop: insets.top }]}>
+          <View style={styles.searchBar}>
+            <View style={styles.searchInputWrap}>
+              <Search size={20} color={colors.textMuted} style={{ marginLeft: 14 }} />
+              <TextInput
+                autoFocus
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search exercise..."
+                placeholderTextColor={colors.textMuted}
+                style={styles.searchInput}
+              />
+            </View>
+            <Pressable onPress={() => setIsSearching(false)} style={styles.searchClose}>
+              <X size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+          >
+            {searchResults.map((ex) => (
+              <Pressable key={ex.id} onPress={() => handleAddExercise(ex)} style={styles.searchItem}>
+                <View style={styles.searchThumb}>
+                  {ex.gifUrl ? (
+                    <Image source={{ uri: ex.gifUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  ) : (
+                    <Dumbbell size={24} color={colors.textMuted} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.searchName} numberOfLines={1}>
+                    {ex.name}
+                  </Text>
+                  <Text style={styles.searchMeta}>{titleCase(ex.muscleGroup) || 'Exercise'}</Text>
+                </View>
+                <MuscleTag group={ex.muscleGroup} />
+              </Pressable>
+            ))}
+            {searchResults.length === 0 && searchQuery.length === 0 && (
+              <View style={styles.emptySearch}>
+                <Search size={48} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>Search for an exercise</Text>
+                <Text style={styles.emptySub}>Type at least 1 character</Text>
+              </View>
+            )}
+            {searchQuery.length > 0 && (
+              <View style={styles.customBox}>
+                <Select
+                  value={newMuscleGroup}
+                  onChange={setNewMuscleGroup}
+                  options={muscleGroups.map((mg) => ({ value: mg, label: mg }))}
+                  style={{ width: 120 }}
+                />
+                <Pressable
+                  onPress={handleCreateCustom}
+                  disabled={isCreatingCustom || searchQuery.trim().length < 1}
+                  style={[styles.customAdd, (isCreatingCustom || searchQuery.trim().length < 1) && { opacity: 0.5 }]}
+                >
+                  {isCreatingCustom ? (
+                    <ActivityIndicator color={colors.accentFg} />
+                  ) : (
+                    <>
+                      <Plus size={18} color={colors.accentFg} />
+                      <Text style={styles.customAddText}>Add Custom Exercise</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
+function makeStyles(colors) {
+  return StyleSheet.create({
+  timerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  minBtn: {
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  timerLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  timerValue: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
+  skipRest: {
+    marginLeft: 8,
+    minHeight: 32,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  skipRestText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12 },
+  restCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  restTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 18 },
+  restSub: { color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13, textAlign: 'center', marginTop: 4 },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
+  },
+  cardExpanded: { borderColor: colors.accent },
+  thumb: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface2 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceLight },
+  exName: { color: colors.text, fontFamily: fonts.bold, fontSize: 16, textTransform: 'capitalize' },
+  exMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 2 },
+  exHeader: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 4 },
+  dragHandle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: HIT },
+  dragTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: HIT },
+  rowBtns: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  iconHit: { padding: 10, minWidth: HIT, minHeight: HIT, alignItems: 'center', justifyContent: 'center' },
+  setHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8 },
+  setHeadText: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.bold, textTransform: 'uppercase' },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 4,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface2,
+  },
+  setIdx: { width: 36, textAlign: 'center', color: colors.textMuted, fontFamily: fonts.bold, fontSize: 13 },
+  setVal: { flex: 1, textAlign: 'center', color: colors.text, fontFamily: fonts.monoBold, fontSize: 15 },
+  cell: {
+    flex: 1,
+    marginHorizontal: 4,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellActive: { borderColor: colors.accent, backgroundColor: colors.surfaceLight },
+  cellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
+  setActions: { width: 88, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  doneMark: {
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playBtn: {
+    width: HIT,
+    height: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playReady: { borderColor: colors.accent },
+  playDisabled: { backgroundColor: colors.surface },
+  addRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 8, marginTop: 12, marginBottom: 4 },
+  addSetBtn: {
+    flex: 1,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  addSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
+  addExBtn: {
+    marginTop: 8,
+    minHeight: HIT,
+    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addExText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
+  searchRoot: { flex: 1, backgroundColor: colors.background },
+  searchBar: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
+  },
+  searchInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceLight,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    color: colors.text,
+    fontFamily: fonts.bold,
+    fontSize: 16,
+  },
+  searchClose: {
+    width: HIT,
+    height: HIT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceLight,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    backgroundColor: colors.surface2,
+    borderRadius: radius.sm,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface3,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchName: { color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
+  searchMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontFamily: fonts.semibold },
+  mgBadge: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mgBadgeText: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fonts.black,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  emptySearch: { alignItems: 'center', paddingVertical: 48, opacity: 0.6 },
+  emptyTitle: { color: colors.text, fontFamily: fonts.bold, marginTop: 12 },
+  emptySub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
+  customBox: {
+    marginTop: 8,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: radius.sm,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  customAdd: {
+    flex: 1,
+    backgroundColor: colors.accent,
+    borderRadius: radius.sm,
+    paddingVertical: 14,
+    minHeight: HIT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  customAddText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 15 },
+});
+}

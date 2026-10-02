@@ -1,102 +1,590 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Delete, ArrowRight } from 'lucide-react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard, ScrollView, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { BlurView } from 'expo-blur';
+import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
+import { fonts, radius } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
+import { haptic } from '../../haptics';
 
-export default function CustomNumpad({ activeInput, onClose, onUpdate, value }) {
-  if (!activeInput) return null;
+const SHEET_H = 380;
 
-  const handleKeyPress = (key) => {
-    let currentVal = String(value || '');
-    if (key === 'delete') {
-      onUpdate(currentVal.slice(0, -1));
-    } else if (key === '.') {
-      if (!currentVal.includes('.')) {
-        onUpdate(currentVal + (currentVal.length === 0 ? '0.' : '.'));
+function NumpadKey({ label, onPress, style, children, flex, accessibilityLabel, colors, styles }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      delayPressIn={0}
+      android_disableSound
+      accessibilityLabel={accessibilityLabel || label}
+      style={({ pressed }) => [styles.key, flex && { flex }, style, pressed && styles.keyPressed]}
+    >
+      {children || <Text style={styles.keyText}>{label}</Text>}
+    </Pressable>
+  );
+}
+
+function PreviewCard({ preview, field, value, colors, styles }) {
+  if (!preview) return null;
+  const sets = preview.sets || [];
+  const unit = preview.unit || 'lbs';
+  const activeIdx = preview.setIndex ?? 0;
+  const readout = value === '' || value == null ? '—' : String(value);
+  const readoutUnit = field === 'reps' ? 'reps' : unit;
+  return (
+    <View style={styles.previewCard}>
+      <View style={styles.previewHead}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.previewTitle} numberOfLines={1}>
+            {preview.title || 'Exercise'}
+          </Text>
+          {preview.meta ? <Text style={styles.previewMeta}>{preview.meta}</Text> : null}
+        </View>
+        <View style={styles.readoutWrap}>
+          <Text style={styles.readout} numberOfLines={1}>
+            {readout}
+          </Text>
+          <Text style={styles.readoutUnit}>{readoutUnit}</Text>
+        </View>
+      </View>
+      <View style={styles.previewCols}>
+        <Text style={[styles.previewCol, { width: 36 }]}>Set</Text>
+        <Text style={[styles.previewCol, { flex: 1 }]}>{unit}</Text>
+        <Text style={[styles.previewCol, { flex: 1 }]}>Reps</Text>
+      </View>
+      <ScrollView
+        style={styles.previewSets}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
+      {sets.map((set, i) => {
+        const wOn = i === activeIdx && field === 'weight';
+        const rOn = i === activeIdx && field === 'reps';
+        return (
+          <View key={i} style={[styles.previewRow, i === activeIdx && styles.previewRowOn]}>
+            <Text style={styles.previewIdx}>{i + 1}</Text>
+            <Pressable
+              onPress={() => preview.onSelectCell?.(i, 'weight')}
+              style={[styles.previewCell, wOn && styles.previewCellOn]}
+              accessibilityLabel={`Set ${i + 1} weight`}
+            >
+              <Text style={[styles.previewCellText, wOn && styles.previewCellTextOn]}>
+                {set.weight === '' || set.weight == null ? '—' : String(set.weight)}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => preview.onSelectCell?.(i, 'reps')}
+              style={[styles.previewCell, rOn && styles.previewCellOn]}
+              accessibilityLabel={`Set ${i + 1} reps`}
+            >
+              <Text style={[styles.previewCellText, rOn && styles.previewCellTextOn]}>
+                {set.reps === '' || set.reps == null ? '—' : String(set.reps)}
+              </Text>
+            </Pressable>
+          </View>
+        );
+      })}
+      </ScrollView>
+    </View>
+  );
+}
+
+export default function CustomNumpad({ activeInput, onClose, onUpdate, value, preview, hostHeight = 0 }) {
+  const insets = useSafeAreaInsets();
+  const { colors, isDark, setTabBarHidden } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const freshRef = useRef(true);
+  const targetRef = useRef(null);
+  const draftRef = useRef(String(value ?? ''));
+  const slide = useRef(new Animated.Value(SHEET_H)).current;
+  const originY = useRef(0);
+  const tracking = useRef(false);
+  const closing = useRef(false);
+  const lastInput = useRef(activeInput);
+  const lastPreview = useRef(preview);
+  const lastValue = useRef(value);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+  const [mounted, setMounted] = useState(!!activeInput);
+  const nativeDriver = Platform.OS !== 'web';
+  const keypadOpen = !!activeInput;
+
+  if (activeInput) lastInput.current = activeInput;
+  if (preview) lastPreview.current = preview;
+  if (value !== undefined) lastValue.current = value;
+  const input = activeInput || lastInput.current;
+  const shownPreview = preview || lastPreview.current;
+  const shownValue = activeInput ? value : lastValue.current;
+  const targetId = input ? input.targetId || input.field : null;
+
+  if (targetRef.current !== targetId) {
+    targetRef.current = targetId;
+    freshRef.current = true;
+    draftRef.current = String(value ?? '');
+  }
+
+  const animateIn = useCallback(() => {
+    closing.current = false;
+    Animated.spring(slide, {
+      toValue: 0,
+      useNativeDriver: nativeDriver,
+      damping: 24,
+      stiffness: 260,
+      mass: 0.85,
+    }).start();
+  }, [nativeDriver, slide]);
+
+  const animateOut = useCallback(
+    (then) => {
+      if (closing.current) return;
+      closing.current = true;
+      Animated.timing(slide, {
+        toValue: SHEET_H + 80,
+        duration: 280,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: nativeDriver,
+      }).start(() => {
+        closing.current = false;
+        setMounted(false);
+        then?.();
+      });
+    },
+    [nativeDriver, slide]
+  );
+
+  const close = useCallback(() => {
+    haptic('selection');
+    animateOut(() => onClose?.());
+  }, [animateOut, onClose]);
+
+  const settle = useCallback(
+    (dy, vy = 0) => {
+      tracking.current = false;
+      if (dy > 48 || vy > 700) {
+        close();
+        return;
       }
-    } else if (key === '+' || key === '-') {
-      let num = parseFloat(currentVal) || 0;
-      const step = activeInput.field === 'weight' ? 2.5 : 1;
-      if (key === '+') num += step;
-      if (key === '-') num = Math.max(0, num - step);
-      // clean up decimals
-      onUpdate(String(Math.round(num * 100) / 100));
-    } else {
-      if (currentVal === '0' && key !== '.') {
-        onUpdate(key);
-      } else {
-        onUpdate(currentVal + key);
+      Animated.spring(slide, {
+        toValue: 0,
+        useNativeDriver: nativeDriver,
+        damping: 24,
+        stiffness: 320,
+        mass: 0.7,
+      }).start();
+    },
+    [close, nativeDriver, slide]
+  );
+
+  const settleRef = useRef(settle);
+  settleRef.current = settle;
+
+  useLayoutEffect(() => {
+    if (keypadOpen) setMounted(true);
+    setTabBarHidden(keypadOpen || mounted);
+  }, [keypadOpen, mounted, setTabBarHidden]);
+
+  useEffect(() => () => setTabBarHidden(false), [setTabBarHidden]);
+
+  useEffect(() => {
+    if (keypadOpen) {
+      Keyboard.dismiss();
+      if (closing.current) {
+        closing.current = false;
+        animateIn();
+        return;
       }
+      if (!mounted) {
+        slide.setValue(SHEET_H);
+        setMounted(true);
+      }
+    } else if (mounted && !closing.current) {
+      animateOut();
     }
-  };
+  }, [keypadOpen, mounted, animateIn, animateOut, slide]);
 
-  const tabs = [
-    { id: 'weight', label: 'Weight' },
-    { id: 'reps', label: 'Reps' }
-  ];
+  useEffect(() => {
+    if (mounted && keypadOpen) animateIn();
+  }, [mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dragSheet = useCallback(
+    (dy) => {
+      slide.setValue(Math.max(0, dy));
+    },
+    [slide]
+  );
+
+  useEffect(() => {
+    if (!mounted || typeof document === 'undefined') return undefined;
+    const onDown = (e) => {
+      const sheet = document.getElementById('keypad-sheet');
+      if (!sheet) return;
+      const r = sheet.getBoundingClientRect();
+      if (e.clientY < r.top - 8 || e.clientY > r.bottom + 8) return;
+      tracking.current = true;
+      originY.current = e.clientY;
+      slide.stopAnimation();
+    };
+    const onMove = (e) => {
+      if (!tracking.current) return;
+      e.preventDefault?.();
+      dragSheet(e.clientY - originY.current);
+    };
+    const onUp = (e) => {
+      if (!tracking.current) return;
+      const dy = Math.max(0, (e.clientY ?? originY.current) - originY.current);
+      settleRef.current(dy, 0);
+    };
+    const opts = { capture: true, passive: false };
+    document.addEventListener('pointerdown', onDown, opts);
+    document.addEventListener('pointermove', onMove, opts);
+    document.addEventListener('pointerup', onUp, opts);
+    document.addEventListener('pointercancel', onUp, opts);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, opts);
+      document.removeEventListener('pointermove', onMove, opts);
+      document.removeEventListener('pointerup', onUp, opts);
+      document.removeEventListener('pointercancel', onUp, opts);
+    };
+  }, [mounted, slide, dragSheet]);
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetY(12)
+        .failOffsetX([-40, 40])
+        .onUpdate((e) => {
+          dragSheet(e.translationY);
+        })
+        .onEnd((e) => {
+          settle(e.translationY, e.velocityY);
+        }),
+    [settle, dragSheet]
+  );
+
+  const commit = useCallback((next) => {
+    draftRef.current = next;
+    onUpdateRef.current?.(next);
+  }, []);
+
+  const handleKeyPress = useCallback(
+    (key) => {
+      const field = lastInput.current?.field;
+      let currentVal = draftRef.current;
+      if (key === 'delete') {
+        freshRef.current = false;
+        haptic('selection');
+        commit(currentVal.slice(0, -1));
+        return;
+      }
+      if (key === '.') {
+        if (field === 'reps') return;
+        if (freshRef.current) {
+          freshRef.current = false;
+          commit('0.');
+          return;
+        }
+        if (!currentVal.includes('.')) commit(currentVal + (currentVal.length === 0 ? '0.' : '.'));
+        return;
+      }
+      if (key === '+' || key === '-') {
+        freshRef.current = false;
+        haptic('selection');
+        let num = parseFloat(currentVal) || 0;
+        const step = field === 'weight' ? 2.5 : 1;
+        if (key === '+') num += step;
+        if (key === '-') num = Math.max(0, num - step);
+        commit(String(Math.round(num * 100) / 100));
+        return;
+      }
+      if (freshRef.current) {
+        freshRef.current = false;
+        commit(key);
+        return;
+      }
+      if (currentVal === '0' && key !== '.') commit(key);
+      else commit(currentVal + key);
+    },
+    [commit]
+  );
+
+  if (!input) return null;
+  if (!keypadOpen && !mounted) return null;
+
+  const keyProps = { colors, styles };
+  const overlayH = hostHeight > 80 ? hostHeight : Math.round(Dimensions.get('window').height * 0.72);
+  const glassFill = isDark ? 'rgba(18,18,18,0.55)' : 'rgba(255,255,255,0.5)';
 
   return (
-    <AnimatePresence>
-      <motion.div
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
-        onDragEnd={(e, info) => {
-          if (info.offset.y > 50 || info.velocity.y > 200) {
-            onClose();
-          }
-        }}
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed bottom-0 left-0 right-0 z-[100] bg-[#1c1c1e] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-[calc(1rem+env(safe-area-inset-bottom))] pt-2 touch-none"
-      >
-        {/* Drag Handle */}
-        <div className="w-full flex justify-center pb-2 cursor-grab active:cursor-grabbing">
-          <div className="w-12 h-1.5 bg-white/20 rounded-full" />
-        </div>
-        <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/5 mb-2 relative">
-          <div className="flex-1 flex justify-center gap-4">
-            {tabs.map(tab => (
-              <div 
-                key={tab.id}
-                className={`text-base font-bold px-4 py-1 rounded-full cursor-pointer transition-colors flex items-center gap-2 ${activeInput.field === tab.id ? 'text-white' : 'text-gray-500'}`}
-                onClick={() => activeInput.onChangeField(tab.id)}
-              >
-                {tab.label} {activeInput.field === tab.id ? <div className="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center text-xs">✓</div> : <div className="w-5 h-5 rounded-full border border-gray-500" />}
-              </div>
-            ))}
-          </div>
-        </div>
+    <BlurView
+      intensity={isDark ? 48 : 62}
+      tint={isDark ? 'dark' : 'light'}
+      collapsable={false}
+      style={[styles.overlay, { height: overlayH, backgroundColor: glassFill }]}
+    >
+      <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Dismiss editor" />
+      <Animated.View style={[styles.stage, { transform: [{ translateY: slide }] }]}>
+        <View style={styles.previewWrap}>
+          <PreviewCard preview={shownPreview} field={input.field} value={shownValue} colors={colors} styles={styles} />
+        </View>
+        <GestureDetector gesture={pan}>
+          <View
+            nativeID="keypad-sheet"
+            collapsable={false}
+            style={[styles.sheet, { paddingBottom: 4 }]}
+          >
+            <View nativeID="keypad-handle" collapsable={false} style={styles.handleWrap}>
+              <View style={styles.handle} />
+            </View>
+            <View style={styles.tabs}>
+              {[
+                { id: 'weight', label: 'Weight' },
+                { id: 'reps', label: 'Reps' },
+              ].map((tab) => {
+                const active = input.field === tab.id;
+                return (
+                  <Pressable
+                    key={tab.id}
+                    delayPressIn={0}
+                    onPress={() => input.onChangeField?.(tab.id)}
+                    style={styles.tab}
+                  >
+                    <Text style={[styles.tabLabel, !active && { color: colors.textMuted }]}>{tab.label}</Text>
+                    {active ? (
+                      <View style={styles.checkOn}>
+                        <Text style={styles.checkOnText}>✓</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.checkOff} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
 
-        <div className="p-3 grid grid-cols-4 gap-1.5 bg-[#1c1c1e]">
-          {/* Row 1 */}
-          <button onClick={() => handleKeyPress('1')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">1</button>
-          <button onClick={() => handleKeyPress('2')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">2</button>
-          <button onClick={() => handleKeyPress('3')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">3</button>
-          <button onClick={onClose} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12"><ChevronDown size={24} /></button>
-
-          {/* Row 2 */}
-          <button onClick={() => handleKeyPress('4')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">4</button>
-          <button onClick={() => handleKeyPress('5')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">5</button>
-          <button onClick={() => handleKeyPress('6')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">6</button>
-          <div className="flex rounded-xl overflow-hidden shadow-sm h-11 sm:h-12">
-            <button onClick={() => handleKeyPress('-')} className="flex-1 flex items-center justify-center font-mono text-xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white border-r border-[#1c1c1e]">-</button>
-            <button onClick={() => handleKeyPress('+')} className="flex-1 flex items-center justify-center font-mono text-xl font-normal transition-colors active:scale-95 bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white">+</button>
-          </div>
-
-          {/* Row 3 */}
-          <button onClick={() => handleKeyPress('7')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">7</button>
-          <button onClick={() => handleKeyPress('8')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">8</button>
-          <button onClick={() => handleKeyPress('9')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">9</button>
-          <button onClick={() => activeInput.onNext()} className="row-span-2 h-full flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-white hover:bg-gray-200 text-black"><ArrowRight size={24} strokeWidth={3} /></button>
-
-          {/* Row 4 */}
-          <button onClick={() => handleKeyPress('.')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">.</button>
-          <button onClick={() => handleKeyPress('0')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12">0</button>
-          <button onClick={() => handleKeyPress('delete')} className="flex items-center justify-center rounded-xl font-mono text-xl font-normal transition-colors active:scale-95 shadow-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] text-white h-11 sm:h-12"><Delete size={24} /></button>
-        </div>
-      </motion.div>
-    </AnimatePresence>
+            <View style={styles.grid}>
+              <View style={styles.row}>
+                <NumpadKey label="1" onPress={() => handleKeyPress('1')} {...keyProps} />
+                <NumpadKey label="2" onPress={() => handleKeyPress('2')} {...keyProps} />
+                <NumpadKey label="3" onPress={() => handleKeyPress('3')} {...keyProps} />
+                <NumpadKey onPress={close} accessibilityLabel="Dismiss keypad" {...keyProps}>
+                  <ChevronDown size={22} color={colors.text} />
+                </NumpadKey>
+              </View>
+              <View style={styles.row}>
+                <NumpadKey label="4" onPress={() => handleKeyPress('4')} {...keyProps} />
+                <NumpadKey label="5" onPress={() => handleKeyPress('5')} {...keyProps} />
+                <NumpadKey label="6" onPress={() => handleKeyPress('6')} {...keyProps} />
+                <View style={styles.split}>
+                  <NumpadKey label="-" onPress={() => handleKeyPress('-')} flex={1} style={styles.splitKey} {...keyProps} />
+                  <NumpadKey label="+" onPress={() => handleKeyPress('+')} flex={1} style={styles.splitKey} {...keyProps} />
+                </View>
+              </View>
+              <View style={styles.rowBottom}>
+                <View style={{ flex: 3 }}>
+                  <View style={styles.row}>
+                    <NumpadKey label="7" onPress={() => handleKeyPress('7')} {...keyProps} />
+                    <NumpadKey label="8" onPress={() => handleKeyPress('8')} {...keyProps} />
+                    <NumpadKey label="9" onPress={() => handleKeyPress('9')} {...keyProps} />
+                  </View>
+                  <View style={[styles.row, { marginBottom: 0 }]}>
+                    <NumpadKey label="." onPress={() => handleKeyPress('.')} {...keyProps} />
+                    <NumpadKey label="0" onPress={() => handleKeyPress('0')} {...keyProps} />
+                    <NumpadKey onPress={() => handleKeyPress('delete')} {...keyProps}>
+                      <Delete size={22} color={colors.text} />
+                    </NumpadKey>
+                  </View>
+                </View>
+                <Pressable
+                  delayPressIn={0}
+                  onPress={() => input.onNext?.()}
+                  style={({ pressed }) => [styles.nextKey, pressed && styles.keyPressed]}
+                >
+                  <ArrowRight size={22} color={colors.accentFg} strokeWidth={2.4} />
+                </Pressable>
+              </View>
+            </View>
+            <View style={{ height: Math.max(insets.bottom, 16) }} />
+          </View>
+        </GestureDetector>
+      </Animated.View>
+    </BlurView>
   );
+}
+
+function makeStyles(colors) {
+  return StyleSheet.create({
+    overlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 80,
+      overflow: 'hidden',
+    },
+    stage: {
+      flex: 1,
+      minHeight: 0,
+    },
+    previewWrap: {
+      flex: 1,
+      minHeight: 0,
+      paddingHorizontal: 12,
+      paddingTop: 10,
+      paddingBottom: 8,
+    },
+    previewCard: {
+      flex: 1,
+      minHeight: 0,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: radius.md,
+      padding: 14,
+      gap: 8,
+    },
+    previewHead: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginBottom: 4 },
+    previewTitle: { color: colors.text, fontFamily: fonts.black, fontSize: 20, textTransform: 'capitalize' },
+    previewMeta: {
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 11,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginTop: 2,
+    },
+    readoutWrap: { alignItems: 'flex-end' },
+    readout: { color: colors.accent, fontFamily: fonts.monoBold, fontSize: 32, lineHeight: 36 },
+    readoutUnit: {
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 11,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    previewCols: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, marginTop: 4 },
+    previewSets: { flex: 1 },
+    previewCol: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontFamily: fonts.bold,
+      textTransform: 'uppercase',
+      textAlign: 'center',
+    },
+    previewRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: radius.sm,
+      paddingVertical: 2,
+      paddingHorizontal: 2,
+    },
+    previewRowOn: { backgroundColor: colors.accentSoftFill || colors.surface2 },
+    previewIdx: {
+      width: 36,
+      textAlign: 'center',
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 13,
+    },
+    previewCell: {
+      flex: 1,
+      marginHorizontal: 4,
+      minHeight: 44,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    previewCellOn: { borderColor: colors.accent, backgroundColor: colors.surface },
+    previewCellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
+    previewCellTextOn: { color: colors.accent },
+    sheet: {
+      zIndex: 200,
+      elevation: 24,
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      borderTopWidth: 1,
+      borderColor: colors.borderStrong,
+      paddingTop: 4,
+    },
+    handleWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 10,
+      paddingBottom: 12,
+      minHeight: 36,
+    },
+    handle: { width: 44, height: 5, borderRadius: 2, backgroundColor: colors.borderStrong },
+    tabs: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 16,
+      paddingBottom: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      marginBottom: 8,
+    },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      minHeight: 44,
+    },
+    tabLabel: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    checkOn: {
+      width: 18,
+      height: 18,
+      borderRadius: 4,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkOnText: { color: colors.accentFg, fontSize: 11, fontFamily: fonts.bold },
+    checkOff: {
+      width: 18,
+      height: 18,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    grid: { padding: 12, gap: 6 },
+    row: { flexDirection: 'row', gap: 6, marginBottom: 6 },
+    rowBottom: { flexDirection: 'row', gap: 6 },
+    key: {
+      flex: 1,
+      height: 52,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    keyPressed: { opacity: 0.85 },
+    keyText: { color: colors.text, fontSize: 22, fontFamily: fonts.medium, fontVariant: ['tabular-nums'] },
+    split: {
+      flex: 1,
+      flexDirection: 'row',
+      height: 52,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    splitKey: { borderRadius: 0, height: 52, borderWidth: 0 },
+    nextKey: {
+      flex: 1,
+      borderRadius: radius.sm,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });
 }

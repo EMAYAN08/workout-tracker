@@ -1,8 +1,32 @@
 import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { CheckCircle, Clock, Weight, Flame, X, Share2, Dumbbell, BatteryCharging, Coffee, Moon } from 'lucide-react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Alert,
+  Platform,
+  Share as RNShare,
+  ScrollView,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  CheckCircle,
+  Clock,
+  Weight,
+  Flame,
+  X,
+  Share2,
+  Dumbbell,
+  BatteryCharging,
+  Coffee,
+  Moon,
+} from 'lucide-react-native';
 import { convertWeight } from '../../utils/calculations';
-import { toPng } from 'html-to-image';
+import { fonts, radius, HIT } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
+import { MuscleTag } from '../ui/primitives';
+import { captureHiResPng, shareFile, waitFrames } from '../../utils/shareShot';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -12,174 +36,325 @@ const formatTime = (seconds) => {
 
 export default function WorkoutSummary({ data, onClose, unit }) {
   const cardRef = useRef(null);
-
+  const scrollRef = useRef(null);
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   if (!data) return null;
 
   const exercises = data.exercises || [];
   const isRest = exercises.length === 0;
 
-  // Calculate volume
   let totalVolume = 0;
   let totalSets = 0;
-  
-  // First pass: count completed sets
-  exercises.forEach(ex => {
-    if (ex.sets) {
-      ex.sets.forEach(s => {
-        if (s.completedAt && s.type !== 'Warmup') {
+  exercises.forEach((ex) => {
+    ex.sets?.forEach((s) => {
+      if (s.completedAt && s.type !== 'Warmup') {
+        totalSets++;
+        totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      }
+    });
+  });
+  const forgotToCheck = totalSets === 0 && exercises.some((ex) => ex.sets?.length > 0);
+  if (forgotToCheck) {
+    totalSets = 0;
+    totalVolume = 0;
+    exercises.forEach((ex) => {
+      ex.sets?.forEach((s) => {
+        if (s.type !== 'Warmup') {
           totalSets++;
           totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
         }
       });
-    }
-  });
-
-  // If they forgot to check anything, just count all sets
-  const forgotToCheck = totalSets === 0 && exercises.some(ex => ex.sets?.length > 0);
-  if (forgotToCheck) {
-    exercises.forEach(ex => {
-      if (ex.sets) {
-        ex.sets.forEach(s => {
-          if (s.type !== 'Warmup') {
-            totalSets++;
-            totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
-          }
-        });
-      }
     });
   }
 
   const handleShare = async () => {
-    if (!cardRef.current) return;
     try {
-      const image = await toPng(cardRef.current, {
-        backgroundColor: '#0a0a0a',
-        pixelRatio: 2
-      });
-      
-      // If mobile with Web Share API
-      if (navigator.share) {
-        const blob = await (await fetch(image)).blob();
-        const file = new File([blob], 'workout.png', { type: 'image/png' });
-        await navigator.share({
-          title: 'TrackIt Workout',
-          text: `Just crushed my ${data.routineName} workout!`,
-          files: [file]
+      if (Platform.OS === 'web') {
+        await RNShare.share({
+          message: `Just crushed my ${data.routineName || 'TrackHit'} workout!`,
         });
-      } else {
-        // Fallback to download
-        const link = document.createElement('a');
-        link.download = `trackit-workout-${Date.now()}.png`;
-        link.href = image;
-        link.click();
+        return;
       }
+      await waitFrames(2);
+      let uri;
+      try {
+        uri = await captureHiResPng(scrollRef, {
+          pixelRatio: 3,
+          snapshotContentContainer: true,
+        });
+      } catch {
+        uri = await captureHiResPng(cardRef, {
+          pixelRatio: 3,
+          useRenderInContext: true,
+        });
+      }
+      await shareFile(uri, {
+        filename: 'TrackHit Workout',
+        mimeType: 'image/png',
+        uti: 'public.png',
+        message: `Just crushed my ${data.routineName || 'TrackHit'} workout!`,
+      });
     } catch (err) {
       console.error('Failed to share:', err);
-      alert('Could not share the image.');
+      Alert.alert('Share', 'Could not share the image.');
     }
   };
 
+  const muscles = [...new Set(exercises.map((ex) => ex.muscleGroup).filter(Boolean))];
+
   return (
-    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md overflow-y-auto overflow-x-hidden flex flex-col items-center p-4 py-16">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-sm flex flex-col gap-4 relative my-auto shrink-0"
+    <View style={[styles.screen, { paddingTop: Math.max(insets.top, 12) }]}>
+      <View style={styles.topBar}>
+        <Pressable onPress={onClose} style={styles.iconBtn} accessibilityLabel="Close summary">
+          <X size={18} color={colors.text} />
+        </Pressable>
+        <Text style={styles.topTitle}>Summary</Text>
+        <Pressable onPress={handleShare} style={styles.iconBtn} accessibilityLabel="Share workout">
+          <Share2 size={18} color={colors.text} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        ref={scrollRef}
+        collapsable={false}
+        removeClippedSubviews={false}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
       >
-        
-          {/* Corner overlay actions (Not captured in share) */}
-          <button 
-            onClick={onClose}
-            className="absolute top-4 left-4 z-20 p-2 text-textMuted hover:text-white bg-surface-light/80 backdrop-blur-md rounded-full transition-colors shadow-lg shadow-black/20"
-            title="Close"
-          >
-            <X size={18} />
-          </button>
-          <button 
-            onClick={handleShare}
-            className="absolute top-4 right-4 z-20 p-2 text-primary hover:text-primary-light bg-primary/20 backdrop-blur-md rounded-full transition-colors shadow-lg shadow-black/20"
-            title="Share"
-          >
-            <Share2 size={18} />
-          </button>
+        <View ref={cardRef} collapsable={false} style={styles.body}>
+          <View style={styles.iconBox}>
+            {isRest ? (
+              <BatteryCharging size={32} color={colors.textMuted} />
+            ) : (
+              <CheckCircle size={32} color={colors.textMuted} />
+            )}
+          </View>
+          <Text style={styles.title}>{isRest ? 'Rest Day Logged' : 'Workout Complete'}</Text>
+          {!!data.routineName && <Text style={styles.routine}>{data.routineName}</Text>}
 
-        <div 
-          ref={cardRef} 
-          className="bg-surface/90 backdrop-blur-xl border border-border/50 rounded-[24px] p-6 shadow-[0_0_40px_rgba(59,130,246,0.1)] flex flex-col gap-6 relative overflow-hidden"
-        >
-          {/* Decorative background */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none -mr-20 -mt-20" />
-          <div className={`absolute bottom-0 left-0 w-64 h-64 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20 ${isRest ? 'bg-indigo-500/10' : 'bg-emerald-500/10'}`} />
-
-          {/* Header */}
-          <div className="z-10 flex flex-col items-center gap-3 text-center mt-2">
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-1 border backdrop-blur-md transform rotate-3 ${isRest ? 'from-blue-400/20 to-indigo-600/20 text-blue-400 shadow-[0_0_30px_rgba(96,165,250,0.2)] border-blue-500/20' : 'from-emerald-400/20 to-emerald-600/20 text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.2)] border-emerald-500/20'}`}>
-              {isRest ? <BatteryCharging size={32} strokeWidth={2.5} className="transform -rotate-3" /> : <CheckCircle size={32} strokeWidth={2.5} className="transform -rotate-3" />}
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-text tracking-tight uppercase">
-                {isRest ? 'Rest Day Logged' : 'Workout Complete'}
-              </h1>
-              <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mt-1 opacity-80">{data.routineName}</p>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="z-10 grid grid-cols-3 gap-3 w-full mt-2">
-            <div className="flex flex-col items-center justify-center bg-surface-light/40 border border-border/30 rounded-2xl p-3 backdrop-blur-sm">
-              <Clock size={18} className="text-textMuted mb-1.5" />
-              <span className="text-text font-black font-mono text-lg leading-none">{formatTime(data.duration)}</span>
-              <span className="text-[9px] uppercase tracking-widest text-textMuted font-bold mt-1">Time</span>
-            </div>
+          <View style={styles.stats}>
+            <View style={styles.stat}>
+              <Clock size={18} color={colors.textMuted} />
+              <Text style={styles.statVal}>{formatTime(data.duration)}</Text>
+              <Text style={styles.statLbl}>Time</Text>
+            </View>
             {!isRest ? (
               <>
-                <div className="flex flex-col items-center justify-center bg-surface-light/40 border border-border/30 rounded-2xl p-3 backdrop-blur-sm">
-                  <Flame size={18} className="text-amber-500 mb-1.5" />
-                  <span className="text-text font-black font-mono text-lg leading-none">{totalSets}</span>
-                  <span className="text-[9px] uppercase tracking-widest text-textMuted font-bold mt-1">Sets</span>
-                </div>
-                <div className="flex flex-col items-center justify-center bg-surface-light/40 border border-border/30 rounded-2xl p-3 backdrop-blur-sm">
-                  <Weight size={18} className="text-primary mb-1.5" />
-                  <span className="text-text font-black font-mono text-lg leading-none truncate w-full text-center">{convertWeight(totalVolume, data.unitSaved, unit)}</span>
-                  <span className="text-[9px] uppercase tracking-widest text-textMuted font-bold mt-1">Volume</span>
-                </div>
+                <View style={styles.stat}>
+                  <Flame size={18} color={colors.textMuted} />
+                  <Text style={styles.statVal}>{totalSets}</Text>
+                  <Text style={styles.statLbl}>Sets</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Weight size={18} color={colors.textMuted} />
+                  <Text style={styles.statVal} numberOfLines={1}>
+                    {convertWeight(totalVolume, data.unitSaved, unit)}
+                  </Text>
+                  <Text style={styles.statLbl}>Volume</Text>
+                </View>
               </>
             ) : (
-               <div className="col-span-2 flex flex-row items-center justify-center gap-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 backdrop-blur-sm text-blue-400">
-      <Coffee size={18} className="animate-bounce" style={{ animationDuration: '3s' }} />
-      <span className="font-black text-sm uppercase tracking-wider">Rest & Recover</span>
-      <Moon size={18} className="animate-pulse" />
-   </div>
+              <View style={styles.restStat}>
+                <Coffee size={18} color={colors.textMuted} />
+                <Text style={styles.restStatText}>Rest & Recover</Text>
+                <Moon size={18} color={colors.textMuted} />
+              </View>
             )}
-          </div>
+          </View>
 
-          {/* Targeted Muscles */}
-            {!isRest && (
-              <div className="z-10 w-full flex flex-col gap-2 mt-2">
-                <h3 className="text-[10px] uppercase tracking-[0.2em] text-textMuted font-bold text-left mb-1 px-1">Targeted Muscles</h3>
-                <div className="flex flex-wrap gap-2 px-1">
-                  {[...new Set(exercises.map(ex => ex.muscleGroup).filter(Boolean))].map(muscle => (
-                    <span key={muscle} className="px-3 py-1.5 rounded-xl bg-surface-light/60 border border-border/30 text-xs font-bold text-text/90 capitalize backdrop-blur-sm shadow-sm">
-                      {muscle}
-                    </span>
-                  ))}
-                  {[...new Set(exercises.map(ex => ex.muscleGroup).filter(Boolean))].length === 0 && (
-                    <span className="text-sm text-textMuted italic">No muscles targeted</span>
-                  )}
-                </div>
-              </div>
-            )}
+          {!isRest && (
+            <View style={{ width: '100%', marginTop: 8 }}>
+              <Text style={styles.sectionLbl}>Targeted Muscles</Text>
+              <View style={styles.chips}>
+                {muscles.length === 0 ? (
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>No muscles targeted</Text>
+                ) : (
+                  muscles.map((m) => <MuscleTag key={m} group={m} />)
+                )}
+              </View>
+            </View>
+          )}
 
-          {/* Footer watermark */}
-          <div className="z-10 w-full pt-4 mt-2 border-t border-border/20 flex justify-between items-center">
-            <div className="flex items-center gap-1.5 opacity-60">
-              <Dumbbell size={14} className="text-text" />
-              <span className="font-black tracking-tighter text-text uppercase text-xs">TrackIt</span>
-            </div>
-            <span className="text-[10px] text-textMuted font-bold uppercase tracking-wider">{new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+          <View style={styles.footer}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.7 }}>
+              <Dumbbell size={14} color={colors.text} />
+              <Text style={styles.brand}>TrackHit</Text>
+            </View>
+            <Text style={styles.date}>
+              {new Date(data.endTime || Date.now()).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <Pressable onPress={onClose} style={styles.doneBtn} accessibilityLabel="Done">
+          <Text style={styles.doneText}>Done</Text>
+        </Pressable>
+      </View>
+    </View>
   );
+}
+
+function makeStyles(colors) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      minHeight: HIT,
+    },
+    topTitle: {
+      color: colors.textSubtle,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    iconBtn: {
+      width: HIT,
+      height: HIT,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: 20,
+      paddingTop: 24,
+      paddingBottom: 16,
+      maxWidth: 520,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    body: {
+      width: '100%',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      paddingHorizontal: 4,
+      paddingTop: 8,
+      paddingBottom: 20,
+      overflow: 'visible',
+    },
+    iconBox: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      marginBottom: 12,
+    },
+    title: {
+      color: colors.text,
+      fontFamily: fonts.bold,
+      fontSize: 28,
+      letterSpacing: -0.6,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    routine: {
+      color: colors.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+    },
+    stats: { flexDirection: 'row', gap: 10, width: '100%', marginTop: 16 },
+    stat: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      paddingVertical: 16,
+      paddingHorizontal: 8,
+      alignItems: 'center',
+      gap: 6,
+    },
+    statVal: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 18 },
+    statLbl: {
+      color: colors.textMuted,
+      fontSize: 9,
+      fontFamily: fonts.bold,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    restStat: {
+      flex: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      padding: 16,
+    },
+    restStatText: { color: colors.text, fontFamily: fonts.black, fontSize: 13, textTransform: 'uppercase' },
+    sectionLbl: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.bold,
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipText: { color: colors.text, fontFamily: fonts.bold, fontSize: 12, textTransform: 'capitalize' },
+    footer: {
+      width: '100%',
+      paddingTop: 16,
+      marginTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    brand: { color: colors.text, fontFamily: fonts.black, fontSize: 12, textTransform: 'uppercase' },
+    date: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.medium },
+    bottom: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      maxWidth: 520,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    doneBtn: {
+      width: '100%',
+      minHeight: HIT,
+      borderRadius: radius.sm,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    doneText: { color: colors.accentFg, fontFamily: fonts.semibold, fontSize: 17 },
+  });
 }

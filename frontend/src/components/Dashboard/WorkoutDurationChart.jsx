@@ -1,44 +1,41 @@
 import React, { useState, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useWorkout } from '../../context/WorkoutContext';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { Clock, Activity } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { useTheme } from '../../context/ThemeContext';
 import InfoPopover from './InfoPopover';
+import BarChart from '../charts/BarChart';
+import RangePills from '../charts/RangePills';
+import { fonts, radius } from '../../theme';
+import { filledBarSeries, barGranularity } from '../../utils/chartRange';
 
-export default function WorkoutDurationChart() {
+export default function WorkoutDurationChart({ onLockScroll, dismissRef, active = true }) {
   const { workoutHistory } = useWorkout();
-  const [displayUnit, setDisplayUnit] = useState('mins'); // 'mins' or 'hrs'
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+  const [displayUnit, setDisplayUnit] = useState('mins');
+  const [range, setRange] = useState('1m');
 
   const chartData = useMemo(() => {
     if (!workoutHistory || workoutHistory.length === 0) return [];
-
-    // Group by date
-    const grouped = {};
-    workoutHistory.forEach(wk => {
-      // Use timestamp if available, else fallback to startTime
-      const timeStr = wk.timestamp || new Date(wk.startTime).toISOString();
-      const dateKey = format(parseISO(timeStr), 'yyyy-MM-dd');
-      
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = { date: dateKey, durationSec: 0 };
-      }
-      grouped[dateKey].durationSec += (wk.duration || 0);
+    const points = [];
+    workoutHistory.forEach((wk) => {
+      const date = new Date(wk.timestamp || wk.startTime);
+      const secs = wk.duration || 0;
+      if (!secs) return;
+      points.push({
+        date,
+        value: displayUnit === 'mins' ? secs / 60 : secs / 3600,
+      });
     });
+    const series = filledBarSeries(points, range, 'sum');
+    return series.map((d) => ({
+      ...d,
+      value: displayUnit === 'mins' ? Math.round(d.value) : Number(d.value.toFixed(1)),
+    }));
+  }, [workoutHistory, displayUnit, range]);
 
-    // Sort chronologically
-    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
-
-    // Map to chart values
-    return sortedDates.map(dateKey => {
-      const d = grouped[dateKey];
-      return {
-        date: format(parseISO(dateKey), 'MMM dd'),
-        value: displayUnit === 'mins' 
-            ? Math.round(d.durationSec / 60)
-            : Number((d.durationSec / 3600).toFixed(1))
-      };
-    }).filter(d => d.value > 0); // Don't plot 0 duration days if any weird data exists
-  }, [workoutHistory, displayUnit]);
+  const grain = barGranularity(range);
+  const avgLabel = grain === 'day' ? 'Daily average' : grain === 'week' ? 'Weekly average' : 'Monthly average';
 
   const averageValue = useMemo(() => {
     if (chartData.length === 0) return 0;
@@ -46,101 +43,98 @@ export default function WorkoutDurationChart() {
     return Number((sum / chartData.length).toFixed(1));
   }, [chartData]);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-surface-light p-3 border border-border rounded-lg shadow-xl">
-          <p className="text-textMuted text-xs font-bold uppercase mb-1">{label}</p>
-          <p className="text-amber-500 font-mono text-xl font-black">
-            {payload[0].value} <span className="text-sm">{displayUnit}</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="flex flex-col w-full pb-2">
-      <div className="mt-4 mb-2 px-2 flex items-center justify-between">
-        <h2 className="text-lg font-black text-text flex items-center gap-2 tracking-tight">
-          <Clock className="text-amber-500" size={20} /> Workout Duration
-        </h2>
-        <InfoPopover 
-          title="Workout Duration"
-          description="Track how much time you spend working out each day. The dashed line shows your average duration over this period."
-          align="right"
-          color="amber" // Wait, I need to add amber to InfoPopover, but it defaults to primary safely if missing. I'll add amber to InfoPopover next.
-        />
-      </div>
+    <View style={{ marginTop: 8, paddingBottom: 8 }}>
+      <InfoPopover
+        title="Workout duration"
+        description="Time spent training in this range. Tap or drag a bar to see that day’s total. Color follows your chart color in Settings."
+      />
 
-      <div className="panel p-4 flex flex-col gap-3 relative z-10 mb-4">
-        <div className="flex items-center justify-between w-full">
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1 block">Time Unit</label>
-            <div className="flex bg-background rounded-lg p-1 border border-border">
-              <button 
-                onClick={() => setDisplayUnit('mins')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${displayUnit === 'mins' ? 'bg-surface-light text-amber-500 shadow' : 'text-textMuted hover:text-text'}`}
-              >
-                Minutes
-              </button>
-              <button 
-                onClick={() => setDisplayUnit('hrs')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${displayUnit === 'hrs' ? 'bg-surface-light text-amber-500 shadow' : 'text-textMuted hover:text-text'}`}
-              >
-                Hours
-              </button>
-            </div>
-          </div>
-          
-          {chartData.length > 0 && (
-            <div className="text-right">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1 block">Average</label>
-              <span className="text-lg font-black text-text font-mono">
-                {averageValue} <span className="text-xs text-textMuted">{displayUnit}</span>
-              </span>
-            </div>
+      <View style={[styles.panel, { marginTop: 10 }]}>
+        <View style={styles.row}>
+          <View>
+            <Text style={styles.label}>Time unit</Text>
+            <View style={styles.toggle}>
+              {['mins', 'hrs'].map((u) => (
+                <Pressable
+                  key={u}
+                  onPress={() => setDisplayUnit(u)}
+                  style={[styles.toggleBtn, displayUnit === u && styles.toggleOn]}
+                >
+                  <Text style={[styles.toggleText, displayUnit === u && styles.toggleTextOn]}>
+                    {u === 'mins' ? 'Minutes' : 'Hours'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {chartData.some((d) => d.value > 0) && (
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.label}>{avgLabel}</Text>
+              <Text style={[styles.avg, { color: colors.chartAccent }]}>
+                {averageValue}
+                <Text style={styles.avgUnit}> {displayUnit}</Text>
+              </Text>
+            </View>
           )}
-        </div>
-      </div>
+        </View>
+        <Text style={[styles.label, { marginTop: 12 }]}>Range</Text>
+        <RangePills value={range} onChange={setRange} />
+      </View>
 
-      <div className="panel p-4 h-[300px] mb-6">
-        {chartData.length > 1 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorDuration" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
-              <XAxis dataKey="date" stroke="#a1a1aa" tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} tickLine={false} axisLine={false} dy={10} />
-              <YAxis stroke="#a1a1aa" tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} tickLine={false} axisLine={false} width={40} />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#52525b', strokeWidth: 1, strokeDasharray: '4 4' }} />
-              
-              <ReferenceLine y={averageValue} stroke="#f59e0b" strokeDasharray="3 3" strokeWidth={2} opacity={0.5} />
-              
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#f59e0b" 
-                strokeWidth={3} 
-                fillOpacity={1} 
-                fill="url(#colorDuration)" 
-                activeDot={{ r: 6, fill: '#f59e0b', stroke: '#18181b', strokeWidth: 3 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-textMuted">
-            <Activity size={32} className="opacity-20 mb-3" />
-            <p className="font-bold text-sm">Not enough data</p>
-            <p className="text-xs mt-1">Log more workouts to see your duration trends.</p>
-          </div>
-        )}
-      </div>
-    </div>
+      <View style={[styles.panel, { marginTop: 10, paddingVertical: 8, overflow: 'hidden' }]}>
+        <BarChart
+          data={chartData}
+          unit={displayUnit}
+          color={colors.chartAccent}
+          totalLabel="Total"
+          emptySubtitle="Log more workouts to see your duration trends."
+          onLockScroll={onLockScroll}
+          dismissRef={dismissRef}
+          active={active}
+        />
+      </View>
+    </View>
   );
+}
+
+function makeStyles(colors) {
+  return StyleSheet.create({
+    panel: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+    },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    label: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontFamily: fonts.semibold,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 6,
+    },
+    toggle: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface2,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      minHeight: 44,
+    },
+    toggleBtn: {
+      paddingHorizontal: 14,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    toggleOn: { backgroundColor: colors.text },
+    toggleText: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12 },
+    toggleTextOn: { color: colors.background },
+    avg: { fontFamily: fonts.monoBold, fontSize: 22, letterSpacing: -0.4 },
+    avgUnit: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.regular },
+  });
 }

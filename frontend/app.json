@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "TrackHit",
+    "slug": "trackit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "trackit",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111111"
+    },
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#111111",
+      "iosDisplayInForeground": true
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.trackhit.app",
+      "buildNumber": "1",
+      "icon": {
+        "light": "./assets/icon-light.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "CFBundleDisplayName": "TrackHit",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+          }
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon-light.png",
+        "backgroundColor": "#F4F0E8",
+        "monochromeImage": "./assets/icon-tinted.png"
+      },
+      "package": "com.trackhit.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "backgroundColor": "#111111",
+      "themeColor": "#111111"
+    },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/VioletSans-Regular.ttf"]
+        }
+      ],
+      "expo-sharing",
+      "expo-image",
+      "expo-splash-screen",
+      "expo-document-picker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "largeIcon": "./assets/icon-light.png",
+          "color": "#111111",
+          "defaultChannel": "rest",
+          "enableBackgroundRemoteNotifications": false
+        }
+      ]
+    ]
+  }
+}
