@@ -117,7 +117,7 @@ export default function WorkoutDetailView({ date, onBack }) {
       <View style={styles.meta}>
         <View style={styles.metaItem}>
           <Clock size={16} color={colors.textMuted} />
-          <Text style={styles.metaText}>{Math.round(totalDuration / 60)} mins</Text>
+          <Text style={styles.metaText}>{Math.round(totalDuration / 60)} {Math.round(totalDuration / 60) === 1 ? 'min' : 'mins'}</Text>
         </View>
         <View style={styles.metaItem}>
           <Activity size={16} color={colors.chartAccent || colors.textMuted} />

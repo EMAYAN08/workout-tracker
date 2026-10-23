@@ -82,7 +82,7 @@ export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
             <View style={styles.cardTop}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardName}>{routine.name}</Text>
-                <Text style={styles.cardMeta}>{routine.exercises?.length || 0} exercises</Text>
+                <Text style={styles.cardMeta}>{routine.exercises?.length || 0} {(routine.exercises?.length || 0) === 1 ? 'exercise' : 'exercises'}</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable

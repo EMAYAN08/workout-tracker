@@ -290,7 +290,7 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 <View style={{ padding: 14, gap: 8 }}>
                   <View style={styles.setHead}>
                     <Text style={[styles.th, { width: 32 }]}>SET</Text>
-                    <Text style={[styles.th, { flex: 1 }]}>{unit === 'kgs' ? 'KG' : 'LB'}</Text>
+                    <Text style={[styles.th, { flex: 1 }]}>{unit === 'kgs' ? 'KGS' : 'LBS'}</Text>
                     <Text style={[styles.th, { flex: 1 }]}>REPS</Text>
                     <View style={{ width: 32 }} />
                   </View>
