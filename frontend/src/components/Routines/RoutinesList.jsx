@@ -78,7 +78,13 @@ export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
         </View>
       ) : (
         routines.map((routine) => (
-          <View key={routine.id} style={styles.card}>
+          <Pressable
+            key={routine.id}
+            onPress={() => onEdit(routine)}
+            style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit routine ${routine.name}`}
+          >
             <View style={styles.cardTop}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardName}>{routine.name}</Text>
@@ -114,7 +120,7 @@ export default function RoutinesList({ onCreateNew, onEdit, scrollRef }) {
                 ))}
               </View>
             )}
-          </View>
+          </Pressable>
         ))
       )}
       </ScrollView>
@@ -165,6 +171,7 @@ function makeStyles(colors) {
     marginBottom: 10,
     gap: 10,
   },
+  cardPressed: { opacity: 0.85 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardName: { color: colors.text, fontFamily: fonts.black, fontSize: 17 },
   cardMeta: { color: colors.textMuted, fontFamily: fonts.semibold, fontSize: 12, marginTop: 4 },
