@@ -352,6 +352,11 @@ export default function CustomExercises({ scrollRef, popRef }) {
                   setIndex: activeInput.index,
                   unit,
                   onSelectCell: (i, field) => setActiveInput({ index: i, field }),
+                  onAddSet: () => {
+                    const newIdx = defaultSets.length;
+                    addSet();
+                    setActiveInput({ index: newIdx, field: 'weight' });
+                  },
                 }
               : null
           }

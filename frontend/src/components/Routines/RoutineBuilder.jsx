@@ -408,6 +408,11 @@ export default function RoutineBuilder({ initialRoutine, onCancel, onSaveSuccess
                 unit,
                 onSelectCell: (i, field) =>
                   setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: i, field }),
+                onAddSet: () => {
+                  const newIdx = (exercises[activeInput.exerciseIndex]?.defaultSets || []).length;
+                  addSet(activeInput.exerciseIndex);
+                  setActiveInput({ exerciseIndex: activeInput.exerciseIndex, setIndex: newIdx, field: 'weight' });
+                },
               }
             : null
         }

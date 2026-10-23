@@ -420,6 +420,11 @@ export default function ActiveWorkout({ minimized = false, onMinimize }) {
                 setIndex: activeInput.sIdx,
                 unit,
                 onSelectCell: (i, field) => setActiveInput({ eIdx: activeInput.eIdx, sIdx: i, field }),
+                onAddSet: () => {
+                  const newIdx = (exercises[activeInput.eIdx]?.sets || []).length;
+                  addSetToExercise(activeInput.eIdx);
+                  setActiveInput({ eIdx: activeInput.eIdx, sIdx: newIdx, field: 'weight' });
+                },
               }
             : null
         }

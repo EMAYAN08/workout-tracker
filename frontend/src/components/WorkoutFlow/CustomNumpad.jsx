@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
-import { ChevronDown, Delete, ArrowRight } from 'lucide-react-native';
+import { ChevronDown, Delete, ArrowRight, Plus } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { haptic } from '../../haptics';
@@ -85,6 +85,20 @@ function PreviewCard({ preview, field, value, colors, styles }) {
           </View>
         );
       })}
+      {preview.onAddSet ? (
+        <Pressable
+          onPress={() => {
+            haptic('selection');
+            preview.onAddSet();
+          }}
+          style={({ pressed }) => [styles.previewAddSet, pressed && styles.keyPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Add set"
+        >
+          <Plus size={16} color={colors.text} strokeWidth={2.6} />
+          <Text style={styles.previewAddSetText}>Add Set</Text>
+        </Pressable>
+      ) : null}
       </ScrollView>
     </View>
   );
@@ -501,6 +515,20 @@ function makeStyles(colors) {
     previewCellOn: { borderColor: colors.accent, backgroundColor: colors.surface },
     previewCellText: { color: colors.text, fontFamily: fonts.monoBold, fontSize: 16 },
     previewCellTextOn: { color: colors.accent },
+    previewAddSet: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      minHeight: 44,
+      marginTop: 6,
+      marginHorizontal: 4,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.borderStrong,
+    },
+    previewAddSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
     sheet: {
       zIndex: 200,
       elevation: 24,
