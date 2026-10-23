@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Animated, Platform, Easing, Keyboard
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
-import { ChevronDown, Delete, ArrowRight, Plus } from 'lucide-react-native';
+import { ChevronDown, Delete, ArrowRight, Plus, Minus } from 'lucide-react-native';
 import { fonts, radius } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { haptic } from '../../haptics';
@@ -85,7 +85,30 @@ function PreviewCard({ preview, field, value, colors, styles }) {
           </View>
         );
       })}
-      {preview.onAddSet ? (
+      {preview.onAddSet || preview.onRemoveSet ? (
+        <View style={styles.previewSetActions}>
+        {preview.onRemoveSet ? (
+          <Pressable
+            disabled={sets.length <= 1}
+            onPress={() => {
+              haptic('selection');
+              preview.onRemoveSet(activeIdx);
+            }}
+            style={({ pressed }) => [
+              styles.previewAddSet,
+              styles.previewRemoveSet,
+              sets.length <= 1 && styles.previewSetActionDisabled,
+              pressed && styles.keyPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove set ${activeIdx + 1}`}
+            accessibilityState={{ disabled: sets.length <= 1 }}
+          >
+            <Minus size={16} color={colors.danger || colors.text} strokeWidth={2.6} />
+            <Text style={[styles.previewAddSetText, { color: colors.danger || colors.text }]}>Remove Set</Text>
+          </Pressable>
+        ) : null}
+        {preview.onAddSet ? (
         <Pressable
           onPress={() => {
             haptic('selection');
@@ -98,6 +121,8 @@ function PreviewCard({ preview, field, value, colors, styles }) {
           <Plus size={16} color={colors.text} strokeWidth={2.6} />
           <Text style={styles.previewAddSetText}>Add Set</Text>
         </Pressable>
+        ) : null}
+        </View>
       ) : null}
       </ScrollView>
     </View>
@@ -520,14 +545,16 @@ function makeStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
+      flex: 1,
       minHeight: 44,
-      marginTop: 6,
-      marginHorizontal: 4,
       borderRadius: radius.sm,
       borderWidth: 1,
       borderStyle: 'dashed',
       borderColor: colors.borderStrong,
     },
+    previewSetActions: { flexDirection: 'row', gap: 8, marginTop: 6, marginHorizontal: 4 },
+    previewRemoveSet: { borderColor: colors.danger || colors.borderStrong },
+    previewSetActionDisabled: { opacity: 0.35 },
     previewAddSetText: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
     sheet: {
       zIndex: 200,

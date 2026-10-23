@@ -352,6 +352,12 @@ export default function CustomExercises({ scrollRef, popRef }) {
                   setIndex: activeInput.index,
                   unit,
                   onSelectCell: (i, field) => setActiveInput({ index: i, field }),
+                  onRemoveSet: (idx) => {
+                    const len = defaultSets.length;
+                    if (len <= 1) return;
+                    removeSet(idx);
+                    setActiveInput({ index: Math.max(0, Math.min(idx, len - 2)), field: activeInput.field });
+                  },
                   onAddSet: () => {
                     const newIdx = defaultSets.length;
                     addSet();
