@@ -9,6 +9,9 @@ let Notifications = null;
 let lastLiveKey = '';
 let logoAttachment = null;
 let donePresented = false;
+// True while the OS holds a scheduled "Rest is over" alert for the current rest.
+// That alert is the single delivery; the in-app fallback must not fire again.
+let doneScheduled = false;
 let listenerAttached = false;
 let liveTicksDisabled = false;
 let scheduleWarned = false;
@@ -227,6 +230,7 @@ export async function scheduleRestNotification({
   try {
     await cancelRestNotification();
     donePresented = false;
+    doneScheduled = false;
     const ok = await ensureNotificationPermission();
     if (!ok) return;
     await registerNotificationCategories();
@@ -249,8 +253,9 @@ export async function scheduleRestNotification({
         },
         trigger: doneTrigger(N, remaining),
       });
+      doneScheduled = !!scheduled;
       if (!scheduled && Platform.OS === 'ios') {
-        await scheduleNow(N, {
+        doneScheduled = await scheduleNow(N, {
           identifier: DONE_ID,
           content: {
             title: 'Rest is over',
@@ -274,6 +279,15 @@ export async function presentRestDone({ exerciseName, setLabel } = {}) {
   const N = await mod();
   lastLiveKey = '';
   if (!N || Platform.OS === 'web') return;
+  if (doneScheduled) {
+    // The OS already delivers (or delivered) the scheduled alert at the exact
+    // end of rest, whether the app was open, backgrounded or locked. Only clear
+    // the live countdown; presenting again would duplicate it on app resume.
+    doneScheduled = false;
+    await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});
+    await N.dismissNotificationAsync(LIVE_ID).catch(() => {});
+    return;
+  }
   try {
     await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});
     await N.cancelScheduledNotificationAsync(DONE_ID).catch(() => {});
@@ -327,6 +341,7 @@ export async function cancelRestNotification() {
   const N = await mod();
   lastLiveKey = '';
   donePresented = false;
+  doneScheduled = false;
   if (!N || Platform.OS === 'web') return;
   try {
     await N.cancelScheduledNotificationAsync(LIVE_ID).catch(() => {});

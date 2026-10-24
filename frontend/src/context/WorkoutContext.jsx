@@ -644,16 +644,18 @@ export function WorkoutProvider({ children }) {
     syncFromStore();
   };
 
+  const restDoneHandledFor = useRef(null);
   useEffect(() => {
     if (!lastSetCompletedAt || playingSet) return undefined;
     const meta = restMeta();
-    let liveCleared = false;
+    let liveCleared = restDoneHandledFor.current === lastSetCompletedAt;
     const tick = () => {
       const elapsed = Math.max(0, Math.floor((Date.now() - lastSetCompletedAt) / 1000));
       const remaining = restTargetSec - elapsed;
       if (remaining <= 0) {
         if (!liveCleared) {
           liveCleared = true;
+          restDoneHandledFor.current = lastSetCompletedAt;
           presentRestDone({
             exerciseName: meta.exerciseName,
             setLabel: meta.setLabel,
