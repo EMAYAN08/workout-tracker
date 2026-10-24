@@ -90,6 +90,7 @@ export function buildMockSnapshot(unit = 'lbs') {
       timestamp: formatISO(addDays(date, 0)),
       startTime: new Date(date.getTime() + 18 * 3600 * 1000).toISOString(),
       duration: 2400 + (d % 5) * 420,
+      routineId: `mock_r_${d % 3}`,
       routineName: tpl.name,
       unitSaved: unit,
       exercises,
