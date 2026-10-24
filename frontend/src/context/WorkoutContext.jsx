@@ -24,6 +24,8 @@ import {
   buildLiveActivityPayload,
 } from '../liveActivity';
 
+export const AUTO_FINISH_SEC = 2.5 * 60 * 60;
+
 const WorkoutContext = createContext();
 
 async function vibrate(pattern = 'light') {
@@ -328,16 +330,18 @@ export function WorkoutProvider({ children }) {
     setLastSetCompletedAt(null);
   };
 
-  const finishWorkout = async () => {
-    await vibrate('success');
+  const finishWorkout = async ({ auto = false } = {}) => {
+    if (!activeWorkout) return;
+    if (!auto) await vibrate('success');
     endLiveActivity({ force: true });
     await cancelRestNotification();
     try {
       const payload = {
         ...activeWorkout,
         timestamp: new Date(activeWorkout.startTime || Date.now()).toISOString(),
-        endTime: Date.now(),
-        duration: workoutDuration,
+        endTime: auto ? (activeWorkout.startTime || Date.now()) + AUTO_FINISH_SEC * 1000 : Date.now(),
+        duration: auto ? AUTO_FINISH_SEC : workoutDuration,
+        ...(auto ? { autoFinished: true } : {}),
         unitSaved: unit,
       };
       const savedWorkout = await localStore.upsertWorkout(payload);
@@ -364,6 +368,20 @@ export function WorkoutProvider({ children }) {
       console.error('Failed to save workout', e);
     }
   };
+
+  // Auto-finish a forgotten session once it passes 2.5 hours. Logged with the
+  // duration capped at 2.5h. Also runs on relaunch with an old saved workout.
+  const autoFinishingRef = useRef(false);
+  useEffect(() => {
+    if (!hydrated || !activeWorkout?.startTime) {
+      autoFinishingRef.current = false;
+      return;
+    }
+    if (autoFinishingRef.current) return;
+    if ((Date.now() - activeWorkout.startTime) / 1000 < AUTO_FINISH_SEC) return;
+    autoFinishingRef.current = true;
+    finishWorkout({ auto: true });
+  }, [hydrated, activeWorkout, workoutDuration]);
 
   const cancelWorkout = async () => {
     endLiveActivity({ force: true });

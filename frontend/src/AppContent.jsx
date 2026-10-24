@@ -1,3 +1,4 @@
+import { confirmAction } from './dialog';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -152,7 +153,12 @@ export default function AppContent() {
           <Pressable
             onPress={() => {
               haptic('warning');
-              cancelWorkout();
+              confirmAction(
+                'Cancel workout?',
+                'This workout will be discarded and nothing will be saved. This cannot be undone.',
+                () => cancelWorkout(),
+                { confirmLabel: 'Discard workout', destructive: true }
+              );
             }}
             style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.7 }]}
           >
