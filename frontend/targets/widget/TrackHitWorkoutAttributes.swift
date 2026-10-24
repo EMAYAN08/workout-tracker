@@ -13,8 +13,6 @@ struct TrackHitWorkoutAttributes: ActivityAttributes {
     var restOver: Bool
     var exerciseName: String
     var nextSet: String
-    var setsDone: Int
-    var setsTotal: Int
   }
 
   var workoutId: String

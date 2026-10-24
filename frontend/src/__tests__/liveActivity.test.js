@@ -43,7 +43,9 @@ describe('buildLiveActivityPayload', () => {
     const p = buildLiveActivityPayload({ activeWorkout: workout(), unit: 'kgs', now: T0 + 5000 });
     expect(p.workoutId).toBe('wk_1');
     expect(p.workoutName).toBe('Push Day');
-    expect(p.state).toMatchObject({ workoutStart: T0 / 1000, setsDone: 1, setsTotal: 3, exerciseName: 'Bench', restOver: false });
+    expect(p.state).toMatchObject({ workoutStart: T0 / 1000, exerciseName: 'Bench', restOver: false });
+    expect(p.state.setsDone).toBeUndefined();
+    expect(p.state.setsTotal).toBeUndefined();
     expect(p.state.nextSet).toBe('Next: Set 2 · 100 kgs × 8');
     expect(p.state.restEnd).toBeUndefined();
     expect(p.staleAtMs).toBe(0);
@@ -112,7 +114,7 @@ describe('sync service', () => {
     const [id, name, json, stale] = n.upsert.mock.calls[0];
     expect(id).toBe('wk_1');
     expect(name).toBe('Push Day');
-    expect(JSON.parse(json).setsTotal).toBe(3);
+    expect(JSON.parse(json).exerciseName).toBe('Bench');
     expect(stale).toBe(0);
     syncLiveActivity(input, { force: true });
     await flush();

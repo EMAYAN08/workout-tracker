@@ -82,14 +82,6 @@ export function buildLiveActivityPayload({
   if (now - activeWorkout.startTime > MAX_WORKOUT_AGE_MS) return null;
 
   const exercises = Array.isArray(activeWorkout.exercises) ? activeWorkout.exercises : [];
-  let setsDone = 0;
-  let setsTotal = 0;
-  exercises.forEach((ex) => {
-    (ex?.sets || []).forEach((s) => {
-      setsTotal += 1;
-      if (s?.completedAt) setsDone += 1;
-    });
-  });
 
   let exerciseName;
   let nextSet;
@@ -119,8 +111,6 @@ export function buildLiveActivityPayload({
     restOver: false,
     exerciseName: String(exerciseName),
     nextSet: String(nextSet),
-    setsDone,
-    setsTotal,
   };
 
   let staleAtMs = 0;
