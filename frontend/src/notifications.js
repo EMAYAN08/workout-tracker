@@ -353,21 +353,43 @@ export async function cancelRestNotification() {
   }
 }
 
+function describeNext(ex, ei, si) {
+  return {
+    exerciseIndex: ei,
+    setIndex: si,
+    name: ex.name || 'Exercise',
+    setNumber: si + 1,
+    setLabel: `Set ${si + 1}`,
+  };
+}
+
+// The next set to do, following the exercise the user is actually working on
+// (the one holding the most recently completed set), not list order. Users skip
+// and reorder exercises freely, e.g. finish #1, jump to #3. If that exercise is
+// done, fall back to the first incomplete set in list order.
 export function findNextIncompleteSet(workout) {
   if (!workout?.exercises) return null;
-  for (let ei = 0; ei < workout.exercises.length; ei++) {
-    const ex = workout.exercises[ei];
-    const sets = ex.sets || [];
-    for (let si = 0; si < sets.length; si++) {
-      if (!sets[si].completedAt) {
-        return {
-          exerciseIndex: ei,
-          setIndex: si,
-          name: ex.name || 'Exercise',
-          setNumber: si + 1,
-          setLabel: `Set ${si + 1}`,
-        };
+  const exercises = workout.exercises;
+  let focus = -1;
+  let latest = -Infinity;
+  exercises.forEach((ex, ei) => {
+    (ex.sets || []).forEach((s) => {
+      const t = Number(s?.completedAt);
+      if (s?.completedAt && Number.isFinite(t) && t >= latest) {
+        latest = t;
+        focus = ei;
       }
+    });
+  });
+  if (focus >= 0) {
+    const sets = exercises[focus].sets || [];
+    const si = sets.findIndex((s) => !s.completedAt);
+    if (si >= 0) return describeNext(exercises[focus], focus, si);
+  }
+  for (let ei = 0; ei < exercises.length; ei++) {
+    const sets = exercises[ei].sets || [];
+    for (let si = 0; si < sets.length; si++) {
+      if (!sets[si].completedAt) return describeNext(exercises[ei], ei, si);
     }
   }
   return null;

@@ -101,3 +101,19 @@ describe('findNextIncompleteSet', () => {
     expect(findNextIncompleteSet(workout)).toBeNull();
   });
 });
+
+describe('findNextIncompleteSet follows the current exercise', () => {
+  const ex = (name, done) => ({ name, sets: done.map((t) => ({ completedAt: t })) });
+  it('stays on the exercise the user jumped to, not list order', () => {
+    const w = { exercises: [ex('Bench', [1, 2, 3]), ex('Fly', [null, null]), ex('Dips', [10, null, null])] };
+    expect(findNextIncompleteSet(w)).toMatchObject({ exerciseIndex: 2, setIndex: 1, name: 'Dips' });
+  });
+  it('falls back to first incomplete set when the current exercise is done', () => {
+    const w = { exercises: [ex('Bench', [1, 2]), ex('Fly', [null]), ex('Dips', [10, 11])] };
+    expect(findNextIncompleteSet(w)).toMatchObject({ exerciseIndex: 1, setIndex: 0 });
+  });
+  it('uses list order before any set is done', () => {
+    const w = { exercises: [ex('Bench', [null]), ex('Fly', [null])] };
+    expect(findNextIncompleteSet(w)).toMatchObject({ exerciseIndex: 0, setIndex: 0 });
+  });
+});
