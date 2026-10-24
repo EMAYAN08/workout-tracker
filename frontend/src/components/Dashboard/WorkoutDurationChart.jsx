@@ -6,7 +6,7 @@ import InfoPopover from './InfoPopover';
 import BarChart from '../charts/BarChart';
 import RangePills from '../charts/RangePills';
 import { fonts, radius } from '../../theme';
-import { filledBarSeries, barGranularity } from '../../utils/chartRange';
+import { filledBarSeries, inChartRange } from '../../utils/chartRange';
 
 export default function WorkoutDurationChart({ onLockScroll, dismissRef, active = true }) {
   const { workoutHistory } = useWorkout();
@@ -34,14 +34,27 @@ export default function WorkoutDurationChart({ onLockScroll, dismissRef, active 
     }));
   }, [workoutHistory, displayUnit, range]);
 
-  const grain = barGranularity(range);
-  const avgLabel = grain === 'day' ? 'Daily average' : grain === 'week' ? 'Weekly average' : 'Monthly average';
-
-  const averageValue = useMemo(() => {
-    if (chartData.length === 0) return 0;
-    const sum = chartData.reduce((acc, curr) => acc + curr.value, 0);
-    return Number((sum / chartData.length).toFixed(1));
-  }, [chartData]);
+  // Average session length: total duration of logged workouts in the selected
+  // range divided by the number of those sessions. Rest days never count.
+  const { averageValue, sessionCount } = useMemo(() => {
+    let totalSecs = 0;
+    let count = 0;
+    (workoutHistory || []).forEach((wk) => {
+      const secs = wk.duration || 0;
+      if (!secs) return;
+      const date = new Date(wk.timestamp || wk.startTime);
+      if (Number.isNaN(date.getTime()) || !inChartRange(date, range)) return;
+      totalSecs += secs;
+      count += 1;
+    });
+    if (count === 0) return { averageValue: 0, sessionCount: 0 };
+    const avgSecs = totalSecs / count;
+    return {
+      averageValue: displayUnit === 'mins' ? Math.round(avgSecs / 60) : Number((avgSecs / 3600).toFixed(1)),
+      sessionCount: count,
+    };
+  }, [workoutHistory, range, displayUnit]);
+  const avgLabel = 'Avg per session';
 
   return (
     <View style={{ marginTop: 8, paddingBottom: 8 }}>
@@ -73,7 +86,10 @@ export default function WorkoutDurationChart({ onLockScroll, dismissRef, active 
               <Text style={styles.label}>{avgLabel}</Text>
               <Text style={[styles.avg, { color: colors.chartAccent }]}>
                 {averageValue}
-                <Text style={styles.avgUnit}> {displayUnit}</Text>
+                <Text style={styles.avgUnit}>
+                  {' '}
+                  {displayUnit === 'mins' && averageValue === 1 ? 'min' : displayUnit === 'hrs' && averageValue === 1 ? 'hr' : displayUnit} · {sessionCount} {sessionCount === 1 ? 'session' : 'sessions'}
+                </Text>
               </Text>
             </View>
           )}
