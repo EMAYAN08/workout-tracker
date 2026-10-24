@@ -196,7 +196,11 @@ export default function CustomExercises({ scrollRef, popRef }) {
     }
   };
 
-  const addSet = () => setDefaultSets((prev) => [...prev, blankSet()]);
+  const addSet = () =>
+    setDefaultSets((prev) => {
+      const last = prev[prev.length - 1];
+      return [...prev, last ? { ...blankSet(), weight: last.weight, reps: last.reps, type: last.type ?? blankSet().type } : blankSet()];
+    });
 
   const updateSet = (index, field, value) => {
     setDefaultSets((prev) => {
