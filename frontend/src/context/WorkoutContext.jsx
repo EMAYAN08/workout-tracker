@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
+import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { convertWeight } from '../utils/calculations';
 import { moveItem } from '../utils/reorder';
@@ -15,6 +16,13 @@ import {
   presentRestDone,
   findNextIncompleteSet,
 } from '../notifications';
+import {
+  syncLiveActivity,
+  endLiveActivity,
+  resetLiveActivityCache,
+  msUntilRestEnd,
+  buildLiveActivityPayload,
+} from '../liveActivity';
 
 const WorkoutContext = createContext();
 
@@ -322,6 +330,7 @@ export function WorkoutProvider({ children }) {
 
   const finishWorkout = async () => {
     await vibrate('success');
+    endLiveActivity({ force: true });
     await cancelRestNotification();
     try {
       const payload = {
@@ -357,6 +366,7 @@ export function WorkoutProvider({ children }) {
   };
 
   const cancelWorkout = async () => {
+    endLiveActivity({ force: true });
     await cancelRestNotification();
     setActiveWorkout(null);
     setWorkoutDuration(0);
@@ -587,6 +597,7 @@ export function WorkoutProvider({ children }) {
   };
 
   const wipeAllData = async () => {
+    endLiveActivity({ force: true });
     await cancelRestNotification();
     setActiveWorkout(null);
     setCompletedWorkout(null);
@@ -643,6 +654,42 @@ export function WorkoutProvider({ children }) {
   const refreshAll = async () => {
     syncFromStore();
   };
+
+  // ---- Live Activity (iOS lock screen / Dynamic Island) ----
+  // Declarative: whatever the workout state is, the activity mirrors it. This
+  // covers start, set start/complete, rest skip, rest target change, add/remove
+  // sets, finish/cancel/wipe (activeWorkout -> null ends it) and relaunch
+  // (first sync after hydration re-attaches or ends stale activities).
+  const [liveTick, setLiveTick] = useState(0);
+  const liveInput = { activeWorkout, lastSetCompletedAt, restTargetSec, playingSet, unit };
+  const liveInputRef = useRef(liveInput);
+  liveInputRef.current = liveInput;
+  const liveFirstSync = useRef(true);
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    const force = liveFirstSync.current;
+    liveFirstSync.current = false;
+    const input = { ...liveInputRef.current, now: Date.now() };
+    syncLiveActivity(input, { force });
+    // Flip to "rest over" exactly at rest end while the app is running.
+    const wait = msUntilRestEnd(buildLiveActivityPayload(input), input.now);
+    if (wait == null) return undefined;
+    const t = setTimeout(() => setLiveTick((n) => n + 1), wait + 250);
+    return () => clearTimeout(t);
+  }, [hydrated, activeWorkout, lastSetCompletedAt, restTargetSec, playingSet, unit, liveTick]);
+
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    const sub = AppState.addEventListener?.('change', (st) => {
+      if (st === 'active') {
+        // Re-check on resume: the user may have dismissed it, toggled Live
+        // Activities in Settings, or rest may have ended while suspended.
+        resetLiveActivityCache();
+        setLiveTick((n) => n + 1);
+      }
+    });
+    return () => sub?.remove?.();
+  }, [hydrated]);
 
   const restDoneHandledFor = useRef(null);
   useEffect(() => {

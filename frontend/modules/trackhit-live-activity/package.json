@@ -1,0 +1,6 @@
+{
+  "name": "trackhit-live-activity",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Expo module that starts/updates/ends the TrackHit workout Live Activity"
+}
