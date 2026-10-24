@@ -38,11 +38,15 @@
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
-            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
           },
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
-            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "C617.1"
+            ]
           }
         ]
       }
@@ -65,7 +69,9 @@
       [
         "expo-font",
         {
-          "fonts": ["./assets/fonts/VioletSans-Regular.ttf"]
+          "fonts": [
+            "./assets/fonts/VioletSans-Regular.ttf"
+          ]
         }
       ],
       "expo-sharing",
@@ -82,6 +88,12 @@
           "enableBackgroundRemoteNotifications": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "597de3ed-1a1f-45b7-a123-cf643203b653"
+      }
+    },
+    "owner": "emayan"
   }
 }
