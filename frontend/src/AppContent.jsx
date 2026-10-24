@@ -1,3 +1,4 @@
+import useWidgetSync from './useWidgetSync';
 import { confirmAction } from './dialog';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -53,8 +54,10 @@ export default function AppContent() {
     unit,
     completedWorkout,
     setCompletedWorkout,
+    workoutHistory,
   } = useWorkout();
   const { colors, tabBarHidden, setTabBarHidden } = useTheme();
+  useWidgetSync({ hydrated, workoutHistory, colors });
   const insets = useSafeAreaInsets();
   const styles = makeStyles(colors);
 

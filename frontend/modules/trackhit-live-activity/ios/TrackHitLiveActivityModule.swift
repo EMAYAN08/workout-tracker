@@ -1,9 +1,12 @@
 import ActivityKit
 import ExpoModulesCore
 import Foundation
+import WidgetKit
 
 private let moduleAppGroupId = "group.com.trackhit.app"
 private let moduleActionKeyPrefix = "trackhit.action."
+private let moduleWidgetDataKey = "trackhit.widget.consistency"
+private let moduleWidgetKind = "TrackHitConsistency"
 private let moduleActionNotification = Notification.Name("TrackHitLiveActivityAction")
 
 public class TrackHitLiveActivityModule: Module {
@@ -34,6 +37,15 @@ public class TrackHitLiveActivityModule: Module {
 
     Function("areActivitiesEnabled") { () -> Bool in
       return ActivityAuthorizationInfo().areActivitiesEnabled
+    }
+
+    // Stores the home screen consistency widget snapshot (JSON) in the App
+    // Group and asks WidgetKit to reload that widget's timeline.
+    Function("setWidgetData") { (json: String) -> Bool in
+      guard let defaults = UserDefaults(suiteName: moduleAppGroupId) else { return false }
+      defaults.set(json, forKey: moduleWidgetDataKey)
+      WidgetCenter.shared.reloadTimelines(ofKind: moduleWidgetKind)
+      return true
     }
 
     // Returns queued lock-screen button actions as a JSON array and removes them.

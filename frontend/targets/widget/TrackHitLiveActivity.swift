@@ -7,6 +7,7 @@ import WidgetKit
 struct TrackHitWidgetBundle: WidgetBundle {
   var body: some Widget {
     TrackHitWorkoutLiveActivity()
+    TrackHitConsistencyWidget()
   }
 }
 
