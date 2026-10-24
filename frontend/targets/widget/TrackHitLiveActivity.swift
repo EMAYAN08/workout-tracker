@@ -1,4 +1,5 @@
 import ActivityKit
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -9,54 +10,40 @@ struct TrackHitWidgetBundle: WidgetBundle {
   }
 }
 
-// MARK: - Phase / style
+// MARK: - State
 
 enum TrackHitPhase {
-  case working
+  case inSet
   case resting
   case restOver
+  case idle
+  case done
 
   var accent: Color {
     switch self {
-    case .working: return Color(red: 0.31, green: 0.55, blue: 1.0)   // brand blue
-    case .resting: return Color(red: 1.0, green: 0.62, blue: 0.04)   // amber
-    case .restOver: return Color(red: 0.19, green: 0.82, blue: 0.35) // green
-    }
-  }
-
-  var accentDeep: Color {
-    switch self {
-    case .working: return Color(red: 0.45, green: 0.30, blue: 1.0)
-    case .resting: return Color(red: 1.0, green: 0.38, blue: 0.12)
-    case .restOver: return Color(red: 0.10, green: 0.70, blue: 0.62)
+    case .inSet: return Color(red: 1.0, green: 0.27, blue: 0.23)
+    case .resting: return Color(red: 0.22, green: 0.62, blue: 1.0)
+    case .restOver: return Color(red: 0.20, green: 0.84, blue: 0.40)
+    case .idle: return Color(white: 0.55)
+    case .done: return Color(red: 0.20, green: 0.84, blue: 0.40)
     }
   }
 
   var symbol: String {
     switch self {
-    case .working: return "figure.strengthtraining.traditional"
+    case .inSet: return "figure.strengthtraining.traditional"
     case .resting: return "timer"
     case .restOver: return "checkmark.circle.fill"
+    case .idle: return "dumbbell.fill"
+    case .done: return "flag.checkered"
     }
-  }
-
-  var label: String {
-    switch self {
-    case .working: return "WORKING OUT"
-    case .resting: return "RESTING"
-    case .restOver: return "REST OVER · GO!"
-    }
-  }
-
-  var gradient: LinearGradient {
-    LinearGradient(colors: [accent, accentDeep], startPoint: .leading, endPoint: .trailing)
   }
 }
 
 extension TrackHitWorkoutAttributes.ContentState {
   var workoutStartDate: Date { Date(timeIntervalSince1970: workoutStart) }
+  var setStartDate: Date? { setStart.map { Date(timeIntervalSince1970: $0) } }
 
-  /// Rest interval with a guaranteed non-empty range.
   var restRange: ClosedRange<Date>? {
     guard let s = restStart, let e = restEnd else { return nil }
     let start = Date(timeIntervalSince1970: s)
@@ -64,134 +51,213 @@ extension TrackHitWorkoutAttributes.ContentState {
     return start...end
   }
 
-  /// `isStale` flips to true when the system passes the staleDate (= rest end)
-  /// set by the app, so the colour switches even while the app is suspended.
+  /// `isStale` turns true when iOS passes the staleDate (= rest end), so the
+  /// "rest over" look appears even while the app is suspended.
   func phase(isStale: Bool) -> TrackHitPhase {
-    guard let range = restRange else { return .working }
-    if restOver || isStale || Date() >= range.upperBound { return .restOver }
-    return .resting
-  }
-}
-
-// MARK: - Building blocks
-
-/// Pulses the symbol on iOS 17+, plain image on 16.x.
-struct PhaseSymbol: View {
-  let phase: TrackHitPhase
-  var body: some View {
-    if #available(iOS 17.0, *) {
-      Image(systemName: phase.symbol)
-        .foregroundStyle(phase.accent)
-        .symbolEffect(.pulse, options: .repeating, isActive: phase != .working)
-    } else {
-      Image(systemName: phase.symbol)
-        .foregroundColor(phase.accent)
+    if setStart != nil { return .inSet }
+    if let range = restRange {
+      if restOver || isStale || Date() >= range.upperBound { return .restOver }
+      return .resting
     }
+    return hasTarget ? .idle : .done
   }
 }
 
-struct PhaseBadge: View {
-  let phase: TrackHitPhase
-  var size: CGFloat = 34
-  var body: some View {
-    ZStack {
-      Circle()
-        .fill(phase.accent.opacity(0.22))
-      Circle()
-        .strokeBorder(phase.accent.opacity(0.55), lineWidth: 1)
-      PhaseSymbol(phase: phase)
-        .font(.system(size: size * 0.48, weight: .bold))
-    }
-    .frame(width: size, height: size)
-  }
-}
+// MARK: - Pieces
 
-struct ElapsedLabel: View {
-  let state: TrackHitWorkoutAttributes.ContentState
-  var body: some View {
-    HStack(spacing: 3) {
-      Image(systemName: "stopwatch")
-        .font(.caption2.weight(.bold))
-      Text(state.workoutStartDate, style: .timer)
-        .font(.system(.footnote, design: .rounded).weight(.semibold))
-        .monospacedDigit()
-        .frame(maxWidth: 64, alignment: .leading)
-    }
-  }
-}
-
-struct BigRestValue: View {
+/// Big white timer in the inner pill.
+struct MainTimerText: View {
   let state: TrackHitWorkoutAttributes.ContentState
   let phase: TrackHitPhase
-  var size: CGFloat
+  var size: CGFloat = 28
+
   var body: some View {
     Group {
       if phase == .resting, let range = state.restRange {
         Text(timerInterval: range, countsDown: true)
-          .monospacedDigit()
+      } else if phase == .inSet, let start = state.setStartDate {
+        Text(start, style: .timer)
       } else if phase == .restOver {
-        Text("GO")
+        Text("0:00")
       } else {
         Text(state.workoutStartDate, style: .timer)
-          .monospacedDigit()
       }
     }
-    .font(.system(size: size, weight: .heavy, design: .rounded))
-    .foregroundStyle(phase.gradient)
-    .contentTransition(.numericText(countsDown: phase == .resting))
-    .multilineTextAlignment(.trailing)
+    .font(.system(size: size, weight: .semibold, design: .rounded))
+    .monospacedDigit()
+    .foregroundColor(.white)
     .lineLimit(1)
-    .minimumScaleFactor(0.6)
+    .minimumScaleFactor(0.7)
   }
 }
 
-/// Rounded, glowing rest bar. Only shown for rest (never set progress).
-struct RestCapsuleBar: View {
+/// Small header timer: workout elapsed with a clock glyph.
+struct WorkoutClock: View {
   let state: TrackHitWorkoutAttributes.ContentState
-  let phase: TrackHitPhase
-  var height: CGFloat = 8
   var body: some View {
-    if phase == .resting, let range = state.restRange {
-      ProgressView(timerInterval: range, countsDown: true, label: { EmptyView() }, currentValueLabel: { EmptyView() })
-        .progressViewStyle(.linear)
-        .tint(phase.accent)
-        .scaleEffect(x: 1, y: height / 4, anchor: .center)
-        .frame(height: height)
-        .clipShape(Capsule())
-        .shadow(color: phase.accent.opacity(0.6), radius: 4)
-    } else if phase == .restOver {
-      Capsule()
-        .fill(phase.gradient)
-        .frame(height: height)
-        .shadow(color: phase.accent.opacity(0.6), radius: 4)
+    HStack(spacing: 4) {
+      Text(state.workoutStartDate, style: .timer)
+        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+        .monospacedDigit()
+        .foregroundColor(.white)
+        .multilineTextAlignment(.trailing)
+        .frame(maxWidth: 70, alignment: .trailing)
+      Image(systemName: "clock.fill")
+        .font(.caption)
+        .foregroundColor(Color(white: 0.6))
     }
   }
 }
 
-struct NextSetChip: View {
-  let text: String
+/// Right side of the inner pill: "Rest" / "Go" capsule, or "Set N" with
+/// small position pills either side.
+struct StatusCapsule: View {
+  let state: TrackHitWorkoutAttributes.ContentState
   let phase: TrackHitPhase
+
   var body: some View {
+    switch phase {
+    case .resting:
+      label("Rest", fg: .white, bg: phase.accent)
+    case .restOver:
+      label("Go", fg: .black, bg: phase.accent)
+    case .done:
+      label("All sets done", fg: .white, bg: Color(white: 0.25))
+    case .inSet, .idle:
+      HStack(spacing: 4) {
+        ForEach(0..<min(max(state.setNumber - 1, 0), 3), id: \.self) { _ in
+          Capsule().fill(Color.white).frame(width: 12, height: 14)
+        }
+        label(
+          state.setNumber > 0 ? "Set \(state.setNumber)" : "Ready",
+          fg: phase == .inSet ? .black : .white,
+          bg: phase == .inSet ? Color.white : Color(white: 0.32)
+        )
+        ForEach(0..<min(max(state.setCount - state.setNumber, 0), 3), id: \.self) { _ in
+          Capsule().fill(Color(white: 0.4)).frame(width: 12, height: 14)
+        }
+      }
+    }
+  }
+
+  private func label(_ text: String, fg: Color, bg: Color) -> some View {
     Text(text)
-      .font(.caption.weight(.semibold))
+      .font(.system(.subheadline, design: .rounded).weight(.semibold))
+      .foregroundColor(fg)
       .lineLimit(1)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 3)
-      .background(Capsule().fill(phase.accent.opacity(0.18)))
-      .overlay(Capsule().strokeBorder(phase.accent.opacity(0.4), lineWidth: 0.5))
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 5)
+      .background(Capsule().fill(bg))
   }
 }
 
-struct RestRing: View {
+struct InnerPill: View {
   let state: TrackHitWorkoutAttributes.ContentState
   let phase: TrackHitPhase
   var body: some View {
-    if phase == .resting, let range = state.restRange {
-      ProgressView(timerInterval: range, countsDown: true, label: { EmptyView() }, currentValueLabel: { EmptyView() })
-        .progressViewStyle(.circular)
-        .tint(phase.accent)
-    } else {
-      PhaseSymbol(phase: phase)
+    HStack(spacing: 10) {
+      MainTimerText(state: state, phase: phase)
+        .frame(width: 78, alignment: .leading)
+      StatusCapsule(state: state, phase: phase)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(white: 0.16)))
+  }
+}
+
+struct ExerciseRow: View {
+  let state: TrackHitWorkoutAttributes.ContentState
+  let phase: TrackHitPhase
+  let workoutId: String
+
+  var body: some View {
+    HStack(spacing: 10) {
+      VStack(spacing: 3) {
+        Capsule()
+          .fill(Color.white)
+          .frame(width: 4, height: 16)
+        Capsule()
+          .fill(Color(white: 0.35))
+          .frame(width: 4, height: 8)
+      }
+      VStack(alignment: .leading, spacing: 1) {
+        Text(state.exerciseName)
+          .font(.headline)
+          .foregroundColor(.white)
+          .lineLimit(1)
+        Text(state.detail)
+          .font(.subheadline)
+          .foregroundColor(Color(white: 0.6))
+          .lineLimit(1)
+      }
+      Spacer(minLength: 6)
+      ActionButtons(state: state, phase: phase, workoutId: workoutId)
+    }
+  }
+}
+
+/// Interactive buttons on iOS 17+; nothing on 16.x.
+struct ActionButtons: View {
+  let state: TrackHitWorkoutAttributes.ContentState
+  let phase: TrackHitPhase
+  let workoutId: String
+
+  var body: some View {
+    if #available(iOS 17.0, *) {
+      ActionButtons17(state: state, phase: phase, workoutId: workoutId)
+    }
+  }
+}
+
+@available(iOS 17.0, *)
+struct ActionButtons17: View {
+  let state: TrackHitWorkoutAttributes.ContentState
+  let phase: TrackHitPhase
+  let workoutId: String
+
+  private func intent(_ action: String) -> TrackHitSetActionIntent {
+    TrackHitSetActionIntent(
+      action: action,
+      workoutId: workoutId,
+      exerciseId: state.targetExerciseId,
+      exerciseIndex: state.targetExerciseIndex,
+      setIndex: state.targetSetIndex
+    )
+  }
+
+  var body: some View {
+    HStack(spacing: 8) {
+      if phase == .resting || phase == .restOver {
+        Button(intent: intent("skipRest")) {
+          Image(systemName: "forward.end.fill")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(.white)
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(Color(white: 0.22)))
+        }
+        .buttonStyle(.plain)
+      } else if phase == .inSet {
+        Button(intent: intent("cancelSet")) {
+          Image(systemName: "xmark")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(.white)
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(Color(white: 0.22)))
+        }
+        .buttonStyle(.plain)
+      }
+
+      if state.hasTarget && (phase != .inSet || state.canComplete) {
+        Button(intent: intent(phase == .inSet ? "complete" : "start")) {
+          Image(systemName: phase == .inSet ? "checkmark" : "play.fill")
+            .font(.system(size: 17, weight: .bold))
+            .foregroundColor(.black)
+            .frame(width: 64, height: 40)
+            .background(Capsule().fill(Color.white))
+        }
+        .buttonStyle(.plain)
+      }
     }
   }
 }
@@ -205,49 +271,24 @@ struct TrackHitLockScreenView: View {
     let state = context.state
     let phase = state.phase(isStale: context.isStale)
 
-    VStack(alignment: .leading, spacing: 10) {
-      HStack(alignment: .center, spacing: 10) {
-        PhaseBadge(phase: phase)
-        VStack(alignment: .leading, spacing: 1) {
-          Text(phase.label)
-            .font(.caption2.weight(.heavy))
-            .tracking(0.8)
-            .foregroundColor(phase.accent)
-            .contentTransition(.numericText())
-          Text(context.attributes.workoutName)
-            .font(.subheadline.weight(.semibold))
-            .foregroundColor(.primary)
-            .lineLimit(1)
-        }
-        Spacer(minLength: 6)
-        ElapsedLabel(state: state)
-          .foregroundColor(.secondary)
+    VStack(spacing: 10) {
+      HStack {
+        Text(context.attributes.workoutName)
+          .font(.subheadline.weight(.semibold))
+          .foregroundColor(Color(white: 0.75))
+          .lineLimit(1)
+        Spacer(minLength: 8)
+        WorkoutClock(state: state)
       }
-
-      HStack(alignment: .center, spacing: 8) {
-        VStack(alignment: .leading, spacing: 5) {
-          Text(state.exerciseName)
-            .font(.title3.weight(.bold))
-            .foregroundColor(.primary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-          NextSetChip(text: state.nextSet, phase: phase)
-            .foregroundColor(.primary)
-        }
-        Spacer(minLength: 6)
-        BigRestValue(state: state, phase: phase, size: phase == .working ? 30 : 42)
-          .frame(maxWidth: 130, alignment: .trailing)
-      }
-
-      RestCapsuleBar(state: state, phase: phase)
+      InnerPill(state: state, phase: phase)
+      ExerciseRow(state: state, phase: phase, workoutId: context.attributes.workoutId)
     }
-    .padding(16)
-    .background(
-      LinearGradient(
-        colors: [phase.accent.opacity(0.28), phase.accentDeep.opacity(0.06)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      )
+    .padding(.horizontal, 14)
+    .padding(.vertical, 12)
+    .overlay(
+      ContainerRelativeShape()
+        .strokeBorder(phase.accent.opacity(0.85), lineWidth: 1.5)
+        .shadow(color: phase.accent.opacity(0.8), radius: 6)
     )
   }
 }
@@ -259,7 +300,7 @@ struct TrackHitWorkoutLiveActivity: Widget {
     ActivityConfiguration(for: TrackHitWorkoutAttributes.self) { context in
       let phase = context.state.phase(isStale: context.isStale)
       TrackHitLockScreenView(context: context)
-        .activityBackgroundTint(phase.accent.opacity(0.10))
+        .activityBackgroundTint(Color.black)
         .activitySystemActionForegroundColor(phase.accent)
     } dynamicIsland: { context in
       let state = context.state
@@ -267,70 +308,49 @@ struct TrackHitWorkoutLiveActivity: Widget {
 
       return DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          HStack(spacing: 8) {
-            PhaseBadge(phase: phase, size: 36)
-            VStack(alignment: .leading, spacing: 1) {
-              Text(phase == .restOver ? "GO!" : (phase == .resting ? "REST" : "LIFT"))
-                .font(.caption2.weight(.heavy))
-                .foregroundColor(phase.accent)
-              ElapsedLabel(state: state)
-                .foregroundColor(.white)
-            }
-          }
-          .padding(.leading, 2)
+          Text(context.attributes.workoutName)
+            .font(.subheadline.weight(.semibold))
+            .foregroundColor(Color(white: 0.75))
+            .lineLimit(1)
+            .padding(.leading, 6)
         }
         DynamicIslandExpandedRegion(.trailing) {
-          BigRestValue(state: state, phase: phase, size: phase == .working ? 22 : 30)
-            .frame(maxWidth: 96, alignment: .trailing)
-            .padding(.trailing, 2)
-        }
-        DynamicIslandExpandedRegion(.center) {
-          Text(context.attributes.workoutName)
-            .font(.caption.weight(.semibold))
-            .foregroundColor(.gray)
-            .lineLimit(1)
+          WorkoutClock(state: state)
+            .padding(.trailing, 6)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-              Text(state.exerciseName)
-                .font(.headline)
-                .foregroundColor(.white)
-                .lineLimit(1)
-              Spacer(minLength: 4)
-              NextSetChip(text: state.nextSet, phase: phase)
-                .foregroundColor(.white)
-            }
-            RestCapsuleBar(state: state, phase: phase, height: 6)
+          VStack(spacing: 8) {
+            InnerPill(state: state, phase: phase)
+            ExerciseRow(state: state, phase: phase, workoutId: context.attributes.workoutId)
           }
           .padding(.horizontal, 4)
         }
       } compactLeading: {
-        if phase == .resting {
-          RestRing(state: state, phase: phase)
-            .frame(width: 20, height: 20)
-        } else {
-          PhaseSymbol(phase: phase)
-        }
+        Image(systemName: phase.symbol)
+          .foregroundColor(phase.accent)
       } compactTrailing: {
-        if phase == .resting, let range = state.restRange {
-          Text(timerInterval: range, countsDown: true)
-            .monospacedDigit()
-            .font(.system(.body, design: .rounded).weight(.bold))
-            .foregroundColor(phase.accent)
-            .frame(maxWidth: 42)
-        } else if phase == .restOver {
-          Image(systemName: "checkmark.circle.fill")
-            .foregroundColor(phase.accent)
-        } else {
-          Text(state.workoutStartDate, style: .timer)
-            .monospacedDigit()
-            .font(.system(.body, design: .rounded).weight(.semibold))
-            .foregroundColor(.white)
-            .frame(maxWidth: 46)
+        Group {
+          if phase == .resting, let range = state.restRange {
+            Text(timerInterval: range, countsDown: true)
+          } else if phase == .inSet, let start = state.setStartDate {
+            Text(start, style: .timer)
+          } else {
+            Text(state.workoutStartDate, style: .timer)
+          }
         }
+        .font(.system(.body, design: .rounded).weight(.semibold))
+        .monospacedDigit()
+        .foregroundColor(phase == .idle || phase == .done ? .white : phase.accent)
+        .frame(maxWidth: 46)
       } minimal: {
-        RestRing(state: state, phase: phase)
+        if phase == .resting, let range = state.restRange {
+          ProgressView(timerInterval: range, countsDown: true, label: { EmptyView() }, currentValueLabel: { EmptyView() })
+            .progressViewStyle(.circular)
+            .tint(phase.accent)
+        } else {
+          Image(systemName: phase.symbol)
+            .foregroundColor(phase.accent)
+        }
       }
       .widgetURL(URL(string: "trackit://"))
       .keylineTint(phase.accent)

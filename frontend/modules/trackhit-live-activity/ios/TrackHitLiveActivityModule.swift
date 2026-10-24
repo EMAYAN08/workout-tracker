@@ -2,18 +2,56 @@ import ActivityKit
 import ExpoModulesCore
 import Foundation
 
+private let moduleAppGroupId = "group.com.trackhit.app"
+private let moduleActionKeyPrefix = "trackhit.action."
+private let moduleActionNotification = Notification.Name("TrackHitLiveActivityAction")
+
 public class TrackHitLiveActivityModule: Module {
+  private var actionObserver: NSObjectProtocol?
+
   public func definition() -> ModuleDefinition {
     Name("TrackHitLiveActivity")
+
+    Events("onAction")
+
+    OnStartObserving {
+      if self.actionObserver != nil { return }
+      self.actionObserver = NotificationCenter.default.addObserver(
+        forName: moduleActionNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        self?.sendEvent("onAction", [:])
+      }
+    }
+
+    OnStopObserving {
+      if let observer = self.actionObserver {
+        NotificationCenter.default.removeObserver(observer)
+      }
+      self.actionObserver = nil
+    }
 
     Function("areActivitiesEnabled") { () -> Bool in
       return ActivityAuthorizationInfo().areActivitiesEnabled
     }
 
+    // Returns queued lock-screen button actions as a JSON array and removes them.
+    Function("consumePendingActions") { () -> String in
+      let defaults = UserDefaults(suiteName: moduleAppGroupId) ?? UserDefaults.standard
+      var items: [String] = []
+      for (key, value) in defaults.dictionaryRepresentation() where key.hasPrefix(moduleActionKeyPrefix) {
+        if let json = value as? String {
+          items.append(json)
+        }
+        defaults.removeObject(forKey: key)
+      }
+      return "[" + items.joined(separator: ",") + "]"
+    }
+
     // Creates the activity for `workoutId`, or updates the existing one.
-    // Any other TrackHit activity (stale / duplicate / old workout) is ended,
-    // so there is never more than one on screen. Returns the activity id,
-    // or "" when Live Activities are disabled by the user.
+    // Any other TrackHit activity is ended so there is only ever one.
+    // Returns the activity id, or "" when Live Activities are disabled.
     AsyncFunction("upsert") { (workoutId: String, workoutName: String, stateJson: String, staleAtMs: Double) async throws -> String in
       let state = try JSONDecoder().decode(
         TrackHitWorkoutAttributes.ContentState.self,

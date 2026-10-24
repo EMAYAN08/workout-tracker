@@ -51,7 +51,12 @@
           }
         ]
       },
-      "appleTeamId": "8863T44X4L"
+      "appleTeamId": "8863T44X4L",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.trackhit.app"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {

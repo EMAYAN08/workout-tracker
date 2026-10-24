@@ -22,6 +22,9 @@ import {
   resetLiveActivityCache,
   msUntilRestEnd,
   buildLiveActivityPayload,
+  consumePendingActions,
+  addLiveActionListener,
+  planLiveAction,
 } from '../liveActivity';
 
 export const AUTO_FINISH_SEC = 2.5 * 60 * 60;
@@ -708,6 +711,46 @@ export function WorkoutProvider({ children }) {
     });
     return () => sub?.remove?.();
   }, [hydrated]);
+
+  // ---- Live Activity buttons (iOS 17+) ----
+  // The intent queues actions in the App Group (works even if we were killed:
+  // iOS relaunches the app in the background to run it). Drain on launch, on
+  // the intent's ping, and on foreground; apply one per render so each sees
+  // the state produced by the previous one.
+  const [liveActions, setLiveActions] = useState([]);
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    const drain = () => {
+      const got = consumePendingActions();
+      if (got.length) setLiveActions((q) => [...q, ...got]);
+    };
+    drain();
+    const unsub = addLiveActionListener(drain);
+    const sub = AppState.addEventListener?.('change', (st) => {
+      if (st === 'active') drain();
+    });
+    return () => {
+      unsub();
+      sub?.remove?.();
+    };
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || liveActions.length === 0) return;
+    const [action, ...rest] = liveActions;
+    const plan = planLiveAction(action, { activeWorkout, playingSet, lastSetCompletedAt });
+    setLiveActions(rest);
+    if (plan.kind === 'start') startSet(plan.exerciseIndex, plan.setIndex);
+    else if (plan.kind === 'complete') completeSet(plan.exerciseIndex, plan.setIndex);
+    else if (plan.kind === 'skipRest') stopRestTimer();
+    else if (plan.kind === 'cancelSet') cancelSet();
+    else {
+      // Skipped (stale/duplicate): the lock screen may have shown optimistic
+      // feedback, so push the real state back.
+      resetLiveActivityCache();
+      setLiveTick((n) => n + 1);
+    }
+  }, [hydrated, liveActions]);
 
   const restDoneHandledFor = useRef(null);
   useEffect(() => {
