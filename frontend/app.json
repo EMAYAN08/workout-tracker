@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.trackhit.app",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "icon": {
         "light": "./assets/icon-light.png",
         "dark": "./assets/icon-dark.png",
